@@ -2,15 +2,23 @@
 #include <string.h>
 #include <fcntl.h>
 #include "cpu.h"
+#include "memory.h"
 #include "common.h"
 #include "cartridge.h"
 #include "instruction_set.h"
 
+void test();
+
 int main()
 {
     init_instruction_set();
+
+    gbc_t gbc = gbc_new();
+    gbc_memory_t mem = gbc.mem;
+    gbc_cpu_t cpu = gbc.cpu;
+    cpu.mem_write = mem.write;
+    cpu.mem_read = mem.read;
     
-    gbc_cpu_t cpu = gbc_cpu_new();    
     FILE* cartridge = fopen("C:\\Users\\liqilong\\Desktop\\Dev\\gbc\\test.gbc", "rb");
     if (!cartridge) {
         printf("Failed to open cartridge\n");
@@ -31,7 +39,38 @@ int main()
     fclose(cartridge);
 
     cartridge_t *cart = cartridge_load((uint8_t*)data);
+
+    if (!cart) {
+        printf("Failed to load cartridge\n");
+        return 1;
+    }
     
+    int code_size = cartridge_code_size(cart);    
+    uint8_t *code = cartridge_code(cart);
+    for (int i = 0; i < code_size;) {
+        instruction_t ins = decode(code+i);
+        LOG_INFO("Addr: %x\n", i+0x150);
+        i += ins.size;
+        if (ins.func) {
+            ins.func(&cpu, &ins);
+        } else {
+            LOG_ERROR("Unknown instruction [0x%x]\n", ins.opcode);
+        }
+        //getchar();
+    }
+    
+    return 0;
+}
+
+void
+test() 
+{
+    gbc_t gbc = gbc_new();
+    gbc_memory_t mem = gbc.mem;
+    gbc_cpu_t cpu = gbc.cpu;
+    cpu.mem_write = mem.write;
+    cpu.mem_read = mem.read;
+
     WRITE_16(cpu.regs.R_AF.AF, 0xff00);    
     printf("%x %x %x\n", READ_16(cpu.regs.R_AF.AF), READ_8(cpu.regs.R_AF.pair.A), READ_8(cpu.regs.R_AF.pair.F));
     cpu.regs.R_BC.pair.B = 2;    
@@ -129,10 +168,5 @@ int main()
     assert (READ_R_FLAG(r, FLAG_N) == 0);
     assert (READ_R_FLAG(r, FLAG_H) == 1);
     assert (READ_R_FLAG(r, FLAG_C) == 1);
-
-
-/*     printf("c %d a %d b %d fz %d fn %d\n", 
-    cpu.regs.r_bc.pair.c, cpu.regs.r_af.pair.a, cpu.regs.r_bc.pair.b, cpu.regs.r_af.pair.f.z, cpu.regs.r_af.pair.f.n);
- */ 
-    return 0;
+    return;
 }

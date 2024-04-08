@@ -10,8 +10,10 @@ endif()
 
 # Set up the source files
 set(SOURCES
+    gbc.c
     cpu.c
     cartridge.c
+    memory.c
     utils.c
     instruction_set.c
     main.c)

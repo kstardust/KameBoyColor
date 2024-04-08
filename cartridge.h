@@ -25,8 +25,12 @@ struct cartridge
     uint8_t  mask_rom_version_number;           /* 0x14C          Mask ROM Version Number */
     uint8_t  header_checksum;                   /* 0x14D          Header Checksum */
     uint16_t global_checksum;                   /* 0x14E-0x14F    Global Checksum */    
-    uint8_t  *rom;                              /* 0x150          ROM */
+    uint8_t  code;                              /* 0x150          ROM */
 };
+
+#define cartridge_rom_size(cart)    (32 * (1 << (cart)->rom_size) * 1024)
+#define cartridge_code(cart)        ((uint8_t*)&(cart->code))
+#define cartridge_code_size(cart)   (cartridge_code(cart) - (uint8_t*)(cart) + cartridge_rom_size((cart)))
 
 cartridge_t* cartridge_load(uint8_t *data);
 

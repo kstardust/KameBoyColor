@@ -2,6 +2,7 @@
 #define _CPU_H
 
 #include <stdint.h>
+#include "memory.h"
     
 typedef struct cpu_register cpu_register_t;
 typedef struct gbc_cpu gbc_cpu_t;
@@ -35,23 +36,6 @@ typedef struct gbc_cpu gbc_cpu_t;
         } REG_PAIR_NAME(high, low);              \
     } REG_FIELD_NAME(high, low)
 
-/*     union _reg_pari_AF
-    {
-        uint16_t AF;
-        struct _AF_pair
-        {
-            uint8_t A;
-            union
-            {
-                uint8_t _f;
-                struct
-                {
-      
-                } F;                             
-            };
-        } pair;
-    } R_AF;
- */
 
 struct cpu_register
 {
@@ -81,12 +65,15 @@ struct cpu_register
     #define REG_D _REG_8_OFFSET(D, E, D)
     #define REG_E _REG_8_OFFSET(D, E, E)
     #define REG_H _REG_8_OFFSET(H, L, H)
-    #define REG_L _REG_8_OFFSET(H, L, L)
+    #define REG_L _REG_8_OFFSET(H, L, L)    
 };
 
 struct gbc_cpu
 {    
     cpu_register_t regs;
+    /* memory op */
+    memory_read mem_read;
+    memory_write mem_write;
 };
 
 gbc_cpu_t gbc_cpu_new();
@@ -118,11 +105,11 @@ uint16_t swap_i16(uint16_t value)
 #define READ_1(reg) (reg & 0x1)
 #define WRITE_1(reg, value) (reg) = (value & 0x1)
 
-#define READ_R16(reg, field) READ_16((*(uint16_t*) ((uint8_t*)reg+field)))
-#define WRITE_R16(reg, field, value) WRITE_16((*(uint16_t*) ((uint8_t*)reg+field)), value)
+#define READ_R16(reg, field) READ_16((*(uint16_t*) ((uint8_t*)(reg)+(field))))
+#define WRITE_R16(reg, field, value) WRITE_16((*(uint16_t*) ((uint8_t*)(reg)+(field))), (value))
 
-#define READ_R8(reg, field) READ_8(*(uint8_t*) ((uint8_t*)reg+field))
-#define WRITE_R8(reg, field, value) WRITE_8((*(uint8_t*) ((uint8_t*)reg+field)), value)
+#define READ_R8(reg, field) READ_8(*(uint8_t*) ((uint8_t*)(reg)+(field)))
+#define WRITE_R8(reg, field, value) WRITE_8((*(uint8_t*) ((uint8_t*)(reg)+(field))), (value))
 
 
 #define FLAG_Z 0b1000  /* zero flag */

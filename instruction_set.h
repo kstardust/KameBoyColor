@@ -4,7 +4,7 @@
 #include "gbc.h"
 
 typedef struct instruction instruction_t;
-typedef void (*instruction_func)(gbc_cpu_t *cpu, void *op1, void *op2);
+typedef void (*instruction_func)(gbc_cpu_t *cpu, instruction_t *ins);
 
 #define INSTRUCTIONS_SET_SIZE 512
 
@@ -31,6 +31,6 @@ struct instruction
 };
 
 void init_instruction_set();
-instruction_t decode(gbc_cpu_t *cpu, uint8_t *data);
+instruction_t decode(uint8_t *data);
 
 #endif

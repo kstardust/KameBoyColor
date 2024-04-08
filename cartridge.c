@@ -56,7 +56,7 @@ cartridge_load(uint8_t *data)
     }
 
     printf("Title: %s\n", cartridge->title);
-    printf("ROM Size: %dk\n", 32 * (1 << cartridge->rom_size));
+    printf("ROM Size: %dk\n", cartridge_rom_size(cartridge) / 1024);
     
     switch (cartridge->ram_size)
     {
