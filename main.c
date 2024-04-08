@@ -9,6 +9,16 @@
 
 void test();
 
+#ifdef DEBUG
+int main()
+{
+    init_instruction_set();    
+    test();
+    return 0;
+}
+
+#else
+
 int main()
 {
     init_instruction_set();
@@ -61,6 +71,8 @@ int main()
     
     return 0;
 }
+
+#endif
 
 void
 test() 
@@ -168,5 +180,7 @@ test()
     assert (READ_R_FLAG(r, FLAG_N) == 0);
     assert (READ_R_FLAG(r, FLAG_H) == 1);
     assert (READ_R_FLAG(r, FLAG_C) == 1);
+
+    test_instructions();
     return;
 }

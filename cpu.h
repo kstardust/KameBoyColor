@@ -120,5 +120,6 @@ uint16_t swap_i16(uint16_t value)
 #define READ_R_FLAG(reg, flag) ((READ_R8(reg, REG_F) & flag) ? 1 : 0)
 #define SET_R_FLAG(reg, flag) WRITE_R8(reg, REG_F, (READ_R8(reg, REG_F) | flag))
 #define CLEAR_R_FLAG(reg, flag) WRITE_R8(reg, REG_F, (READ_R8(reg, REG_F) & ~flag))
+#define SET_R_FLAG_VALUE(reg, flag, value) ((value) ? (SET_R_FLAG(reg, flag)) : (CLEAR_R_FLAG(reg, flag)))
 
 #endif

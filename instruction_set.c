@@ -12,44 +12,119 @@ void
 inc_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("INC r8: %s\n", ins->name);
-    size_t reg = (size_t)(ins->op1);
-    
+
+    size_t reg_offset = (size_t)ins->op1;
+    cpu_register_t *regs = &(cpu->regs);    
+    uint16_t v = READ_R8(regs, reg_offset);
+    uint8_t hc = HALF_CARRY(v, 1);
+    v++;
+    v &= UINT8_MASK;
+    WRITE_R8(regs, reg_offset, (uint8_t)v);
+
+    SET_R_FLAG_VALUE(regs, FLAG_Z, v == 0);
+    CLEAR_R_FLAG(regs, FLAG_N);
+    SET_R_FLAG_VALUE(regs, FLAG_H, hc);
 }
 
 void 
 inc_r16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("INC r16: %s\n", ins->name);
+
+    size_t reg_offset = (size_t)ins->op1;
+    cpu_register_t *regs = &(cpu->regs);
+    uint16_t v = READ_R16(regs, reg_offset);
+    v++;
+    WRITE_R16(regs, reg_offset, v);
 }
 
 void 
 inc_m16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("INC m16: %s\n", ins->name);
+    
+    size_t reg_offset = (size_t)ins->op1;
+    cpu_register_t *regs = &(cpu->regs);
+    uint16_t addr = READ_R16(regs, reg_offset);        
+    uint16_t v = cpu->mem_read(addr);    
+    uint8_t hc = HALF_CARRY(v, 1);
+
+    v++;
+    v &= UINT8_MASK;
+    cpu->mem_write(addr, (uint8_t)v);
+
+    SET_R_FLAG_VALUE(regs, FLAG_Z, v == 0);
+    CLEAR_R_FLAG(regs, FLAG_N);
+    SET_R_FLAG_VALUE(regs, FLAG_H, hc);
 }
 
 void 
 dec_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("DEC r8: %s\n", ins->name);
+
+    size_t reg_offset = (size_t)ins->op1;
+    cpu_register_t *regs = &(cpu->regs);    
+    uint16_t v = READ_R8(regs, reg_offset);
+    printf("%x %x %x\n", v, -1, HALF_CARRY(v, -1));
+    uint8_t hc = HALF_CARRY(v, -1);
+
+    v--;
+    v &= UINT8_MASK;
+    WRITE_R8(regs, reg_offset, (uint8_t)v);
+
+    SET_R_FLAG_VALUE(regs, FLAG_Z, v == 0);
+    SET_R_FLAG(regs, FLAG_N);
+    SET_R_FLAG_VALUE(regs, FLAG_H, hc);
 }
 
-void 
+void
 dec_r16(gbc_cpu_t *cpu, instruction_t *ins)
 {
-    LOG_INFO("DEC r16: %s\n", ins->name);
+    LOG_INFO("DEC r16: %s\n", ins->name);    
+
+    size_t reg_offset = (size_t)ins->op1;
+    cpu_register_t *regs = &(cpu->regs);
+    uint16_t v = READ_R16(regs, reg_offset);
+    v--;
+    WRITE_R16(regs, reg_offset, v);  
 }
 
 void 
 dec_m16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("DEC m16: %s\n", ins->name);
-}   
+
+    size_t reg_offset = (size_t)ins->op1;
+    cpu_register_t *regs = &(cpu->regs);
+    uint16_t addr = READ_R16(regs, reg_offset);        
+    uint16_t v = cpu->mem_read(addr);    
+    uint8_t hc = HALF_CARRY(v, -1);
+
+    v--;
+    v &= UINT8_MASK;
+    cpu->mem_write(addr, (uint8_t)v);
+
+    SET_R_FLAG_VALUE(regs, FLAG_Z, v == 0);
+    SET_R_FLAG(regs, FLAG_N);
+    SET_R_FLAG_VALUE(regs, FLAG_H, hc);
+}
 
 void
 rlca(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("RLCA: %s\n", ins->name);
+    
+    cpu_register_t *regs = &(cpu->regs);
+    uint16_t v = READ_R8(regs, REG_A);
+    uint16_t carry = v >> 7;
+    v = (v << 1) | carry;
+    WRITE_R8(regs, REG_A, (uint8_t)v);
+
+    CLEAR_R_FLAG(regs, FLAG_Z);
+    CLEAR_R_FLAG(regs, FLAG_N);
+    CLEAR_R_FLAG(regs, FLAG_H);
+    SET_R_FLAG_VALUE(regs, FLAG_C, carry);
 }
 
 void
@@ -1322,3 +1397,163 @@ decode(uint8_t *data)
 
     return inst;
 }
+
+#ifdef DEBUG
+#include "memory.h"
+#include <assert.h>
+
+static uint8_t _flat_mem[0xffff]; // 64KB
+
+static uint8_t 
+_mem_write(uint16_t addr, uint8_t data)
+{
+    printf("Writing to memory at address %x [%x]\n", addr, data);
+    _flat_mem[addr] = data;
+    return data;
+}
+
+static uint8_t 
+_mem_read(uint16_t addr)
+{
+    printf("Reading from memory at address %x\n", addr);
+    return _flat_mem[addr];
+}
+
+void 
+test_inc_r16(gbc_cpu_t *cpu)
+{   
+    cpu_register_t *reg = &(cpu->regs);
+    WRITE_R16(reg, REG_BC, 0x1234);
+    uint8_t code[] = {0x03}; // INC BC
+    instruction_t inst = decode(code);
+    inst.func(cpu, &inst);
+    assert(READ_R16(reg, REG_BC) == 0x1235);
+
+    WRITE_R16(reg, REG_BC, 0xffff);    
+    inst.func(cpu, &inst);
+    assert(READ_R16(reg, REG_BC) == 0x0000);
+}
+
+void 
+test_dec_r16(gbc_cpu_t *cpu)
+{
+    cpu_register_t *reg = &(cpu->regs);
+    WRITE_R16(reg, REG_BC, 0x1234);
+    uint8_t code[] = {0x0b}; // DEC BC
+    instruction_t inst = decode(code);
+    inst.func(cpu, &inst);
+    assert(READ_R16(reg, REG_BC) == 0x1233);
+
+    WRITE_R16(reg, REG_BC, 0x0000);
+    inst.func(cpu, &inst);
+    assert(READ_R16(reg, REG_BC) == 0xffff);    
+}
+
+void
+test_inc_r8(gbc_cpu_t *cpu)
+{
+    cpu_register_t *reg = &(cpu->regs);
+    WRITE_R8(reg, REG_B, 0x34);
+    uint8_t code[] = {0x04}; // INC B
+
+    instruction_t inst = decode(code);
+    inst.func(cpu, &inst);
+
+    assert(READ_R8(reg, REG_B) == 0x35);
+    assert(READ_R_FLAG(reg, FLAG_Z) == 0);
+    assert(READ_R_FLAG(reg, FLAG_N) == 0);
+    assert(READ_R_FLAG(reg, FLAG_H) == 0);
+
+    WRITE_R8(reg, REG_B, 0xff);
+
+    uint8_t h = READ_R8(reg, REG_C);
+
+    inst = decode(code);
+    inst.func(cpu, &inst);
+    
+    assert(READ_R8(reg, REG_B) == 0);
+    assert(READ_R8(reg, REG_C) == h);
+    assert(READ_R_FLAG(reg, FLAG_Z) == 1);
+    assert(READ_R_FLAG(reg, FLAG_N) == 0);
+    assert(READ_R_FLAG(reg, FLAG_H) == 1);
+}
+
+void
+test_dec_r8(gbc_cpu_t *cpu)
+{
+    cpu_register_t *reg = &(cpu->regs);
+    WRITE_R8(reg, REG_B, 0x01);
+    uint8_t code[] = {0x05}; // DEC B
+
+    instruction_t inst = decode(code);
+    inst.func(cpu, &inst);
+
+    assert(READ_R8(reg, REG_B) == 0);
+    assert(READ_R_FLAG(reg, FLAG_Z) == 1);
+    assert(READ_R_FLAG(reg, FLAG_N) == 1);
+    //assert(READ_R_FLAG(reg, FLAG_H) == 0);
+
+    WRITE_R8(reg, REG_B, 0x00);
+
+    uint8_t h = READ_R8(reg, REG_C);
+
+    inst = decode(code);
+    inst.func(cpu, &inst);
+    
+    assert(READ_R8(reg, REG_B) == 0xff);
+    assert(READ_R8(reg, REG_C) == h);
+    assert(READ_R_FLAG(reg, FLAG_Z) == 0);
+    assert(READ_R_FLAG(reg, FLAG_N) == 1);
+    assert(READ_R_FLAG(reg, FLAG_H) == 1);
+}
+
+void 
+test_inc_m16(gbc_cpu_t *cpu)
+{
+    cpu_register_t *reg = &(cpu->regs);
+    const uint16_t addr = 0x34;
+    WRITE_R16(reg, REG_HL, addr);
+    cpu->mem_write(addr, 0x34);
+    uint8_t code[] = {0x34}; // INC HL
+
+    instruction_t inst = decode(code);
+    inst.func(cpu, &inst);
+
+    assert(cpu->mem_read(addr) == 0x35);
+    assert(READ_R_FLAG(reg, FLAG_Z) == 0);
+    assert(READ_R_FLAG(reg, FLAG_N) == 0);
+    assert(READ_R_FLAG(reg, FLAG_H) == 0);
+
+    cpu->mem_write(addr, 0xff);
+    uint8_t h = READ_R8(reg, REG_C);
+
+    inst = decode(code);
+    inst.func(cpu, &inst);
+    
+    assert(cpu->mem_read(addr) == 0);        
+    assert(READ_R_FLAG(reg, FLAG_Z) == 1);
+    assert(READ_R_FLAG(reg, FLAG_N) == 0);
+    assert(READ_R_FLAG(reg, FLAG_H) == 1);
+}
+
+void 
+test_instructions() 
+{
+    gbc_cpu_t cpu = gbc_cpu_new(); 
+    gbc_memory_t mem = gbc_mem_new();
+    mem.read = _mem_read;
+    mem.write = _mem_write;
+
+    cpu.mem_read = mem.read;
+    cpu.mem_write = mem.write;
+
+    test_inc_r16(&cpu);
+    test_inc_r8(&cpu);
+    test_inc_m16(&cpu);
+
+    test_dec_r16(&cpu);
+    test_dec_r8(&cpu);
+    test_inc_m16(&cpu);    
+}
+
+#endif

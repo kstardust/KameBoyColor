@@ -32,5 +32,5 @@ struct instruction
 
 void init_instruction_set();
 instruction_t decode(uint8_t *data);
-
+void  test_instructions();
 #endif
