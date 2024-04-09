@@ -14,9 +14,9 @@ inc_r8(gbc_cpu_t *cpu, instruction_t *ins)
     LOG_INFO("INC r8: %s\n", ins->name);
 
     size_t reg_offset = (size_t)ins->op1;
-    cpu_register_t *regs = &(cpu->regs);    
+    cpu_register_t *regs = &(cpu->regs);
     uint16_t v = READ_R8(regs, reg_offset);
-    uint8_t hc = HALF_CARRY(v, 1);
+    uint8_t hc = HALF_CARRY_ADD(v, 1);
     v++;
     v &= UINT8_MASK;
     WRITE_R8(regs, reg_offset, (uint8_t)v);
@@ -47,7 +47,7 @@ inc_m16(gbc_cpu_t *cpu, instruction_t *ins)
     cpu_register_t *regs = &(cpu->regs);
     uint16_t addr = READ_R16(regs, reg_offset);        
     uint16_t v = cpu->mem_read(addr);    
-    uint8_t hc = HALF_CARRY(v, 1);
+    uint8_t hc = HALF_CARRY_ADD(v, 1);
 
     v++;
     v &= UINT8_MASK;
@@ -64,11 +64,9 @@ dec_r8(gbc_cpu_t *cpu, instruction_t *ins)
     LOG_INFO("DEC r8: %s\n", ins->name);
 
     size_t reg_offset = (size_t)ins->op1;
-    cpu_register_t *regs = &(cpu->regs);    
+    cpu_register_t *regs = &(cpu->regs);
     uint16_t v = READ_R8(regs, reg_offset);
-    printf("%x %x %x\n", v, -1, HALF_CARRY(v, -1));
-    uint8_t hc = HALF_CARRY(v, -1);
-
+    uint8_t hc = HALF_CARRY_SUB(v, 1);
     v--;
     v &= UINT8_MASK;
     WRITE_R8(regs, reg_offset, (uint8_t)v);
@@ -81,7 +79,7 @@ dec_r8(gbc_cpu_t *cpu, instruction_t *ins)
 void
 dec_r16(gbc_cpu_t *cpu, instruction_t *ins)
 {
-    LOG_INFO("DEC r16: %s\n", ins->name);    
+    LOG_INFO("DEC r16: %s\n", ins->name);
 
     size_t reg_offset = (size_t)ins->op1;
     cpu_register_t *regs = &(cpu->regs);
@@ -99,7 +97,7 @@ dec_m16(gbc_cpu_t *cpu, instruction_t *ins)
     cpu_register_t *regs = &(cpu->regs);
     uint16_t addr = READ_R16(regs, reg_offset);        
     uint16_t v = cpu->mem_read(addr);    
-    uint8_t hc = HALF_CARRY(v, -1);
+    uint8_t hc = HALF_CARRY_SUB(v, 1);
 
     v--;
     v &= UINT8_MASK;
@@ -116,10 +114,10 @@ rlca(gbc_cpu_t *cpu, instruction_t *ins)
     LOG_INFO("RLCA: %s\n", ins->name);
     
     cpu_register_t *regs = &(cpu->regs);
-    uint16_t v = READ_R8(regs, REG_A);
-    uint16_t carry = v >> 7;
+    uint8_t v = READ_R8(regs, REG_A);
+    uint8_t carry = v >> 7;
     v = (v << 1) | carry;
-    WRITE_R8(regs, REG_A, (uint8_t)v);
+    WRITE_R8(regs, REG_A, v);
 
     CLEAR_R_FLAG(regs, FLAG_Z);
     CLEAR_R_FLAG(regs, FLAG_N);
@@ -131,18 +129,51 @@ void
 rla(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("RLA: %s\n", ins->name);
+
+    cpu_register_t *regs = &(cpu->regs);
+    uint8_t v = READ_R8(regs, REG_A);
+    uint8_t carry = v >> 7;
+    v = (v << 1) | READ_R_FLAG(regs, FLAG_C);
+    WRITE_R8(regs, REG_A, v);
+
+    CLEAR_R_FLAG(regs, FLAG_Z);
+    CLEAR_R_FLAG(regs, FLAG_N);
+    CLEAR_R_FLAG(regs, FLAG_H);
+    SET_R_FLAG_VALUE(regs, FLAG_C, carry);
 }
 
 void 
 rrca(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("RRCA: %s\n", ins->name);
+    
+    cpu_register_t *regs = &(cpu->regs);
+    uint8_t v = READ_R8(regs, REG_A);
+    uint8_t carry = v & 0x1;    
+    v = (v >> 1) | (carry << 7);
+    WRITE_R8(regs, REG_A, v);
+
+    CLEAR_R_FLAG(regs, FLAG_Z);
+    CLEAR_R_FLAG(regs, FLAG_N);
+    CLEAR_R_FLAG(regs, FLAG_H);
+    SET_R_FLAG_VALUE(regs, FLAG_C, carry);
 }
 
 void 
 rra(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("RRA: %s\n", ins->name);
+
+    cpu_register_t *regs = &(cpu->regs);
+    uint8_t v = READ_R8(regs, REG_A);
+    uint8_t carry = v & 0x1;    
+    v = (v >> 1) | (READ_R_FLAG(regs, FLAG_C) << 7);
+    WRITE_R8(regs, REG_A, v);
+
+    CLEAR_R_FLAG(regs, FLAG_Z);
+    CLEAR_R_FLAG(regs, FLAG_N);
+    CLEAR_R_FLAG(regs, FLAG_H);
+    SET_R_FLAG_VALUE(regs, FLAG_C, carry);    
 }
 
 void
@@ -1491,7 +1522,7 @@ test_dec_r8(gbc_cpu_t *cpu)
     assert(READ_R8(reg, REG_B) == 0);
     assert(READ_R_FLAG(reg, FLAG_Z) == 1);
     assert(READ_R_FLAG(reg, FLAG_N) == 1);
-    //assert(READ_R_FLAG(reg, FLAG_H) == 0);
+    assert(READ_R_FLAG(reg, FLAG_H) == 0);
 
     WRITE_R8(reg, REG_B, 0x00);
 
@@ -1537,6 +1568,147 @@ test_inc_m16(gbc_cpu_t *cpu)
 }
 
 void 
+test_dec_m16(gbc_cpu_t *cpu)
+{
+    cpu_register_t *reg = &(cpu->regs);
+    const uint16_t addr = 0x34;
+    WRITE_R16(reg, REG_HL, addr);
+    cpu->mem_write(addr, 0x01);
+    uint8_t code[] = {0x35}; // DEC (HL)
+
+    instruction_t inst = decode(code);
+    inst.func(cpu, &inst);
+
+    assert(cpu->mem_read(addr) == 0);
+    assert(READ_R_FLAG(reg, FLAG_Z) == 1);
+    assert(READ_R_FLAG(reg, FLAG_N) == 1);
+    assert(READ_R_FLAG(reg, FLAG_H) == 0);
+
+    cpu->mem_write(addr, 0x0);
+    uint8_t h = READ_R8(reg, REG_C);
+
+    inst = decode(code);
+    inst.func(cpu, &inst);
+    
+    assert(cpu->mem_read(addr) == 0xff);
+    assert(READ_R_FLAG(reg, FLAG_Z) == 0);
+    assert(READ_R_FLAG(reg, FLAG_N) == 1);
+    assert(READ_R_FLAG(reg, FLAG_H) == 1);
+}
+
+void 
+test_rlca(gbc_cpu_t *cpu)
+{    
+    cpu_register_t *reg = &(cpu->regs);
+    WRITE_R8(reg, REG_A, 0x85);
+    uint8_t code[] = {0x07}; // RLCA
+
+    instruction_t inst = decode(code);
+    inst.func(cpu, &inst);
+
+    assert(READ_R8(reg, REG_A) == 0x0b);
+    assert(READ_R_FLAG(reg, FLAG_C) == 1);
+    assert(READ_R_FLAG(reg, FLAG_Z) == 0);
+    assert(READ_R_FLAG(reg, FLAG_N) == 0);
+    assert(READ_R_FLAG(reg, FLAG_H) == 0);
+
+    WRITE_R8(reg, REG_A, 0x1);
+
+    inst = decode(code);
+    inst.func(cpu, &inst);
+
+    assert(READ_R8(reg, REG_A) == 0x2);
+    assert(READ_R_FLAG(reg, FLAG_C) == 0);
+    assert(READ_R_FLAG(reg, FLAG_Z) == 0);
+    assert(READ_R_FLAG(reg, FLAG_N) == 0);
+    assert(READ_R_FLAG(reg, FLAG_H) == 0);
+}
+
+void 
+test_rla(gbc_cpu_t *cpu)
+{    
+    cpu_register_t *reg = &(cpu->regs);
+    WRITE_R8(reg, REG_A, 0x02);
+    uint8_t code[] = {0x17}; // RLA
+
+    SET_R_FLAG(reg, FLAG_C);
+
+    instruction_t inst = decode(code);
+    inst.func(cpu, &inst);
+
+    assert(READ_R8(reg, REG_A) == 0x05);
+    assert(READ_R_FLAG(reg, FLAG_C) == 0);
+    assert(READ_R_FLAG(reg, FLAG_Z) == 0);
+    assert(READ_R_FLAG(reg, FLAG_N) == 0);
+    assert(READ_R_FLAG(reg, FLAG_H) == 0);
+
+    WRITE_R8(reg, REG_A, 0xff);
+    inst = decode(code);
+    inst.func(cpu, &inst);
+   
+    assert(READ_R8(reg, REG_A) == 0xfe);
+    assert(READ_R_FLAG(reg, FLAG_C) == 1);
+    assert(READ_R_FLAG(reg, FLAG_Z) == 0);
+    assert(READ_R_FLAG(reg, FLAG_N) == 0);
+    assert(READ_R_FLAG(reg, FLAG_H) == 0);    
+}
+
+void 
+test_rra(gbc_cpu_t *cpu)
+{    
+    cpu_register_t *reg = &(cpu->regs);
+    WRITE_R8(reg, REG_A, 0x02);
+    uint8_t code[] = {0x1f}; // RRA
+
+    SET_R_FLAG(reg, FLAG_C);
+    instruction_t inst = decode(code);
+    inst.func(cpu, &inst);
+
+    assert(READ_R8(reg, REG_A) == 0x81);
+    assert(READ_R_FLAG(reg, FLAG_C) == 0);
+    assert(READ_R_FLAG(reg, FLAG_Z) == 0);
+    assert(READ_R_FLAG(reg, FLAG_N) == 0);
+    assert(READ_R_FLAG(reg, FLAG_H) == 0);
+
+    WRITE_R8(reg, REG_A, 0x1);
+    inst = decode(code);
+    inst.func(cpu, &inst);
+
+    assert(READ_R8(reg, REG_A) == 0);
+    assert(READ_R_FLAG(reg, FLAG_C) == 1);
+    assert(READ_R_FLAG(reg, FLAG_Z) == 0);
+    assert(READ_R_FLAG(reg, FLAG_N) == 0);
+    assert(READ_R_FLAG(reg, FLAG_H) == 0);    
+}
+
+void 
+test_rrca(gbc_cpu_t *cpu)
+{
+    cpu_register_t *reg = &(cpu->regs);
+    WRITE_R8(reg, REG_A, 0x03);
+    uint8_t code[] = {0x0f}; // RRCA
+
+    instruction_t inst = decode(code);
+    inst.func(cpu, &inst);
+
+    assert(READ_R8(reg, REG_A) == 0x81);
+    assert(READ_R_FLAG(reg, FLAG_C) == 1);
+    assert(READ_R_FLAG(reg, FLAG_Z) == 0);
+    assert(READ_R_FLAG(reg, FLAG_N) == 0);
+    assert(READ_R_FLAG(reg, FLAG_H) == 0);
+
+    WRITE_R8(reg, REG_A, 0x2);
+    inst = decode(code);
+    inst.func(cpu, &inst);
+
+    assert(READ_R8(reg, REG_A) == 0x1);
+    assert(READ_R_FLAG(reg, FLAG_C) == 0);
+    assert(READ_R_FLAG(reg, FLAG_Z) == 0);
+    assert(READ_R_FLAG(reg, FLAG_N) == 0);
+    assert(READ_R_FLAG(reg, FLAG_H) == 0);    
+}
+
+void 
 test_instructions() 
 {
     gbc_cpu_t cpu = gbc_cpu_new(); 
@@ -1553,7 +1725,14 @@ test_instructions()
 
     test_dec_r16(&cpu);
     test_dec_r8(&cpu);
-    test_inc_m16(&cpu);    
+    test_dec_m16(&cpu);
+
+    test_rlca(&cpu);
+    test_rla(&cpu);
+
+    test_rrca(&cpu);
+    test_rra(&cpu);    
+    
 }
 
 #endif
