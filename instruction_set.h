@@ -21,12 +21,9 @@ struct instruction
     void *op2;
     /* https://gbdev.io/gb-opcodes/optables/ */
     union {
-        uint16_t n16;    /* little-endian 16-bit immediate */
-        int16_t a16;     /* little-endian 16-bit address */
-        uint8_t n8;      /* 8-bit immediate */
-        uint8_t a8;      /* 8-bit unsigned data, which is added to $FF00 in certain instructions to create a 16-bit address in HRAM (High RAM) */
-        int8_t e8;       /* signed 8-bit immediate */
-    } opcode_ext;            
+        uint16_t i16;    /* little-endian 16-bit immediate */        
+        uint8_t i8;      /* 8-bit immediate */
+    } opcode_ext;    
     const char *name;
 };
 

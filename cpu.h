@@ -92,13 +92,16 @@ uint16_t swap_i16(uint16_t value)
 //#endif
 
 #if (IS_LITTLE_ENDIAN)
+#define READ_I16(reg) reg                  /* immediate 16-bit */
 #define READ_16(reg) reg
 #define WRITE_16(reg, value) (reg) = (value)
 #else
-#define READ_16(reg) swap_i16(reg)
-#define WRITE_16(reg, value) (reg) = swap_i16(value)
+#define READ_I16(reg) (reg)
+#define READ_16(reg) reg
+#define WRITE_16(reg, value) (reg) = (value)
 #endif
 
+#define READ_I8(reg) (reg)                  /* immediate 8-bit */
 #define READ_8(reg) (reg)
 #define WRITE_8(reg, value) (reg) = (value)
 

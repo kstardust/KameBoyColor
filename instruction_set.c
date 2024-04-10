@@ -2,13 +2,14 @@
 #include "common.h"
 #include "cpu.h"
 
-void 
+static void 
 stop(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("STOP: %s\n", ins->name);
+    assert(0);
 }
 
-void 
+static void 
 inc_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("INC r8: %s\n", ins->name);
@@ -26,7 +27,7 @@ inc_r8(gbc_cpu_t *cpu, instruction_t *ins)
     SET_R_FLAG_VALUE(regs, FLAG_H, hc);
 }
 
-void 
+static void 
 inc_r16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("INC r16: %s\n", ins->name);
@@ -38,7 +39,7 @@ inc_r16(gbc_cpu_t *cpu, instruction_t *ins)
     WRITE_R16(regs, reg_offset, v);
 }
 
-void 
+static void 
 inc_m16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("INC m16: %s\n", ins->name);
@@ -58,7 +59,7 @@ inc_m16(gbc_cpu_t *cpu, instruction_t *ins)
     SET_R_FLAG_VALUE(regs, FLAG_H, hc);
 }
 
-void 
+static void 
 dec_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("DEC r8: %s\n", ins->name);
@@ -76,7 +77,7 @@ dec_r8(gbc_cpu_t *cpu, instruction_t *ins)
     SET_R_FLAG_VALUE(regs, FLAG_H, hc);
 }
 
-void
+static void
 dec_r16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("DEC r16: %s\n", ins->name);
@@ -88,7 +89,7 @@ dec_r16(gbc_cpu_t *cpu, instruction_t *ins)
     WRITE_R16(regs, reg_offset, v);  
 }
 
-void 
+static void 
 dec_m16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("DEC m16: %s\n", ins->name);
@@ -108,7 +109,7 @@ dec_m16(gbc_cpu_t *cpu, instruction_t *ins)
     SET_R_FLAG_VALUE(regs, FLAG_H, hc);
 }
 
-void
+static void
 rlca(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("RLCA: %s\n", ins->name);
@@ -125,7 +126,7 @@ rlca(gbc_cpu_t *cpu, instruction_t *ins)
     SET_R_FLAG_VALUE(regs, FLAG_C, carry);
 }
 
-void
+static void
 rla(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("RLA: %s\n", ins->name);
@@ -142,7 +143,7 @@ rla(gbc_cpu_t *cpu, instruction_t *ins)
     SET_R_FLAG_VALUE(regs, FLAG_C, carry);
 }
 
-void 
+static void 
 rrca(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("RRCA: %s\n", ins->name);
@@ -159,7 +160,7 @@ rrca(gbc_cpu_t *cpu, instruction_t *ins)
     SET_R_FLAG_VALUE(regs, FLAG_C, carry);
 }
 
-void 
+static void 
 rra(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("RRA: %s\n", ins->name);
@@ -176,613 +177,680 @@ rra(gbc_cpu_t *cpu, instruction_t *ins)
     SET_R_FLAG_VALUE(regs, FLAG_C, carry);    
 }
 
-void
+static void
 daa(gbc_cpu_t *cpu, instruction_t *ins)
 {
+    /* https://ehaskins.com/2018-01-30%20Z80%20DAA/ */
     LOG_INFO("DAA: %s\n", ins->name);
+
+    cpu_register_t *regs = &(cpu->regs);
+    uint8_t v = READ_R8(regs, REG_A);
+
+    uint8_t n = READ_R_FLAG(regs, FLAG_N);
+    uint8_t h = READ_R_FLAG(regs, FLAG_H);
+    uint8_t c = READ_R_FLAG(regs, FLAG_C);
+
+    uint8_t correction = 0;
+
+    if (h || (!n && (v & 0xf) > 9)) {
+        correction |= 0x6;
+    }
+
+    if (c || (!n && v > 0x99)) {
+        correction |= 0x60;
+        SET_R_FLAG(regs, FLAG_C);
+    }
+
+    v += n ? -correction : correction;
+
+    WRITE_R8(regs, REG_A, v);
+    SET_R_FLAG_VALUE(regs, FLAG_Z, v == 0);    
+    CLEAR_R_FLAG(regs, FLAG_H);
 }
 
-void
+static void
 scf(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("SCF: %s\n", ins->name);
+    cpu_register_t *regs = &(cpu->regs);
+    SET_R_FLAG(regs, FLAG_C);
+    CLEAR_R_FLAG(regs, FLAG_N);
+    CLEAR_R_FLAG(regs, FLAG_H);    
 }
 
-void
+static void
+_jr_i8(gbc_cpu_t *cpu, instruction_t *ins)
+{
+    LOG_INFO("_JR: %s\n", ins->name);
+
+    cpu_register_t *regs = &(cpu->regs);
+    int8_t offset = (int8_t)ins->opcode_ext.i8;
+    uint16_t pc = READ_R16(regs, REG_PC);
+    pc += offset;    
+    WRITE_R16(regs, REG_PC, pc);
+}
+
+static void
 jr_i8(gbc_cpu_t *cpu, instruction_t *ins)
 {
-    LOG_INFO("JR: %s\n", ins->name);
+    LOG_INFO("JR: %s\n", ins->name);    
+    _jr_i8(cpu, ins);
 }
 
-void
+static void
 jr_nz_i8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("JR NZ: %s\n", ins->name);
+
+    cpu_register_t *regs = &(cpu->regs);
+    if (!READ_R_FLAG(regs, FLAG_Z)) {
+        _jr_i8(cpu, ins);        
+    }
 }
 
-void 
+static void 
 jr_nc_i8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("JR NC: %s\n", ins->name);
+
+    cpu_register_t *regs = &(cpu->regs);
+    if (!READ_R_FLAG(regs, FLAG_C)) {
+        _jr_i8(cpu, ins);
+    }
 }
 
-void 
+static void 
 jr_z_i8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("JR NZ: %s\n", ins->name);
+
+    cpu_register_t *regs = &(cpu->regs);
+    if (READ_R_FLAG(regs, FLAG_Z)) {
+        _jr_i8(cpu, ins);
+    }
 }
 
-void 
+static void 
 jr_c_i8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("JR C: %s\n", ins->name);    
+    
+    cpu_register_t *regs = &(cpu->regs);
+    if (READ_R_FLAG(regs, FLAG_C)) {
+        _jr_i8(cpu, ins);
+    }
 }
 
-void 
+static void 
 nop(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("NOP: %s\n", ins->name);
 }
 
-void
+static void
 ld_r16_i16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("LD r16, i16: %s\n", ins->name);
+
+    cpu_register_t *regs = &(cpu->regs);
+    size_t reg_offset = (size_t)ins->op1;
+    uint16_t value = ins->opcode_ext.i16;
+    WRITE_R16(regs, reg_offset, value);   
 }
 
-void
+static void
 ld_sp_hl(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("LD SP, HL: %s\n", ins->name);
 }
 
-void
+static void
 ld_hl_sp_i8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("LD HL, SP + i8: %s\n", ins->name);
 }
 
-void
+static void
 ld_m8_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("LD m8, r8: %s\n", ins->name);
 }
 
-void
+static void
 ld_r8_m8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("LD r8, m8: %s\n", ins->name);
 }
 
-void
+static void
 ld_r8_i8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("LD r8, i8: %s\n", ins->name);
 }
 
-void
+static void
 ld_r8_im16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("LD r8, im16: %s\n", ins->name);
 }
 
-void
+static void
 ldi_r8_m16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("LDI r8, m16: %s\n", ins->name);
 }
 
-void
+static void
 ldi_m16_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("LDI m16, r8: %s\n", ins->name);
 }
 
-void
+static void
 ldd_r8_m16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("LDD r8, m16: %s\n", ins->name);
 }
 
-void
+static void
 ldd_m16_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("LDD m16, r8: %s\n", ins->name);
 }
 
-void
+static void
 ld_m16_i8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("LD m16, 8: %s\n", ins->name);
 }
 
-void
+static void
 ld_r8_m16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("LD r8, m16: %s\n", ins->name);
 }
 
-void 
+static void 
 ld_m16_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("LD m16, r8: %s\n", ins->name);
 }
 
-void 
+static void 
 ld_im16_r16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("LD im16, r16: %s\n", ins->name);
 }
 
-void 
+static void 
 ld_im16_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("LD im16, r8: %s\n", ins->name);
 }
 
-void
+static void
 ld_r8_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("LD r8, r8: %s\n", ins->name);
 }
 
-void 
+static void 
 add_r16_r16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("ADD r16, r16: %s\n", ins->name);
 }
 
-void 
+static void 
 add_r16_i8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("ADD r16, i8: %s\n", ins->name);
 }
 
-void 
+static void 
 add_r8_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("ADD r8, r8: %s\n", ins->name);
 }
 
-void 
+static void 
 add_r8_i8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("ADD r8, i8: %s\n", ins->name);
 }
 
-void 
+static void 
 add_r8_m8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("ADD r8, m8: %s\n", ins->name);
 }
 
-void 
+static void 
 add_r8_m16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("ADD r8, m16: %s\n", ins->name);
 }
 
-void 
+static void 
 adc_r8_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("ADC r8, r8: %s\n", ins->name);
 }
 
-void 
+static void 
 adc_r8_i8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("ADC r8, i8: %s\n", ins->name);    
 }
 
-void 
+static void 
 adc_r8_m16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("ADC r8, m16: %s\n", ins->name);
 }
 
-void 
+static void 
 sub_r8_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("SUB r8, r8: %s\n", ins->name);
 }
 
-void 
+static void 
 sub_r8_i8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("SUB r8, i8: %s\n", ins->name);
 }
 
-void
+static void
 sub_r8_m16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("SUB r8, m16: %s\n", ins->name);
 }
 
-void
+static void
 subc_r8_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("SUBC r8, r8: %s\n", ins->name);
 }
 
-void
+static void
 subc_r8_i8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("SUB r8, i8: %s\n", ins->name);
 }
 
-void 
+static void 
 subc_r8_m16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("SUB r8, m16: %s\n", ins->name);
 }
 
-void 
+static void 
 and_r8_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("AND r8, r8: %s\n", ins->name);
 }
 
-void
+static void
 and_r8_m16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("AND r8, m16: %s\n", ins->name);
 }
 
-void
+static void
 and_r8_i8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("AND r8, i8: %s\n", ins->name);
 }
 
-void 
+static void 
 or_r8_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("OR r8, r8: %s\n", ins->name);
 }
 
-void 
+static void 
 or_r8_i8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("OR r8, i8: %s\n", ins->name);
 }
 
-void
+static void
 or_r8_m16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("OR r8, m16: %s\n", ins->name);
 }
 
-void
+static void
 xor_r8_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("XOR r8, r8: %s\n", ins->name);
 }
 
-void
+static void
 xor_r8_i8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("XOR r8, i8: %s\n", ins->name);
 }
 
-void    
+static void    
 xor_r8_m16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("XOR r8, m16: %s\n", ins->name);
 }
 
-void
+static void
 cp_r8_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("CP r8, r8: %s\n", ins->name);
 }
 
-void 
+static void 
 cp_r8_i8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("CP r8, i8: %s\n", ins->name);
 }
 
-void 
+static void 
 cp_r8_m16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("CP r8, m16: %s\n", ins->name);
 }
 
-void
+static void
 ret_nz(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("RET NZ: %s\n", ins->name);
 }
 
-void
+static void
 ret_nc(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("RET NC: %s\n", ins->name);
 }
 
-void 
+static void 
 ret_z(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("RET Z: %s\n", ins->name);
 }
 
-void
+static void
 ret_c(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("RET C: %s\n", ins->name);
 }
 
-void
+static void
 ret(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("RET: %s\n", ins->name);
 }
 
-void
+static void
 reti(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("RETI: %s\n", ins->name);
 }
 
-void
+static void
 rst(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("RST: %s\n", ins->name);
 }
 
-void
+static void
 jp_nz_i16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("JP NZ: %s\n", ins->name);
 }
 
-void
+static void
 jp_nc_i16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("JP NC: %s\n", ins->name);
 }
 
-void
+static void
 jp_c_i16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("JP: %s\n", ins->name);
 }
 
-void 
+static void 
 jp_z_i16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("JP Z: %s\n", ins->name);
 }
 
-void
+static void
 jp_i16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("JP I16: %s\n", ins->name);
 }
 
-void
+static void
 jp_r16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("JP R16: %s\n", ins->name);
 }
 
-void
+static void
 pop_r16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("POP r16: %s\n", ins->name);
 }
 
-void
+static void
 push_r16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("PUSH r16: %s\n", ins->name);
 }
 
-void
+static void
 ldh_im8_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("LDH m8, r8: %s\n", ins->name);
 }
 
-void
+static void
 ldh_r8_m8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("LDH r8, m8: %s\n", ins->name);
 }
 
-void
+static void
 ldh_r8_im8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("LDH r8, m8: %s\n", ins->name);
 }
 
-void
+static void
 call_nz_i16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("CALL NZ: %s\n", ins->name);
 }
 
-void
+static void
 call_nc_i16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("CALL NC: %s\n", ins->name);
 }
 
-void
+static void
 call_z_i16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("CALL Z: %s\n", ins->name);
 }
 
-void
+static void
 call_c_i16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("CALL C: %s\n", ins->name);
 }
 
-void
+static void
 call_i16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("CALL: %s\n", ins->name);
 }
 
-void 
+static void 
 cpl(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("CPL: %s\n", ins->name);
 }
 
-void 
+static void 
 ccf(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("CCF: %s\n", ins->name);
 }
 
-void 
+static void 
 di(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("DI: %s\n", ins->name);
 }
 
-void
+static void
 ei(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("EI: %s\n", ins->name);
 }
 
-void 
+static void 
 halt(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("HALT: %s\n", ins->name);
 }
 
-void
+static void
 cb_rlc_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("RLC: %s\n", ins->name);
 }
 
-void
+static void
 cb_rlc_m16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("RLC: %s\n", ins->name);
 }
 
-void
+static void
 cb_rrc_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("RRC: %s\n", ins->name);
 }
 
-void
+static void
 cb_rrc_m16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("RRC: %s\n", ins->name);
 }
 
-void
+static void
 cb_rl_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("RL: %s\n", ins->name);
 }
 
-void
+static void
 cb_rl_m16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("RL: %s\n", ins->name);
 }
 
-void
+static void
 cb_rr_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("RR: %s\n", ins->name);
 }
 
-void
+static void
 cb_rr_m16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("RR: %s\n", ins->name);
 }
 
-void
+static void
 cb_sla_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("SLA: %s\n", ins->name);
 }
 
-void
+static void
 cb_sla_m16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("SLA: %s\n", ins->name);
 }
 
-void
+static void
 cb_sra_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("SRA: %s\n", ins->name);
 }
 
-void
+static void
 cb_sra_m16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("SRA: %s\n", ins->name);
 }
 
-void
+static void
 cb_swap_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("SWAP: %s\n", ins->name);
 }
 
-void
+static void
 cb_swap_m16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("SWAP: %s\n", ins->name);
 }
 
-void
+static void
 cb_srl_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("SRL: %s\n", ins->name);
 }
 
-void
+static void
 cb_srl_m16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("SRL: %s\n", ins->name);
 }
 
-void
+static void
 cb_bit_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("BIT: %s\n", ins->name);
 }
 
-void
+static void
 cb_bit_m16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("BIT: %s\n", ins->name);
 }
 
-void
+static void
 cb_res_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("RES: %s\n", ins->name);
 }
 
-void
+static void
 cb_res_m16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("RES: %s\n", ins->name);
 }
 
-void
+static void
 cb_set_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("SET: %s\n", ins->name);
 }
 
-void
+static void
 cb_set_m16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("SET: %s\n", ins->name);
@@ -1406,7 +1474,7 @@ decode(uint8_t *data)
     if (opcode == PREFIX_CB) {        
         inst_set = prefixed_instruction_set;
         prefix_size = 1;
-        opcode = data[1];
+        opcode = READ_I8(data[1]);
     }
     
     instruction_t inst = inst_set[opcode];
@@ -1414,10 +1482,10 @@ decode(uint8_t *data)
 
     if (inst.size != 1) {
         if (inst.size == 2) {
-            inst.opcode_ext.a8 = READ_8(*(data + 1));
+            inst.opcode_ext.i8 = READ_I8(*(data + 1));            
         } else if (inst.size == 3) {
             /* immediate value is little-endian */
-            inst.opcode_ext.n16 = READ_16(*(uint16_t*)(data + 1));
+            inst.opcode_ext.i16 = READ_I16(*(uint16_t*)(data + 1));
         } else {
             LOG_ERROR("Invalid instruction, imme size [%d]", inst.size);
             abort();
@@ -1450,7 +1518,7 @@ _mem_read(uint16_t addr)
     return _flat_mem[addr];
 }
 
-void 
+static void 
 test_inc_r16(gbc_cpu_t *cpu)
 {   
     cpu_register_t *reg = &(cpu->regs);
@@ -1465,7 +1533,7 @@ test_inc_r16(gbc_cpu_t *cpu)
     assert(READ_R16(reg, REG_BC) == 0x0000);
 }
 
-void 
+static void 
 test_dec_r16(gbc_cpu_t *cpu)
 {
     cpu_register_t *reg = &(cpu->regs);
@@ -1480,7 +1548,7 @@ test_dec_r16(gbc_cpu_t *cpu)
     assert(READ_R16(reg, REG_BC) == 0xffff);    
 }
 
-void
+static void
 test_inc_r8(gbc_cpu_t *cpu)
 {
     cpu_register_t *reg = &(cpu->regs);
@@ -1509,7 +1577,7 @@ test_inc_r8(gbc_cpu_t *cpu)
     assert(READ_R_FLAG(reg, FLAG_H) == 1);
 }
 
-void
+static void
 test_dec_r8(gbc_cpu_t *cpu)
 {
     cpu_register_t *reg = &(cpu->regs);
@@ -1538,7 +1606,7 @@ test_dec_r8(gbc_cpu_t *cpu)
     assert(READ_R_FLAG(reg, FLAG_H) == 1);
 }
 
-void 
+static void 
 test_inc_m16(gbc_cpu_t *cpu)
 {
     cpu_register_t *reg = &(cpu->regs);
@@ -1567,7 +1635,7 @@ test_inc_m16(gbc_cpu_t *cpu)
     assert(READ_R_FLAG(reg, FLAG_H) == 1);
 }
 
-void 
+static void 
 test_dec_m16(gbc_cpu_t *cpu)
 {
     cpu_register_t *reg = &(cpu->regs);
@@ -1596,7 +1664,7 @@ test_dec_m16(gbc_cpu_t *cpu)
     assert(READ_R_FLAG(reg, FLAG_H) == 1);
 }
 
-void 
+static void 
 test_rlca(gbc_cpu_t *cpu)
 {    
     cpu_register_t *reg = &(cpu->regs);
@@ -1624,7 +1692,7 @@ test_rlca(gbc_cpu_t *cpu)
     assert(READ_R_FLAG(reg, FLAG_H) == 0);
 }
 
-void 
+static void 
 test_rla(gbc_cpu_t *cpu)
 {    
     cpu_register_t *reg = &(cpu->regs);
@@ -1653,7 +1721,7 @@ test_rla(gbc_cpu_t *cpu)
     assert(READ_R_FLAG(reg, FLAG_H) == 0);    
 }
 
-void 
+static void 
 test_rra(gbc_cpu_t *cpu)
 {    
     cpu_register_t *reg = &(cpu->regs);
@@ -1681,7 +1749,7 @@ test_rra(gbc_cpu_t *cpu)
     assert(READ_R_FLAG(reg, FLAG_H) == 0);    
 }
 
-void 
+static void 
 test_rrca(gbc_cpu_t *cpu)
 {
     cpu_register_t *reg = &(cpu->regs);
@@ -1708,7 +1776,63 @@ test_rrca(gbc_cpu_t *cpu)
     assert(READ_R_FLAG(reg, FLAG_H) == 0);    
 }
 
-void 
+static void 
+test_daa(gbc_cpu_t *cpu)
+{
+    cpu_register_t *reg = &(cpu->regs);
+    WRITE_R8(reg, REG_A, 0x1f);
+    uint8_t code[] = {0x27}; // DAA
+
+    SET_R_FLAG(reg, FLAG_H);
+    CLEAR_R_FLAG(reg, FLAG_C);
+    SET_R_FLAG(reg, FLAG_N);
+
+    instruction_t inst = decode(code);
+    inst.func(cpu, &inst);
+    
+    assert(READ_R8(reg, REG_A) == 0x19);
+    assert(READ_R_FLAG(reg, FLAG_C) == 0);
+    assert(READ_R_FLAG(reg, FLAG_Z) == 0);
+    assert(READ_R_FLAG(reg, FLAG_N) == 1);
+    assert(READ_R_FLAG(reg, FLAG_H) == 0);
+
+    WRITE_R8(reg, REG_A, 0x41);
+    CLEAR_R_FLAG(reg, FLAG_N);
+    SET_R_FLAG(reg, FLAG_H);
+    CLEAR_R_FLAG(reg, FLAG_C);
+
+    inst = decode(code);
+    inst.func(cpu, &inst);
+
+    assert(READ_R8(reg, REG_A) == 0x47);
+    assert(READ_R_FLAG(reg, FLAG_C) == 0);
+    assert(READ_R_FLAG(reg, FLAG_Z) == 0);
+    assert(READ_R_FLAG(reg, FLAG_N) == 0);
+    assert(READ_R_FLAG(reg, FLAG_H) == 0);
+}
+
+void
+test_jr(gbc_cpu_t *cpu)
+{
+    cpu_register_t *reg = &(cpu->regs);
+    WRITE_R16(reg, REG_PC, 0x1000);
+    uint8_t code[] = {0x18, 0x02}; // JR 0x02
+
+    instruction_t inst = decode(code);
+    inst.func(cpu, &inst);
+
+    assert(READ_R16(reg, REG_PC) == 0x1002);
+
+    WRITE_R16(reg, REG_PC, 0x1000);
+    code[1] = 0xfe; // JR -2
+
+    inst = decode(code);
+    inst.func(cpu, &inst);
+
+    assert(READ_R16(reg, REG_PC) == 0x0ffe);
+}
+
+void
 test_instructions() 
 {
     gbc_cpu_t cpu = gbc_cpu_new(); 
@@ -1732,7 +1856,8 @@ test_instructions()
 
     test_rrca(&cpu);
     test_rra(&cpu);    
-    
+    test_daa(&cpu);
+    test_jr(&cpu);
 }
 
 #endif
