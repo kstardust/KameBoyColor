@@ -10,17 +10,19 @@ typedef void (*instruction_func)(gbc_cpu_t *cpu, instruction_t *ins);
 
 #define PREFIX_CB 0xcb
 
-#define INSTRUCTION_ADD(opcode, size, func, op1, op2, name) {(opcode), (size), (func), ((void*)(op1)), ((void*)(op2)), 0, (name)}
+#define INSTRUCTION_ADD(opcode, size, func, op1, op2, c1, c2, name) {(opcode), (size), (c1), (c2), (func), ((void*)(op1)), ((void*)(op2)), 0, (name)}
 
 struct instruction
 {   
-    uint8_t opcode;    
-    uint8_t size;
+    uint8_t opcode;
+    uint8_t size;    
+    uint8_t cycles;
+    uint8_t cycles2;
     instruction_func func;
     void *op1;
     void *op2;
     /* https://gbdev.io/gb-opcodes/optables/ */
-    union {
+    union {        
         uint16_t i16;    /* little-endian 16-bit immediate */        
         uint8_t i8;      /* 8-bit immediate */
     } opcode_ext;    
