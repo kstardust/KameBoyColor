@@ -5,6 +5,7 @@
 static void 
 stop(gbc_cpu_t *cpu, instruction_t *ins)
 {
+    /* TODO */
     LOG_INFO("STOP: %s\n", ins->name);
     assert(0);
 }
@@ -221,7 +222,7 @@ scf(gbc_cpu_t *cpu, instruction_t *ins)
 static void
 _jr_i8(gbc_cpu_t *cpu, instruction_t *ins)
 {
-    LOG_INFO("_JR: %s\n", ins->name);    
+    LOG_INFO("\n_JR: %s\n", ins->name);
     cpu_register_t *regs = &(cpu->regs);
     int8_t offset = (int8_t)ins->opcode_ext.i8;
     uint16_t pc = READ_R16(regs, REG_PC);
@@ -242,7 +243,7 @@ jr_nz_i8(gbc_cpu_t *cpu, instruction_t *ins)
     LOG_INFO("JR NZ: %s\n", ins->name);
 
     cpu_register_t *regs = &(cpu->regs);    
-    if (!READ_R_FLAG(regs, FLAG_Z)) {        
+    if (!READ_R_FLAG(regs, FLAG_Z)) {
         ins->cycles = ins->cycles2;
         _jr_i8(cpu, ins);        
     }
@@ -1015,7 +1016,7 @@ cp_r8_m16(gbc_cpu_t *cpu, instruction_t *ins)
 
     cpu_register_t *regs = &(cpu->regs);
     size_t reg_offset = (size_t)ins->op1;
-    uint16_t addr = READ_R16(regs, (size_t)ins->op2);        
+    uint16_t addr = READ_R16(regs, (size_t)ins->op2);
 
     uint8_t v1 = READ_R8(regs, reg_offset);
     uint8_t v2 = cpu->mem_read(addr);
@@ -1029,171 +1030,358 @@ cp_r8_m16(gbc_cpu_t *cpu, instruction_t *ins)
     SET_R_FLAG_VALUE(regs, FLAG_Z, result == 0);
 }
 
+/* This function is equivolent to POP r16, where r16 is PC */
+static void
+_ret(gbc_cpu_t *cpu, instruction_t *ins)
+{
+    LOG_INFO("\t_RET: %s\n", ins->name); 
+
+    cpu_register_t *regs = &(cpu->regs);
+    size_t reg_offset = REG_PC;
+    uint16_t sp = READ_R16(regs, REG_SP);
+
+    uint8_t lo = cpu->mem_read(sp);
+    uint8_t hi = cpu->mem_read(sp + 1);
+
+    WRITE_R16(regs, reg_offset, (hi << 8) | lo);
+    WRITE_R16(regs, REG_SP, sp + 2);
+}
+
 static void
 ret_nz(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("RET NZ: %s\n", ins->name);
+
+    if (!READ_R_FLAG(&(cpu->regs), FLAG_Z)) {
+        ins->cycles = ins->cycles2;
+        _ret(cpu, ins);
+    } 
 }
 
 static void
 ret_nc(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("RET NC: %s\n", ins->name);
+
+    if (!READ_R_FLAG(&(cpu->regs), FLAG_C)) {
+        ins->cycles = ins->cycles2;
+        _ret(cpu, ins);
+    }
 }
 
 static void 
 ret_z(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("RET Z: %s\n", ins->name);
+
+    if (READ_R_FLAG(&(cpu->regs), FLAG_Z)) {
+        ins->cycles = ins->cycles2;
+        _ret(cpu, ins);
+    }
 }
 
 static void
 ret_c(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("RET C: %s\n", ins->name);
+
+    if (READ_R_FLAG(&(cpu->regs), FLAG_C)) {
+        ins->cycles = ins->cycles2;
+        _ret(cpu, ins);
+    }
 }
 
 static void
 ret(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("RET: %s\n", ins->name);
+    _ret(cpu, ins);
 }
 
 static void
 reti(gbc_cpu_t *cpu, instruction_t *ins)
 {
+    /* TODO */
     LOG_INFO("RETI: %s\n", ins->name);
 }
 
 static void
 rst(gbc_cpu_t *cpu, instruction_t *ins)
 {
+    /* TODO */    
     LOG_INFO("RST: %s\n", ins->name);
+}
+
+static void
+_jp_addr16(gbc_cpu_t *cpu, instruction_t *ins, uint16_t addr)
+{
+    LOG_INFO("\t_JP ADDR16: %s\n", ins->name);
+
+    cpu_register_t *regs = &(cpu->regs);
+    WRITE_R16(regs, REG_PC, addr);
+}
+
+static void
+_jp_i16(gbc_cpu_t *cpu, instruction_t *ins)
+{
+    LOG_INFO("\t_JP I16: %s\n", ins->name);
+    cpu_register_t *regs = &(cpu->regs);
+    uint16_t addr = ins->opcode_ext.i16;
+    _jp_addr16(cpu, ins, addr);
 }
 
 static void
 jp_nz_i16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("JP NZ: %s\n", ins->name);
+
+    if (!READ_R_FLAG(&(cpu->regs), FLAG_Z)) {
+        ins->cycles = ins->cycles2;
+        _jp_i16(cpu, ins);
+    }
 }
 
 static void
 jp_nc_i16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("JP NC: %s\n", ins->name);
+
+    if (!READ_R_FLAG(&(cpu->regs), FLAG_C)) {
+        ins->cycles = ins->cycles2;
+        _jp_i16(cpu, ins);
+    }
 }
 
 static void
 jp_c_i16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("JP: %s\n", ins->name);
+
+    if (READ_R_FLAG(&(cpu->regs), FLAG_C)) {
+        ins->cycles = ins->cycles2;
+        _jp_i16(cpu, ins);
+    }
 }
 
 static void 
 jp_z_i16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("JP Z: %s\n", ins->name);
+
+    if (READ_R_FLAG(&(cpu->regs), FLAG_Z)) {
+        ins->cycles = ins->cycles2;
+        _jp_i16(cpu, ins);
+    }
 }
 
 static void
 jp_i16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("JP I16: %s\n", ins->name);
+    _jp_i16(cpu, ins);
 }
 
 static void
 jp_r16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("JP R16: %s\n", ins->name);
+
+    cpu_register_t *regs = &(cpu->regs);
+    size_t reg_offset = (size_t)ins->op1;
+    uint16_t addr = READ_R16(regs, reg_offset);
+
+    _jp_addr16(cpu, ins, addr);
 }
 
 static void
 pop_r16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("POP r16: %s\n", ins->name);
+
+    cpu_register_t *regs = &(cpu->regs);
+    size_t reg_offset = (size_t)ins->op1;
+    uint16_t sp = READ_R16(regs, REG_SP);
+
+    uint8_t lo = cpu->mem_read(sp);
+    uint8_t hi = cpu->mem_read(sp + 1);
+
+    WRITE_R16(regs, reg_offset, (hi << 8) | lo);
+    WRITE_R16(regs, REG_SP, sp + 2);
 }
 
 static void
 push_r16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("PUSH r16: %s\n", ins->name);
+
+    cpu_register_t *regs = &(cpu->regs);
+    size_t reg_offset = (size_t)ins->op1;
+
+    uint16_t value = READ_R16(regs, reg_offset);
+    uint16_t sp = READ_R16(regs, REG_SP);    
+
+    cpu->mem_write(sp - 1, value >> 8);
+    cpu->mem_write(sp - 2, value & UINT8_MASK);
+
+    WRITE_R16(regs, REG_SP, sp - 2);
 }
 
 static void
 ldh_im8_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("LDH m8, r8: %s\n", ins->name);
-}
-
-static void
-ldh_r8_m8(gbc_cpu_t *cpu, instruction_t *ins)
-{
-    LOG_INFO("LDH r8, m8: %s\n", ins->name);
+    
+    cpu_register_t *regs = &(cpu->regs);
+    size_t reg_offset = (size_t)ins->op2;
+    uint16_t addr = 0xFF00 + ins->opcode_ext.i8;    
+    cpu->mem_write(addr, READ_R8(regs, reg_offset));
 }
 
 static void
 ldh_r8_im8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("LDH r8, m8: %s\n", ins->name);
+
+    cpu_register_t *regs = &(cpu->regs);
+    size_t reg_offset = (size_t)ins->op1;
+    uint16_t addr = 0xFF00 + ins->opcode_ext.i8;    
+    WRITE_R8(regs, reg_offset, cpu->mem_read(addr));
+}
+
+static void
+ldh_r8_m8(gbc_cpu_t *cpu, instruction_t *ins)
+{
+    LOG_INFO("LDH r8, C: %s\n", ins->name);
+
+    cpu_register_t *regs = &(cpu->regs);
+    size_t reg_offset = (size_t)ins->op1;
+    size_t reg_offset2 = (size_t)ins->op2;
+
+    uint16_t addr = 0xFF00 + READ_R8(regs, reg_offset2);
+    WRITE_R8(regs, reg_offset, cpu->mem_read(addr));
+}
+
+static void
+ldh_m8_r8(gbc_cpu_t *cpu, instruction_t *ins)
+{
+    LOG_INFO("LDH C, r8: %s\n", ins->name);
+
+    cpu_register_t *regs = &(cpu->regs);
+    size_t reg_offset = (size_t)ins->op1;
+    size_t reg_offset2 = (size_t)ins->op2;
+
+    uint16_t addr = 0xFF00 + READ_R8(regs, reg_offset);
+    cpu->mem_write(addr, READ_R8(regs, reg_offset2));
+}
+
+static void
+_call_i16(gbc_cpu_t *cpu, instruction_t *ins)
+{
+    LOG_INFO("\t_CALL I16: %s\n", ins->name);
+
+    cpu_register_t *regs = &(cpu->regs);
+    uint16_t addr = ins->opcode_ext.i16;
+    uint16_t pc = READ_R16(regs, REG_PC);
+    uint16_t sp = READ_R16(regs, REG_SP);
+    pc += ins->size;
+
+    cpu->mem_write(sp - 1, pc >> 8);
+    cpu->mem_write(sp - 2, pc & UINT8_MASK);
+
+    WRITE_R16(regs, REG_SP, sp - 2);
+    _jp_addr16(cpu, ins, addr);
 }
 
 static void
 call_nz_i16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("CALL NZ: %s\n", ins->name);
+    if (!READ_R_FLAG(&(cpu->regs), FLAG_Z)) {
+        ins->cycles = ins->cycles2;
+        _call_i16(cpu, ins);
+    }
 }
 
 static void
 call_nc_i16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("CALL NC: %s\n", ins->name);
+    if (!READ_R_FLAG(&(cpu->regs), FLAG_C)) {
+        ins->cycles = ins->cycles2;
+        _call_i16(cpu, ins);
+    }    
 }
 
 static void
 call_z_i16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("CALL Z: %s\n", ins->name);
+    if (READ_R_FLAG(&(cpu->regs), FLAG_Z)) {
+        ins->cycles = ins->cycles2;
+        _call_i16(cpu, ins);
+    }    
 }
 
 static void
 call_c_i16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("CALL C: %s\n", ins->name);
+    if (READ_R_FLAG(&(cpu->regs), FLAG_C)) {
+        ins->cycles = ins->cycles2;
+        _call_i16(cpu, ins);
+    }    
 }
 
 static void
 call_i16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("CALL: %s\n", ins->name);
+    _call_i16(cpu, ins);
 }
 
 static void 
 cpl(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("CPL: %s\n", ins->name);
+
+    cpu_register_t *regs = &(cpu->regs);
+    uint8_t v = READ_R8(regs, REG_A);
+    WRITE_R8(regs, REG_A, ~v);
+
+    SET_R_FLAG(regs, FLAG_N);
+    SET_R_FLAG(regs, FLAG_H);
 }
 
 static void 
 ccf(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("CCF: %s\n", ins->name);
+
+    cpu_register_t *regs = &(cpu->regs);
+    uint8_t carry = READ_R_FLAG(regs, FLAG_C);
+    CLEAR_R_FLAG(regs, FLAG_N);
+    CLEAR_R_FLAG(regs, FLAG_H);
+    SET_R_FLAG_VALUE(regs, FLAG_C, !carry);
 }
 
 static void 
 di(gbc_cpu_t *cpu, instruction_t *ins)
 {
+    /* TODO DISABLE INTERRUPTS */
     LOG_INFO("DI: %s\n", ins->name);
 }
 
 static void
 ei(gbc_cpu_t *cpu, instruction_t *ins)
 {
+    /* TODO ENABLE INTERRUPTS */    
     LOG_INFO("EI: %s\n", ins->name);
 }
 
 static void 
 halt(gbc_cpu_t *cpu, instruction_t *ins)
 {
+    /* TODO */
     LOG_INFO("HALT: %s\n", ins->name);
 }
 
@@ -1201,132 +1389,399 @@ static void
 cb_rlc_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("RLC: %s\n", ins->name);
+
+    cpu_register_t *regs = &(cpu->regs);
+    size_t reg_offset = (size_t)ins->op1;
+    uint8_t v = READ_R8(regs, reg_offset);
+
+    uint8_t carry = v >> 7;
+    uint8_t result = (v << 1) | carry;
+
+    WRITE_R8(regs, reg_offset, result);
+    SET_R_FLAG_VALUE(regs, FLAG_C, carry);
+    SET_R_FLAG_VALUE(regs, FLAG_Z, result == 0);
+    CLEAR_R_FLAG(regs, FLAG_N);
+    CLEAR_R_FLAG(regs, FLAG_H);
 }
 
 static void
 cb_rlc_m16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("RLC: %s\n", ins->name);
+
+    cpu_register_t *regs = &(cpu->regs);
+    uint16_t addr = READ_R16(regs, (size_t)ins->op1);
+    uint8_t v = cpu->mem_read(addr);
+
+    uint8_t carry = v >> 7;
+    uint8_t result = (v << 1) | carry;
+
+    cpu->mem_write(addr, result);
+    SET_R_FLAG_VALUE(regs, FLAG_C, carry);
+    SET_R_FLAG_VALUE(regs, FLAG_Z, result == 0);
+    CLEAR_R_FLAG(regs, FLAG_N);
+    CLEAR_R_FLAG(regs, FLAG_H);    
 }
 
 static void
 cb_rrc_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("RRC: %s\n", ins->name);
+
+    cpu_register_t *regs = &(cpu->regs);
+    size_t reg_offset = (size_t)ins->op1;
+
+    uint8_t value = READ_R8(regs, reg_offset);
+    uint8_t carry = value & 0x1;
+    uint8_t result = (value >> 1) | (carry << 7);
+
+    WRITE_R8(regs, reg_offset, result);
+    SET_R_FLAG_VALUE(regs, FLAG_C, carry);
+    SET_R_FLAG_VALUE(regs, FLAG_Z, result == 0);
+    CLEAR_R_FLAG(regs, FLAG_N);
+    CLEAR_R_FLAG(regs, FLAG_H);            
 }
 
 static void
 cb_rrc_m16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("RRC: %s\n", ins->name);
+
+    cpu_register_t *regs = &(cpu->regs);
+    uint16_t addr = READ_R16(regs, (size_t)ins->op1);
+
+    uint8_t value = cpu->mem_read(addr);
+    uint8_t carry = value & 0x1;
+    uint8_t result = (value >> 1) | (carry << 7);
+
+    cpu->mem_write(addr, result);
+    SET_R_FLAG_VALUE(regs, FLAG_C, carry);
+    SET_R_FLAG_VALUE(regs, FLAG_Z, result == 0);
+    CLEAR_R_FLAG(regs, FLAG_N);
+    CLEAR_R_FLAG(regs, FLAG_H);
 }
 
 static void
 cb_rl_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("RL: %s\n", ins->name);
+
+    cpu_register_t *regs = &(cpu->regs);
+    size_t reg_offset = (size_t)ins->op1;
+    uint8_t value = READ_R8(regs, reg_offset);
+    uint8_t carry = READ_R_FLAG(regs, FLAG_C);
+    uint8_t result = (value << 1) | carry;
+    carry = value >> 7;
+
+    WRITE_R8(regs, reg_offset, result);
+    SET_R_FLAG_VALUE(regs, FLAG_C, carry);
+    SET_R_FLAG_VALUE(regs, FLAG_Z, result == 0);
+    CLEAR_R_FLAG(regs, FLAG_N);
+    CLEAR_R_FLAG(regs, FLAG_H);
 }
 
 static void
 cb_rl_m16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("RL: %s\n", ins->name);
+
+    cpu_register_t *regs = &(cpu->regs);
+    uint16_t addr = READ_R16(regs, (size_t)ins->op1);
+    uint8_t value = cpu->mem_read(addr);
+    uint8_t carry = READ_R_FLAG(regs, FLAG_C);
+    uint8_t result = (value << 1) | carry;
+    carry = value >> 7;
+
+    cpu->mem_write(addr, result);
+    SET_R_FLAG_VALUE(regs, FLAG_C, carry);
+    SET_R_FLAG_VALUE(regs, FLAG_Z, result == 0);
+    CLEAR_R_FLAG(regs, FLAG_N);
+    CLEAR_R_FLAG(regs, FLAG_H);    
 }
 
 static void
 cb_rr_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("RR: %s\n", ins->name);
+
+    cpu_register_t *regs = &(cpu->regs);
+    size_t reg_offset = (size_t)ins->op1;
+    uint8_t value = READ_R8(regs, reg_offset);
+    uint8_t carry = READ_R_FLAG(regs, FLAG_C);
+    uint8_t result = (value >> 1) | (carry << 7);
+    carry = value & 0x1;
+
+    WRITE_R8(regs, reg_offset, result);
+    SET_R_FLAG_VALUE(regs, FLAG_C, carry);
+    SET_R_FLAG_VALUE(regs, FLAG_Z, result == 0);
+    CLEAR_R_FLAG(regs, FLAG_N);
+    CLEAR_R_FLAG(regs, FLAG_H);    
 }
 
 static void
 cb_rr_m16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("RR: %s\n", ins->name);
+
+    cpu_register_t *regs = &(cpu->regs);
+    uint16_t addr = READ_R16(regs, (size_t)ins->op1);
+    uint8_t value = cpu->mem_read(addr);
+    uint8_t carry = READ_R_FLAG(regs, FLAG_C);
+    uint8_t result = (value >> 1) | (carry << 7);
+    carry = value & 0x1;
+
+    cpu->mem_write(addr, result);
+    SET_R_FLAG_VALUE(regs, FLAG_C, carry);
+    SET_R_FLAG_VALUE(regs, FLAG_Z, result == 0);
+    CLEAR_R_FLAG(regs, FLAG_N);
+    CLEAR_R_FLAG(regs, FLAG_H);    
 }
 
 static void
 cb_sla_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("SLA: %s\n", ins->name);
+
+    cpu_register_t *regs = &(cpu->regs);
+    size_t reg_offset = (size_t)ins->op1;
+    uint8_t value = READ_R8(regs, reg_offset);
+
+    uint8_t carry = value >> 7;
+    uint8_t result = value << 1;
+
+    WRITE_R8(regs, reg_offset, result);
+    SET_R_FLAG_VALUE(regs, FLAG_C, carry);
+    SET_R_FLAG_VALUE(regs, FLAG_Z, result == 0);
+    CLEAR_R_FLAG(regs, FLAG_N);
+    CLEAR_R_FLAG(regs, FLAG_H);
 }
 
 static void
 cb_sla_m16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("SLA: %s\n", ins->name);
+
+    cpu_register_t *regs = &(cpu->regs);
+    uint16_t addr = READ_R16(regs, (size_t)ins->op1);
+    uint8_t value = cpu->mem_read(addr);
+
+    uint8_t carry = value >> 7;
+    uint8_t result = value << 1;
+
+    cpu->mem_write(addr, result);
+    SET_R_FLAG_VALUE(regs, FLAG_C, carry);
+    SET_R_FLAG_VALUE(regs, FLAG_Z, result == 0);
+    CLEAR_R_FLAG(regs, FLAG_N);
+    CLEAR_R_FLAG(regs, FLAG_H);
 }
 
 static void
 cb_sra_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("SRA: %s\n", ins->name);
+
+    cpu_register_t *regs = &(cpu->regs);
+    size_t reg_offset = (size_t)ins->op1;
+    uint8_t value = READ_R8(regs, reg_offset);
+
+    uint8_t carry = value & 0x1;
+    uint8_t result = (value >> 1) | (value & 0x80);
+
+    WRITE_R8(regs, reg_offset, result);
+    SET_R_FLAG_VALUE(regs, FLAG_C, carry);
+    SET_R_FLAG_VALUE(regs, FLAG_Z, result == 0);
+    CLEAR_R_FLAG(regs, FLAG_N);
+    CLEAR_R_FLAG(regs, FLAG_H);
 }
 
 static void
 cb_sra_m16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("SRA: %s\n", ins->name);
+
+    cpu_register_t *regs = &(cpu->regs);
+    uint16_t addr = READ_R16(regs, (size_t)ins->op1);
+    uint8_t value = cpu->mem_read(addr);
+
+    uint8_t carry = value & 0x1;
+    uint8_t result = (value >> 1) | (value & 0x80);    
+
+    cpu->mem_write(addr, result);
+    SET_R_FLAG_VALUE(regs, FLAG_C, carry);
+    SET_R_FLAG_VALUE(regs, FLAG_Z, result == 0);
+    CLEAR_R_FLAG(regs, FLAG_N);
+    CLEAR_R_FLAG(regs, FLAG_H);
 }
 
 static void
 cb_swap_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("SWAP: %s\n", ins->name);
+
+    cpu_register_t *regs = &(cpu->regs);
+    size_t reg_offset = (size_t)ins->op1;
+    uint8_t value = READ_R8(regs, reg_offset);
+
+    uint8_t result = (value >> 4) | ((value << 4) & 0xf0);
+
+    WRITE_R8(regs, reg_offset, result);
+    CLEAR_R_FLAG(regs, FLAG_N);
+    CLEAR_R_FLAG(regs, FLAG_H);
+    CLEAR_R_FLAG(regs, FLAG_C);
+    SET_R_FLAG_VALUE(regs, FLAG_Z, result == 0);
 }
 
 static void
 cb_swap_m16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("SWAP: %s\n", ins->name);
+    
+    cpu_register_t *regs = &(cpu->regs);
+    size_t reg_offset = (size_t)ins->op1;
+    uint16_t addr = READ_R16(regs, reg_offset);
+    uint8_t value = cpu->mem_read(addr);
+
+    uint8_t result = (value >> 4) | ((value << 4) & 0xf0);
+
+    cpu->mem_write(addr, result);
+    CLEAR_R_FLAG(regs, FLAG_N);
+    CLEAR_R_FLAG(regs, FLAG_H);
+    CLEAR_R_FLAG(regs, FLAG_C);
+    SET_R_FLAG_VALUE(regs, FLAG_Z, result == 0);    
 }
 
 static void
 cb_srl_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("SRL: %s\n", ins->name);
+
+    cpu_register_t *regs = &(cpu->regs);
+    size_t reg_offset = (size_t)ins->op1;
+    uint8_t value = READ_R8(regs, reg_offset);
+
+    uint8_t carry = value & 0x1;
+    uint8_t result = value >> 1;
+
+    WRITE_R8(regs, reg_offset, result);
+    SET_R_FLAG_VALUE(regs, FLAG_C, carry);
+    SET_R_FLAG_VALUE(regs, FLAG_Z, result == 0);
+    CLEAR_R_FLAG(regs, FLAG_N);
+    CLEAR_R_FLAG(regs, FLAG_H);    
 }
 
 static void
 cb_srl_m16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("SRL: %s\n", ins->name);
+    cpu_register_t *regs = &(cpu->regs);
+    uint16_t addr = READ_R16(regs, (size_t)ins->op1);
+    uint8_t value = cpu->mem_read(addr);
+
+    uint8_t carry = value & 0x1;
+    uint8_t result = value >> 1;
+
+    cpu->mem_write(addr, result);
+    SET_R_FLAG_VALUE(regs, FLAG_C, carry);
+    SET_R_FLAG_VALUE(regs, FLAG_Z, result == 0);
+    CLEAR_R_FLAG(regs, FLAG_N);
+    CLEAR_R_FLAG(regs, FLAG_H);    
 }
 
 static void
 cb_bit_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("BIT: %s\n", ins->name);
+
+    cpu_register_t *regs = &(cpu->regs);
+    uint8_t bit = (uint8_t)ins->op1;
+    size_t reg_offset = (size_t)ins->op2;
+    
+    uint8_t value = READ_R8(regs, reg_offset);
+    uint8_t result = value & (1 << bit);
+
+    CLEAR_R_FLAG(regs, FLAG_N);
+    SET_R_FLAG(regs, FLAG_H);
+    SET_R_FLAG_VALUE(regs, FLAG_Z, result == 0);
 }
 
 static void
 cb_bit_m16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("BIT: %s\n", ins->name);
+
+    cpu_register_t *regs = &(cpu->regs);
+    uint8_t bit = (uint8_t)ins->op1;
+    size_t reg_offset = (size_t)ins->op2;
+    uint16_t addr = READ_R16(regs, reg_offset);
+    uint8_t value = cpu->mem_read(addr);
+
+    uint8_t result = value & (1 << bit);
+
+    CLEAR_R_FLAG(regs, FLAG_N);
+    SET_R_FLAG(regs, FLAG_H);
+    SET_R_FLAG_VALUE(regs, FLAG_Z, result == 0);
 }
 
 static void
 cb_res_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("RES: %s\n", ins->name);
+
+    cpu_register_t *regs = &(cpu->regs);
+    uint8_t bit = (uint8_t)ins->op1;
+    size_t reg_offset = (size_t)ins->op2;
+    
+    uint8_t value = READ_R8(regs, reg_offset);
+    uint8_t result = value & ~(1 << bit);
+
+    WRITE_R8(regs, reg_offset, result);
 }
 
 static void
 cb_res_m16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("RES: %s\n", ins->name);
+
+    cpu_register_t *regs = &(cpu->regs);
+    uint8_t bit = (uint8_t)ins->op1;
+    size_t reg_offset = (size_t)ins->op2;
+    uint16_t addr = READ_R16(regs, reg_offset);
+    uint8_t value = cpu->mem_read(addr);
+
+    uint8_t result = value & ~(1 << bit);
+
+    cpu->mem_write(addr, result);
 }
 
 static void
 cb_set_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("SET: %s\n", ins->name);
+
+    cpu_register_t *regs = &(cpu->regs);
+    uint8_t bit = (uint8_t)ins->op1;
+    size_t reg_offset = (size_t)ins->op2;
+    
+    uint8_t value = READ_R8(regs, reg_offset);
+    uint8_t result = value | (1 << bit);
+
+    WRITE_R8(regs, reg_offset, result);
 }
 
 static void
 cb_set_m16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("SET: %s\n", ins->name);
+
+    cpu_register_t *regs = &(cpu->regs);
+    uint8_t bit = (uint8_t)ins->op1;
+    size_t reg_offset = (size_t)ins->op2;
+    uint16_t addr = READ_R16(regs, reg_offset);
+    uint8_t value = cpu->mem_read(addr);
+
+    uint8_t result = value | (1 << bit);
+
+    cpu->mem_write(addr, result);
 }
 
 /* DO NOT MODIFY INSTUCTIONS DIRECTLY, COPY THEM BEFORE MODIFYING */
@@ -1586,7 +2041,7 @@ static instruction_t instruction_set[INSTRUCTIONS_SET_SIZE] = {
     /* 0xe0 */
     INSTRUCTION_ADD(0xe0, 2, ldh_im8_r8, NULL, REG_A, 12, 12, "LDH (n8), A"),
     INSTRUCTION_ADD(0xe1, 1, pop_r16, REG_HL, NULL, 12, 12, "POP HL"),
-    INSTRUCTION_ADD(0xe2, 1, ldh_r8_m8, REG_C, REG_A, 8, 8, "LDH (C), A"),
+    INSTRUCTION_ADD(0xe2, 1, ldh_m8_r8, REG_C, REG_A, 8, 8, "LDH (C), A"),
     INSTRUCTION_ADD(0xe3, 1, NULL, NULL, NULL, 4, 4, "NOP"),
     INSTRUCTION_ADD(0xe4, 1, NULL, NULL, NULL, 4, 4, "NOP"),
     INSTRUCTION_ADD(0xe5, 1, push_r16, REG_HL, NULL, 16, 16, "PUSH HL"),
@@ -1972,1341 +2427,5 @@ decode(uint8_t *data)
 }
 
 #ifdef DEBUG
-#include "memory.h"
-#include <assert.h>
-
-static uint8_t _flat_mem[0xffff]; // 64KB
-
-static uint8_t 
-_mem_write(uint16_t addr, uint8_t data)
-{
-    printf("Writing to memory at address %x [%x]\n", addr, data);
-    _flat_mem[addr] = data;
-    return data;
-}
-
-static uint8_t 
-_mem_read(uint16_t addr)
-{
-    printf("Reading from memory at address %x\n", addr);
-    return _flat_mem[addr];
-}
-
-static void 
-test_inc_r16(gbc_cpu_t *cpu)
-{   
-    cpu_register_t *reg = &(cpu->regs);
-    WRITE_R16(reg, REG_BC, 0x1234);
-    uint8_t code[] = {0x03}; // INC BC
-    instruction_t inst = decode(code);
-    inst.func(cpu, &inst);
-    assert(READ_R16(reg, REG_BC) == 0x1235);
-
-    WRITE_R16(reg, REG_BC, 0xffff);    
-    inst.func(cpu, &inst);
-    assert(READ_R16(reg, REG_BC) == 0x0000);
-}
-
-static void 
-test_dec_r16(gbc_cpu_t *cpu)
-{
-    cpu_register_t *reg = &(cpu->regs);
-    WRITE_R16(reg, REG_BC, 0x1234);
-    uint8_t code[] = {0x0b}; // DEC BC
-    instruction_t inst = decode(code);
-    inst.func(cpu, &inst);
-    assert(READ_R16(reg, REG_BC) == 0x1233);
-
-    WRITE_R16(reg, REG_BC, 0x0000);
-    inst.func(cpu, &inst);
-    assert(READ_R16(reg, REG_BC) == 0xffff);    
-}
-
-static void
-test_inc_r8(gbc_cpu_t *cpu)
-{
-    cpu_register_t *reg = &(cpu->regs);
-    WRITE_R8(reg, REG_B, 0x34);
-    uint8_t code[] = {0x04}; // INC B
-
-    instruction_t inst = decode(code);
-    inst.func(cpu, &inst);
-
-    assert(READ_R8(reg, REG_B) == 0x35);
-    assert(READ_R_FLAG(reg, FLAG_Z) == 0);
-    assert(READ_R_FLAG(reg, FLAG_N) == 0);
-    assert(READ_R_FLAG(reg, FLAG_H) == 0);
-
-    WRITE_R8(reg, REG_B, 0xff);
-
-    uint8_t h = READ_R8(reg, REG_C);
-
-    inst = decode(code);
-    inst.func(cpu, &inst);
-    
-    assert(READ_R8(reg, REG_B) == 0);
-    assert(READ_R8(reg, REG_C) == h);
-    assert(READ_R_FLAG(reg, FLAG_Z) == 1);
-    assert(READ_R_FLAG(reg, FLAG_N) == 0);
-    assert(READ_R_FLAG(reg, FLAG_H) == 1);
-}
-
-static void
-test_dec_r8(gbc_cpu_t *cpu)
-{
-    cpu_register_t *reg = &(cpu->regs);
-    WRITE_R8(reg, REG_B, 0x01);
-    uint8_t code[] = {0x05}; // DEC B
-
-    instruction_t inst = decode(code);
-    inst.func(cpu, &inst);
-
-    assert(READ_R8(reg, REG_B) == 0);
-    assert(READ_R_FLAG(reg, FLAG_Z) == 1);
-    assert(READ_R_FLAG(reg, FLAG_N) == 1);
-    assert(READ_R_FLAG(reg, FLAG_H) == 0);
-
-    WRITE_R8(reg, REG_B, 0x00);
-
-    uint8_t h = READ_R8(reg, REG_C);
-
-    inst = decode(code);
-    inst.func(cpu, &inst);
-    
-    assert(READ_R8(reg, REG_B) == 0xff);
-    assert(READ_R8(reg, REG_C) == h);
-    assert(READ_R_FLAG(reg, FLAG_Z) == 0);
-    assert(READ_R_FLAG(reg, FLAG_N) == 1);
-    assert(READ_R_FLAG(reg, FLAG_H) == 1);
-}
-
-static void 
-test_inc_m16(gbc_cpu_t *cpu)
-{
-    cpu_register_t *reg = &(cpu->regs);
-    const uint16_t addr = 0x34;
-    WRITE_R16(reg, REG_HL, addr);
-    cpu->mem_write(addr, 0x34);
-    uint8_t code[] = {0x34}; // INC HL
-
-    instruction_t inst = decode(code);
-    inst.func(cpu, &inst);
-
-    assert(cpu->mem_read(addr) == 0x35);
-    assert(READ_R_FLAG(reg, FLAG_Z) == 0);
-    assert(READ_R_FLAG(reg, FLAG_N) == 0);
-    assert(READ_R_FLAG(reg, FLAG_H) == 0);
-
-    cpu->mem_write(addr, 0xff);
-    uint8_t h = READ_R8(reg, REG_C);
-
-    inst = decode(code);
-    inst.func(cpu, &inst);
-    
-    assert(cpu->mem_read(addr) == 0);        
-    assert(READ_R_FLAG(reg, FLAG_Z) == 1);
-    assert(READ_R_FLAG(reg, FLAG_N) == 0);
-    assert(READ_R_FLAG(reg, FLAG_H) == 1);
-}
-
-static void 
-test_dec_m16(gbc_cpu_t *cpu)
-{
-    cpu_register_t *reg = &(cpu->regs);
-    const uint16_t addr = 0x34;
-    WRITE_R16(reg, REG_HL, addr);
-    cpu->mem_write(addr, 0x01);
-    uint8_t code[] = {0x35}; // DEC (HL)
-
-    instruction_t inst = decode(code);
-    inst.func(cpu, &inst);
-
-    assert(cpu->mem_read(addr) == 0);
-    assert(READ_R_FLAG(reg, FLAG_Z) == 1);
-    assert(READ_R_FLAG(reg, FLAG_N) == 1);
-    assert(READ_R_FLAG(reg, FLAG_H) == 0);
-
-    cpu->mem_write(addr, 0x0);
-    uint8_t h = READ_R8(reg, REG_C);
-
-    inst = decode(code);
-    inst.func(cpu, &inst);
-    
-    assert(cpu->mem_read(addr) == 0xff);
-    assert(READ_R_FLAG(reg, FLAG_Z) == 0);
-    assert(READ_R_FLAG(reg, FLAG_N) == 1);
-    assert(READ_R_FLAG(reg, FLAG_H) == 1);
-}
-
-static void 
-test_rlca(gbc_cpu_t *cpu)
-{    
-    cpu_register_t *reg = &(cpu->regs);
-    WRITE_R8(reg, REG_A, 0x85);
-    uint8_t code[] = {0x07}; // RLCA
-
-    instruction_t inst = decode(code);
-    inst.func(cpu, &inst);
-
-    assert(READ_R8(reg, REG_A) == 0x0b);
-    assert(READ_R_FLAG(reg, FLAG_C) == 1);
-    assert(READ_R_FLAG(reg, FLAG_Z) == 0);
-    assert(READ_R_FLAG(reg, FLAG_N) == 0);
-    assert(READ_R_FLAG(reg, FLAG_H) == 0);
-
-    WRITE_R8(reg, REG_A, 0x1);
-
-    inst = decode(code);
-    inst.func(cpu, &inst);
-
-    assert(READ_R8(reg, REG_A) == 0x2);
-    assert(READ_R_FLAG(reg, FLAG_C) == 0);
-    assert(READ_R_FLAG(reg, FLAG_Z) == 0);
-    assert(READ_R_FLAG(reg, FLAG_N) == 0);
-    assert(READ_R_FLAG(reg, FLAG_H) == 0);
-}
-
-static void 
-test_rla(gbc_cpu_t *cpu)
-{    
-    cpu_register_t *reg = &(cpu->regs);
-    WRITE_R8(reg, REG_A, 0x02);
-    uint8_t code[] = {0x17}; // RLA
-
-    SET_R_FLAG(reg, FLAG_C);
-
-    instruction_t inst = decode(code);
-    inst.func(cpu, &inst);
-
-    assert(READ_R8(reg, REG_A) == 0x05);
-    assert(READ_R_FLAG(reg, FLAG_C) == 0);
-    assert(READ_R_FLAG(reg, FLAG_Z) == 0);
-    assert(READ_R_FLAG(reg, FLAG_N) == 0);
-    assert(READ_R_FLAG(reg, FLAG_H) == 0);
-
-    WRITE_R8(reg, REG_A, 0xff);
-    inst = decode(code);
-    inst.func(cpu, &inst);
-   
-    assert(READ_R8(reg, REG_A) == 0xfe);
-    assert(READ_R_FLAG(reg, FLAG_C) == 1);
-    assert(READ_R_FLAG(reg, FLAG_Z) == 0);
-    assert(READ_R_FLAG(reg, FLAG_N) == 0);
-    assert(READ_R_FLAG(reg, FLAG_H) == 0);    
-}
-
-static void 
-test_rra(gbc_cpu_t *cpu)
-{    
-    cpu_register_t *reg = &(cpu->regs);
-    WRITE_R8(reg, REG_A, 0x02);
-    uint8_t code[] = {0x1f}; // RRA
-
-    SET_R_FLAG(reg, FLAG_C);
-    instruction_t inst = decode(code);
-    inst.func(cpu, &inst);
-
-    assert(READ_R8(reg, REG_A) == 0x81);
-    assert(READ_R_FLAG(reg, FLAG_C) == 0);
-    assert(READ_R_FLAG(reg, FLAG_Z) == 0);
-    assert(READ_R_FLAG(reg, FLAG_N) == 0);
-    assert(READ_R_FLAG(reg, FLAG_H) == 0);
-
-    WRITE_R8(reg, REG_A, 0x1);
-    inst = decode(code);
-    inst.func(cpu, &inst);
-
-    assert(READ_R8(reg, REG_A) == 0);
-    assert(READ_R_FLAG(reg, FLAG_C) == 1);
-    assert(READ_R_FLAG(reg, FLAG_Z) == 0);
-    assert(READ_R_FLAG(reg, FLAG_N) == 0);
-    assert(READ_R_FLAG(reg, FLAG_H) == 0);    
-}
-
-static void 
-test_rrca(gbc_cpu_t *cpu)
-{
-    cpu_register_t *reg = &(cpu->regs);
-    WRITE_R8(reg, REG_A, 0x03);
-    uint8_t code[] = {0x0f}; // RRCA
-
-    instruction_t inst = decode(code);
-    inst.func(cpu, &inst);
-
-    assert(READ_R8(reg, REG_A) == 0x81);
-    assert(READ_R_FLAG(reg, FLAG_C) == 1);
-    assert(READ_R_FLAG(reg, FLAG_Z) == 0);
-    assert(READ_R_FLAG(reg, FLAG_N) == 0);
-    assert(READ_R_FLAG(reg, FLAG_H) == 0);
-
-    WRITE_R8(reg, REG_A, 0x2);
-    inst = decode(code);
-    inst.func(cpu, &inst);
-
-    assert(READ_R8(reg, REG_A) == 0x1);
-    assert(READ_R_FLAG(reg, FLAG_C) == 0);
-    assert(READ_R_FLAG(reg, FLAG_Z) == 0);
-    assert(READ_R_FLAG(reg, FLAG_N) == 0);
-    assert(READ_R_FLAG(reg, FLAG_H) == 0);    
-}
-
-static void 
-test_daa(gbc_cpu_t *cpu)
-{
-    cpu_register_t *reg = &(cpu->regs);
-    WRITE_R8(reg, REG_A, 0x1f);
-    uint8_t code[] = {0x27}; // DAA
-
-    SET_R_FLAG(reg, FLAG_H);
-    CLEAR_R_FLAG(reg, FLAG_C);
-    SET_R_FLAG(reg, FLAG_N);
-
-    instruction_t inst = decode(code);
-    inst.func(cpu, &inst);
-    
-    assert(READ_R8(reg, REG_A) == 0x19);
-    assert(READ_R_FLAG(reg, FLAG_C) == 0);
-    assert(READ_R_FLAG(reg, FLAG_Z) == 0);
-    assert(READ_R_FLAG(reg, FLAG_N) == 1);
-    assert(READ_R_FLAG(reg, FLAG_H) == 0);
-
-    WRITE_R8(reg, REG_A, 0x41);
-    CLEAR_R_FLAG(reg, FLAG_N);
-    SET_R_FLAG(reg, FLAG_H);
-    CLEAR_R_FLAG(reg, FLAG_C);
-
-    inst = decode(code);
-    inst.func(cpu, &inst);
-
-    assert(READ_R8(reg, REG_A) == 0x47);
-    assert(READ_R_FLAG(reg, FLAG_C) == 0);
-    assert(READ_R_FLAG(reg, FLAG_Z) == 0);
-    assert(READ_R_FLAG(reg, FLAG_N) == 0);
-    assert(READ_R_FLAG(reg, FLAG_H) == 0);
-}
-
-static void
-test_jr(gbc_cpu_t *cpu)
-{
-    cpu_register_t *reg = &(cpu->regs);
-    WRITE_R16(reg, REG_PC, 0x1000);
-    uint8_t code[] = {0x18, 0x02}; // JR 0x02
-
-    instruction_t inst = decode(code);
-    inst.func(cpu, &inst);
-
-    assert(READ_R16(reg, REG_PC) == 0x1002);
-
-    WRITE_R16(reg, REG_PC, 0x1000);
-    code[1] = 0xfe; // JR -2
-
-    inst = decode(code);
-    inst.func(cpu, &inst);
-
-    assert(READ_R16(reg, REG_PC) == 0x0ffe);
-}
-
-static void
-test_ld_r16_i16(gbc_cpu_t *cpu)
-{
-    cpu_register_t *reg = &(cpu->regs);    
-    uint8_t code[] = {0x01, 0x34, 0x12}; // LD BC, 0x1234    
-    instruction_t inst = decode(code);
-    inst.func(cpu, &inst);
-
-    assert(READ_R16(reg, REG_BC) == 0x1234);
-}
-
-static void
-test_ld_sp_hl(gbc_cpu_t *cpu)
-{
-    cpu_register_t *reg = &(cpu->regs);
-    WRITE_R16(reg, REG_HL, 0x1234);
-    WRITE_R16(reg, REG_SP, 0x0000);
-    uint8_t code[] = {0xf9}; // LD SP, HL
-    instruction_t inst = decode(code);
-    inst.func(cpu, &inst);
-
-    assert(READ_R16(reg, REG_SP) == 0x1234);
-}
-
-static void 
-test_ld_hl_sp_i8(gbc_cpu_t *cpu)
-{
-    cpu_register_t *reg = &(cpu->regs);
-    WRITE_R16(reg, REG_SP, 0x1001);
-    uint8_t code[] = {0xf8, 0x02}; // LD HL, SP+e8
-    instruction_t inst = decode(code);
-    inst.func(cpu, &inst);
-
-    assert(READ_R16(reg, REG_HL) == 0x1003);
-    assert(READ_R_FLAG(reg, FLAG_Z) == 0);
-    assert(READ_R_FLAG(reg, FLAG_N) == 0);
-    assert(READ_R_FLAG(reg, FLAG_H) == 0);
-    assert(READ_R_FLAG(reg, FLAG_C) == 0);
-
-    WRITE_R16(reg, REG_SP, 0x00ff);
-    code[1] = 0x2;
-    inst = decode(code);
-    inst.func(cpu, &inst);
-
-    assert(READ_R16(reg, REG_HL) == 0x0101);
-    assert(READ_R_FLAG(reg, FLAG_Z) == 0);
-    assert(READ_R_FLAG(reg, FLAG_N) == 0);
-    assert(READ_R_FLAG(reg, FLAG_H) == 1);
-    assert(READ_R_FLAG(reg, FLAG_C) == 1);
-
-    WRITE_R16(reg, REG_SP, 0x1000);
-    code[1] = 0xfe; // LD HL, SP-e8
-
-    inst = decode(code);
-    inst.func(cpu, &inst);
-
-    assert(READ_R16(reg, REG_HL) == 0x0ffe);
-    assert(READ_R_FLAG(reg, FLAG_Z) == 0);
-    assert(READ_R_FLAG(reg, FLAG_N) == 0);
-    assert(READ_R_FLAG(reg, FLAG_H) == 0);
-    assert(READ_R_FLAG(reg, FLAG_C) == 0);
-}
-
-static void 
-test_ld_r8_i8(gbc_cpu_t *cpu)
-{
-    cpu_register_t *reg = &(cpu->regs);
-    WRITE_R8(reg, REG_B, 0x00);
-    uint8_t code[] = {0x06, 0x34}; // LD B, 0x34
-    instruction_t inst = decode(code);
-    inst.func(cpu, &inst);
-
-    assert(READ_R8(reg, REG_B) == 0x34);
-}
-
-static void
-test_ldi_r8_m16(gbc_cpu_t *cpu)
-{
-    cpu_register_t *reg = &(cpu->regs);
-    WRITE_R16(reg, REG_HL, 0x1000);    
-    cpu->mem_write(0x1000, 0x34);
-    uint8_t code[] = {0x2a}; // LDI A, (HL)
-    instruction_t inst = decode(code);
-    inst.func(cpu, &inst);
-
-    assert(READ_R8(reg, REG_A) == 0x34);
-    assert(READ_R16(reg, REG_HL) == 0x1001);
-}
-
-static void
-test_ldi_m16_r8(gbc_cpu_t *cpu)
-{
-    cpu_register_t *reg = &(cpu->regs);
-    cpu->mem_write(0x1000, 0x00);
-    WRITE_R16(reg, REG_HL, 0x1000);
-    WRITE_R8(reg, REG_A, 0xff);
-    uint8_t code[] = {0x22}; // LDI (HL), A
-    instruction_t inst = decode(code);
-    inst.func(cpu, &inst);
-
-    assert(cpu->mem_read(0x1000) == 0xff);
-    assert(READ_R16(reg, REG_HL) == 0x1001);
-}
-
-static void
-test_ldd_r8_m16(gbc_cpu_t *cpu)
-{
-    cpu_register_t *reg = &(cpu->regs);
-    WRITE_R16(reg, REG_HL, 0x1000);    
-    WRITE_R8(reg, REG_A, 0x00);
-    cpu->mem_write(0x1000, 0x34);
-    uint8_t code[] = {0x3a}; // LDD A, (HL)
-    instruction_t inst = decode(code);
-    inst.func(cpu, &inst);
-
-    assert(READ_R8(reg, REG_A) == 0x34);
-    assert(READ_R16(reg, REG_HL) == 0x0fff);
-}
-
-static void
-test_ldd_m16_r8(gbc_cpu_t *cpu)
-{
-    cpu_register_t *reg = &(cpu->regs);
-    WRITE_R16(reg, REG_HL, 0x1000);
-    WRITE_R8(reg, REG_A, 0xff);
-    uint8_t code[] = {0x32}; // LDD (HL), A
-    instruction_t inst = decode(code);
-    inst.func(cpu, &inst);
-
-    assert(cpu->mem_read(0x1000) == 0xff);
-    assert(READ_R16(reg, REG_HL) == 0x0fff);
-}
-
-static void 
-test_ld_m16_i8(gbc_cpu_t *cpu)
-{
-    cpu_register_t *reg = &(cpu->regs);
-    cpu->mem_write(0x1234, 0x00);
-    WRITE_R16(reg, REG_HL, 0x1234);
-    uint8_t code[] = {0x36, 0x34}; // LD (HL), 0x34
-    instruction_t inst = decode(code);
-    inst.func(cpu, &inst);
-
-    assert(cpu->mem_read(0x1234) == 0x34);    
-}
-
-static void
-test_ld_r8_m16(gbc_cpu_t *cpu)
-{
-    cpu_register_t *reg = &(cpu->regs);
-    WRITE_R16(reg, REG_BC, 0x1000);
-    WRITE_R8(reg, REG_A, 0x00);
-    cpu->mem_write(0x1000, 0x34);
-    uint8_t code[] = {0x0a}; // LD A, (BC)
-    instruction_t inst = decode(code);
-    inst.func(cpu, &inst);
-
-    assert(READ_R8(reg, REG_A) == 0x34);
-}
-
-static void
-test_ld_m16_r8(gbc_cpu_t *cpu)
-{
-    cpu_register_t *regs = &(cpu->regs);    
-    WRITE_R16(regs, REG_BC, 0x1000);
-    cpu->mem_write(0x1000, 0x0);
-    WRITE_R8(regs, REG_A, 0x10);    
-    uint8_t code[] = {0x02}; // LD (BC), A
-    instruction_t ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(cpu->mem_read(0x1000) == 0x10);
-}
-
-static void 
-test_ld_im16_r16(gbc_cpu_t *cpu)
-{
-    cpu_register_t *regs = &(cpu->regs);
-    uint8_t code[] = {0x08, 0x34, 0x12}; // LD (0x1234), SP
-    WRITE_R16(regs, REG_SP, 0x1001);
-    cpu->mem_write(0x1234, 0x00);
-    instruction_t ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(cpu->mem_read(0x1234) == 0x01);
-    assert(cpu->mem_read(0x1235) == 0x10);
-}
-
-static void
-test_ld_im16_r8(gbc_cpu_t *cpu)
-{
-    WRITE_R8(&(cpu->regs), REG_A, 0xff);
-    cpu->mem_write(0x1234, 0x0);
-    uint8_t code[] = {0xea, 0x34, 0x12}; // LD (0x1234), A
-    instruction_t ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(cpu->mem_read(0x1234) == 0xff);
-}
-
-static void
-test_ld_r8_r8(gbc_cpu_t *cpu)
-{
-    cpu_register_t *regs = &(cpu->regs);
-    WRITE_R8(regs, REG_A, 0x00);
-    WRITE_R8(regs, REG_B, 0xfe);
-    uint8_t code[] = {0x78}; // LD A, B
-    instruction_t ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0xfe);
-}
-
-static void 
-test_jr_nz_i8(gbc_cpu_t *cpu)
-{
-    cpu_register_t *regs = &(cpu->regs);
-    WRITE_R16(regs, REG_PC, 0x1000);
-
-    CLEAR_R_FLAG(regs, FLAG_Z);
-    uint8_t code[] = {0x20, 0x02}; // JR NZ, 0x02
-    instruction_t ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R16(regs, REG_PC) == 0x1002);
-
-    assert(ins.cycles == ins.cycles2);
-    
-    code[1] = 0xff;
-    ins = decode(code);
-    SET_R_FLAG(regs, FLAG_Z);
-    ins.func(cpu, &ins);
-    assert(READ_R16(regs, REG_PC) == 0x1002);
-    assert(ins.cycles != ins.cycles2);
-}
-
-void 
-test_add_r16_r16(gbc_cpu_t *cpu)
-{
-    cpu_register_t *regs = &(cpu->regs);
-    WRITE_R16(regs, REG_BC, 0x1234);
-    WRITE_R16(regs, REG_HL, 0x5f78);
-    SET_R_FLAG(regs, FLAG_Z);
-    uint8_t code[] = {0x09}; // ADD HL, BC
-    instruction_t ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R16(regs, REG_HL) == 0x71ac);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 1);
-    assert(READ_R_FLAG(regs, FLAG_N) == 0);
-    assert(READ_R_FLAG(regs, FLAG_H) == 1);
-    assert(READ_R_FLAG(regs, FLAG_C) == 0);
-
-    WRITE_R16(regs, REG_BC, 0x0001);    
-    WRITE_R16(regs, REG_HL, 0xffff);
-    code[0] = 0x09;
-    ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R16(regs, REG_HL) == 0x0000);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 1);
-    assert(READ_R_FLAG(regs, FLAG_N) == 0);
-    assert(READ_R_FLAG(regs, FLAG_H) == 1);
-    assert(READ_R_FLAG(regs, FLAG_C) == 1);
-}
-
-void 
-test_add_r16_i8(gbc_cpu_t *cpu)
-{
-    cpu_register_t *regs = &(cpu->regs);
-    WRITE_R16(regs, REG_SP, 0x10ff);
-    uint8_t code[] = {0xe8, 0x02}; // ADD SP, 0x02
-    instruction_t ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R16(regs, REG_SP) == 0x1101);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 0);
-    assert(READ_R_FLAG(regs, FLAG_N) == 0);
-    assert(READ_R_FLAG(regs, FLAG_H) == 1);
-    assert(READ_R_FLAG(regs, FLAG_C) == 1);
-
-    WRITE_R16(regs, REG_SP, 0x1001);
-    code[1] = 0xef; // ADD SP, -2
-    ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R16(regs, REG_SP) == 0x0ff0);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 0);
-    assert(READ_R_FLAG(regs, FLAG_N) == 0);
-    assert(READ_R_FLAG(regs, FLAG_H) == 1);
-    assert(READ_R_FLAG(regs, FLAG_C) == 0);    
-}
-
-void 
-test_add_r8_i8(gbc_cpu_t *cpu)
-{
-    cpu_register_t *regs = &(cpu->regs);
-    WRITE_R8(regs, REG_A, 0x01);    
-    uint8_t code[] = {0xc6, 0x01}; // ADD A, 0x01
-    instruction_t ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0x02);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 0);
-    assert(READ_R_FLAG(regs, FLAG_N) == 0);
-    assert(READ_R_FLAG(regs, FLAG_H) == 0);
-    assert(READ_R_FLAG(regs, FLAG_C) == 0);
-
-    WRITE_R8(regs, REG_A, 0xff);
-    code[1] = 0x01;
-    ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0x00);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 1);
-    assert(READ_R_FLAG(regs, FLAG_N) == 0);
-    assert(READ_R_FLAG(regs, FLAG_H) == 1);
-    assert(READ_R_FLAG(regs, FLAG_C) == 1);
-}
-
-void 
-test_add_r8_r8(gbc_cpu_t *cpu)
-{
-    cpu_register_t *regs = &(cpu->regs);
-    WRITE_R8(regs, REG_A, 0x01);
-    WRITE_R8(regs, REG_B, 0x02);
-    uint8_t code[] = {0x80}; // ADD A, B
-    instruction_t ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0x03);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 0);
-    assert(READ_R_FLAG(regs, FLAG_N) == 0);
-    assert(READ_R_FLAG(regs, FLAG_H) == 0);
-    assert(READ_R_FLAG(regs, FLAG_C) == 0);
-
-    WRITE_R8(regs, REG_A, 0xff);
-    WRITE_R8(regs, REG_B, 0x01);
-    ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0x00);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 1);
-    assert(READ_R_FLAG(regs, FLAG_N) == 0);
-    assert(READ_R_FLAG(regs, FLAG_H) == 1);
-    assert(READ_R_FLAG(regs, FLAG_C) == 1);
-}
-
-void
-test_add_r8_m16(gbc_cpu_t *cpu)
-{
-    cpu_register_t *regs = &(cpu->regs);
-    WRITE_R8(regs, REG_A, 0x01);
-    WRITE_R16(regs, REG_HL, 0x1000);
-    cpu->mem_write(0x1000, 0x02);    
-    uint8_t code[] = {0x86}; // ADD A, (HL)
-    instruction_t ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0x03);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 0);
-    assert(READ_R_FLAG(regs, FLAG_N) == 0);
-    assert(READ_R_FLAG(regs, FLAG_H) == 0);
-    assert(READ_R_FLAG(regs, FLAG_C) == 0);
-
-    WRITE_R8(regs, REG_A, 0xff);
-    cpu->mem_write(0x1000, 0x01);    
-    ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0x00);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 1);
-    assert(READ_R_FLAG(regs, FLAG_N) == 0);
-    assert(READ_R_FLAG(regs, FLAG_H) == 1);
-    assert(READ_R_FLAG(regs, FLAG_C) == 1);    
-}
-
-void 
-test_adc_r8_i8(gbc_cpu_t *cpu)
-{
-    cpu_register_t *regs = &(cpu->regs);
-    WRITE_R8(regs, REG_A, 0x01);    
-    CLEAR_R_FLAG(regs, FLAG_C);
-    uint8_t code[] = {0xce, 0x01}; // ADD A, 0x01
-    instruction_t ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0x02);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 0);
-    assert(READ_R_FLAG(regs, FLAG_N) == 0);
-    assert(READ_R_FLAG(regs, FLAG_H) == 0);
-    assert(READ_R_FLAG(regs, FLAG_C) == 0);
-
-    SET_R_FLAG(regs, FLAG_C);
-    WRITE_R8(regs, REG_A, 0xfe);
-    code[1] = 0x01;
-    ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0x00);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 1);
-    assert(READ_R_FLAG(regs, FLAG_N) == 0);
-    assert(READ_R_FLAG(regs, FLAG_H) == 1);
-    assert(READ_R_FLAG(regs, FLAG_C) == 1);    
-}
-
-void 
-test_adc_r8_r8(gbc_cpu_t *cpu)
-{
-    cpu_register_t *regs = &(cpu->regs);
-    WRITE_R8(regs, REG_A, 0x0f);    
-    CLEAR_R_FLAG(regs, FLAG_C);
-    uint8_t code[] = {0x8f}; // ADD A, A
-    instruction_t ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0x1e);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 0);
-    assert(READ_R_FLAG(regs, FLAG_N) == 0);
-    assert(READ_R_FLAG(regs, FLAG_H) == 1);
-    assert(READ_R_FLAG(regs, FLAG_C) == 0);
-
-    WRITE_R8(regs, REG_A, 0xfe);
-    WRITE_R8(regs, REG_B, 0x01);
-    SET_R_FLAG(regs, FLAG_C);
-    code[0] = 0x88; // ADC A, B
-    ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 1);
-    assert(READ_R_FLAG(regs, FLAG_N) == 0);
-    assert(READ_R_FLAG(regs, FLAG_H) == 1);
-    assert(READ_R_FLAG(regs, FLAG_C) == 1);
-}
-
-void
-test_adc_r8_m16(gbc_cpu_t *cpu)
-{
-    cpu_register_t *regs = &(cpu->regs);
-    WRITE_R8(regs, REG_A, 0x01);
-    WRITE_R16(regs, REG_HL, 0x1000);
-    CLEAR_R_FLAG(regs, FLAG_C);
-    cpu->mem_write(0x1000, 0x02);    
-    uint8_t code[] = {0x8e}; // ADD A, (HL)
-    instruction_t ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0x03);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 0);
-    assert(READ_R_FLAG(regs, FLAG_N) == 0);
-    assert(READ_R_FLAG(regs, FLAG_H) == 0);
-    assert(READ_R_FLAG(regs, FLAG_C) == 0);
-
-    WRITE_R8(regs, REG_A, 0xfe);
-    SET_R_FLAG_VALUE(regs, FLAG_C, 1);
-    cpu->mem_write(0x1000, 0x01);    
-    ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0x00);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 1);
-    assert(READ_R_FLAG(regs, FLAG_N) == 0);
-    assert(READ_R_FLAG(regs, FLAG_H) == 1);
-    assert(READ_R_FLAG(regs, FLAG_C) == 1);    
-}
-
-void
-test_sub_r8_i8(gbc_cpu_t *cpu)
-{
-    cpu_register_t *regs = &(cpu->regs);
-    CLEAR_R_FLAG(regs, FLAG_Z);
-    WRITE_R8(regs, REG_A, 0x01);    
-    uint8_t code[] = {0xd6, 0x01}; // SUB A, 0x01
-    instruction_t ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0x00);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 1);
-    assert(READ_R_FLAG(regs, FLAG_N) == 1);
-    assert(READ_R_FLAG(regs, FLAG_H) == 0);
-    assert(READ_R_FLAG(regs, FLAG_C) == 0);
-
-    WRITE_R8(regs, REG_A, 0x01);
-    code[1] = 0x02;
-    ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0xff);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 0);
-    assert(READ_R_FLAG(regs, FLAG_N) == 1);
-    assert(READ_R_FLAG(regs, FLAG_H) == 1);
-    assert(READ_R_FLAG(regs, FLAG_C) == 1);
-}
-
-void
-test_sub_r8_r8(gbc_cpu_t *cpu)
-{
-    cpu_register_t *regs = &(cpu->regs);
-    CLEAR_R_FLAG(regs, FLAG_Z);    
-    WRITE_R8(regs, REG_A, 0x01);
-    WRITE_R8(regs, REG_B, 0x01);
-    uint8_t code[] = {0x90}; // SUB A, B
-    instruction_t ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0x00);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 1);
-    assert(READ_R_FLAG(regs, FLAG_N) == 1);
-    assert(READ_R_FLAG(regs, FLAG_H) == 0);
-    assert(READ_R_FLAG(regs, FLAG_C) == 0);
-
-    WRITE_R8(regs, REG_A, 0x01);
-    WRITE_R8(regs, REG_B, 0x02);
-    ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0xff);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 0);
-    assert(READ_R_FLAG(regs, FLAG_N) == 1);
-    assert(READ_R_FLAG(regs, FLAG_H) == 1);
-    assert(READ_R_FLAG(regs, FLAG_C) == 1);    
-}
-
-void
-test_sub_r8_m16(gbc_cpu_t *cpu)
-{
-    cpu_register_t *regs = &(cpu->regs);
-    WRITE_R8(regs, REG_A, 0x01);
-    WRITE_R16(regs, REG_HL, 0x1000);
-    cpu->mem_write(0x1000, 0x01);
-    uint8_t code[] = {0x96}; // SUB A, (HL)
-    instruction_t ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0x00);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 1);
-    assert(READ_R_FLAG(regs, FLAG_N) == 1);
-    assert(READ_R_FLAG(regs, FLAG_H) == 0);
-    assert(READ_R_FLAG(regs, FLAG_C) == 0);
-
-    WRITE_R8(regs, REG_A, 0x01);
-    cpu->mem_write(0x1000, 0x02);
-    ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0xff);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 0);
-    assert(READ_R_FLAG(regs, FLAG_N) == 1);
-    assert(READ_R_FLAG(regs, FLAG_H) == 1);
-    assert(READ_R_FLAG(regs, FLAG_C) == 1);    
-}
-
-void 
-test_subc_r8_i8(gbc_cpu_t *cpu)
-{
-    cpu_register_t *regs = &(cpu->regs);
-    WRITE_R8(regs, REG_A, 0x01);
-    CLEAR_R_FLAG(regs, FLAG_C);
-    uint8_t code[] = {0xde, 0x01}; // SBC A, 0x01
-    instruction_t ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0x0);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 1);
-    assert(READ_R_FLAG(regs, FLAG_N) == 1);
-    assert(READ_R_FLAG(regs, FLAG_H) == 0);
-    assert(READ_R_FLAG(regs, FLAG_C) == 0);
-
-    SET_R_FLAG(regs, FLAG_C);
-    WRITE_R8(regs, REG_A, 0x01);
-    code[1] = 0x01;
-    ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0xff);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 0);
-    assert(READ_R_FLAG(regs, FLAG_N) == 1);
-    assert(READ_R_FLAG(regs, FLAG_H) == 1);
-    assert(READ_R_FLAG(regs, FLAG_C) == 1);    
-}
-
-void 
-test_subc_r8_r8(gbc_cpu_t *cpu)
-{
-    cpu_register_t *regs = &(cpu->regs);
-    WRITE_R8(regs, REG_A, 0x0f);    
-    WRITE_R8(regs, REG_B, 0x0f);
-    CLEAR_R_FLAG(regs, FLAG_C);
-    uint8_t code[] = {0x98}; // SBC A, B
-    instruction_t ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0x00);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 1);
-    assert(READ_R_FLAG(regs, FLAG_N) == 1);
-    assert(READ_R_FLAG(regs, FLAG_H) == 0);
-    assert(READ_R_FLAG(regs, FLAG_C) == 0);
-
-    WRITE_R8(regs, REG_A, 0x01);
-    WRITE_R8(regs, REG_B, 0x01);
-    SET_R_FLAG(regs, FLAG_C);    
-    ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0xff);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 0);
-    assert(READ_R_FLAG(regs, FLAG_N) == 1);
-    assert(READ_R_FLAG(regs, FLAG_H) == 1);
-    assert(READ_R_FLAG(regs, FLAG_C) == 1);
-}
-
-void
-test_subc_r8_m16(gbc_cpu_t *cpu)
-{
-    cpu_register_t *regs = &(cpu->regs);
-    WRITE_R8(regs, REG_A, 0x01);
-    WRITE_R16(regs, REG_HL, 0x1000);
-    CLEAR_R_FLAG(regs, FLAG_C);
-    cpu->mem_write(0x1000, 0x01);
-    uint8_t code[] = {0x9e}; // SBC A, (HL)
-    instruction_t ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0x00);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 1);
-    assert(READ_R_FLAG(regs, FLAG_N) == 1);
-    assert(READ_R_FLAG(regs, FLAG_H) == 0);
-    assert(READ_R_FLAG(regs, FLAG_C) == 0);
-
-    WRITE_R8(regs, REG_A, 0xff);
-    SET_R_FLAG_VALUE(regs, FLAG_C, 1);
-    cpu->mem_write(0x1000, 0xff);
-    ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0xff);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 0);
-    assert(READ_R_FLAG(regs, FLAG_N) == 1);
-    assert(READ_R_FLAG(regs, FLAG_H) == 1);
-    assert(READ_R_FLAG(regs, FLAG_C) == 1);    
-}
-
-void 
-test_and_r8_r8(gbc_cpu_t *cpu)
-{
-    cpu_register_t *regs = &(cpu->regs);
-    WRITE_R8(regs, REG_A, 0x0f);    
-    WRITE_R8(regs, REG_B, 0xf1);
-    uint8_t code[] = {0xa0}; // AND A, B
-    instruction_t ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0x01);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 0);
-    assert(READ_R_FLAG(regs, FLAG_N) == 0);
-    assert(READ_R_FLAG(regs, FLAG_H) == 1);
-    assert(READ_R_FLAG(regs, FLAG_C) == 0);
-
-    WRITE_R8(regs, REG_A, 0x0f);
-    WRITE_R8(regs, REG_B, 0xf0);
-    ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0x00);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 1);
-    assert(READ_R_FLAG(regs, FLAG_N) == 0);
-    assert(READ_R_FLAG(regs, FLAG_H) == 1);
-    assert(READ_R_FLAG(regs, FLAG_C) == 0);    
-}
-
-void 
-test_and_r8_i8(gbc_cpu_t *cpu)
-{
-    cpu_register_t *regs = &(cpu->regs);
-    WRITE_R8(regs, REG_A, 0x0f);        
-    uint8_t code[] = {0xe6, 0xf1}; // AND A, 0xf1
-    instruction_t ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0x01);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 0);
-    assert(READ_R_FLAG(regs, FLAG_N) == 0);
-    assert(READ_R_FLAG(regs, FLAG_H) == 1);
-    assert(READ_R_FLAG(regs, FLAG_C) == 0);
-
-    WRITE_R8(regs, REG_A, 0x0f);
-    code[1] = 0xf0;    
-    ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0x00);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 1);
-    assert(READ_R_FLAG(regs, FLAG_N) == 0);
-    assert(READ_R_FLAG(regs, FLAG_H) == 1);
-    assert(READ_R_FLAG(regs, FLAG_C) == 0);
-}
-
-void 
-test_and_r8_m16(gbc_cpu_t *cpu)
-{
-    cpu_register_t *regs = &(cpu->regs);
-    WRITE_R8(regs, REG_A, 0x0f);        
-    WRITE_R16(regs, REG_HL, 0x1000);
-    cpu->mem_write(0x1000, 0xf1);
-    uint8_t code[] = {0xa6}; // AND A, (HL)
-    instruction_t ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0x01);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 0);
-    assert(READ_R_FLAG(regs, FLAG_N) == 0);
-    assert(READ_R_FLAG(regs, FLAG_H) == 1);
-    assert(READ_R_FLAG(regs, FLAG_C) == 0);
-
-    WRITE_R8(regs, REG_A, 0x0f);
-    cpu->mem_write(0x1000, 0xf0);
-    ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0x00);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 1);
-    assert(READ_R_FLAG(regs, FLAG_N) == 0);
-    assert(READ_R_FLAG(regs, FLAG_H) == 1);
-    assert(READ_R_FLAG(regs, FLAG_C) == 0);
-}
-
-void 
-test_or_r8_r8(gbc_cpu_t *cpu)
-{
-    cpu_register_t *regs = &(cpu->regs);
-    WRITE_R8(regs, REG_A, 0x0f);    
-    WRITE_R8(regs, REG_B, 0xf1);
-    uint8_t code[] = {0xb0}; // OR A, B
-    instruction_t ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0xff);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 0);
-    assert(READ_R_FLAG(regs, FLAG_N) == 0);
-    assert(READ_R_FLAG(regs, FLAG_H) == 0);
-    assert(READ_R_FLAG(regs, FLAG_C) == 0);
-
-    WRITE_R8(regs, REG_A, 0x00);
-    WRITE_R8(regs, REG_B, 0x00);
-    ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0x00);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 1);
-    assert(READ_R_FLAG(regs, FLAG_N) == 0);
-    assert(READ_R_FLAG(regs, FLAG_H) == 0);
-    assert(READ_R_FLAG(regs, FLAG_C) == 0);
-}
-
-void 
-test_or_r8_i8(gbc_cpu_t *cpu)
-{
-    cpu_register_t *regs = &(cpu->regs);
-    WRITE_R8(regs, REG_A, 0x0f);        
-    uint8_t code[] = {0xf6, 0xf1}; // OR A, 0xf1
-    instruction_t ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0xff);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 0);
-    assert(READ_R_FLAG(regs, FLAG_N) == 0);
-    assert(READ_R_FLAG(regs, FLAG_H) == 0);
-    assert(READ_R_FLAG(regs, FLAG_C) == 0);
-
-    WRITE_R8(regs, REG_A, 0x00);
-    code[1] = 0x0;
-    ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0x00);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 1);
-    assert(READ_R_FLAG(regs, FLAG_N) == 0);
-    assert(READ_R_FLAG(regs, FLAG_H) == 0);
-    assert(READ_R_FLAG(regs, FLAG_C) == 0);    
-}
-
-void 
-test_or_r8_m16(gbc_cpu_t *cpu)
-{
-    cpu_register_t *regs = &(cpu->regs);
-    WRITE_R8(regs, REG_A, 0x0f);        
-    WRITE_R16(regs, REG_HL, 0x1000);
-    cpu->mem_write(0x1000, 0xf1);
-    uint8_t code[] = {0xb6}; // OR A, (HL)
-    instruction_t ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0xff);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 0);
-    assert(READ_R_FLAG(regs, FLAG_N) == 0);
-    assert(READ_R_FLAG(regs, FLAG_H) == 0);
-    assert(READ_R_FLAG(regs, FLAG_C) == 0);
-
-    WRITE_R8(regs, REG_A, 0x00);
-    cpu->mem_write(0x1000, 0x00);
-    ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0x00);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 1);
-    assert(READ_R_FLAG(regs, FLAG_N) == 0);
-    assert(READ_R_FLAG(regs, FLAG_H) == 0);
-    assert(READ_R_FLAG(regs, FLAG_C) == 0);    
-}
-
-void 
-test_xor_r8_r8(gbc_cpu_t *cpu)
-{
-    cpu_register_t *regs = &(cpu->regs);
-    WRITE_R8(regs, REG_A, 0x0f);    
-    WRITE_R8(regs, REG_B, 0xf1);
-    uint8_t code[] = {0xa8}; // XOR A, B
-    instruction_t ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0xfe);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 0);
-    assert(READ_R_FLAG(regs, FLAG_N) == 0);
-    assert(READ_R_FLAG(regs, FLAG_H) == 0);
-    assert(READ_R_FLAG(regs, FLAG_C) == 0);
-
-    WRITE_R8(regs, REG_A, 0xff);
-    WRITE_R8(regs, REG_B, 0xff);
-    ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0x00);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 1);
-    assert(READ_R_FLAG(regs, FLAG_N) == 0);
-    assert(READ_R_FLAG(regs, FLAG_H) == 0);
-    assert(READ_R_FLAG(regs, FLAG_C) == 0);    
-}
-
-void 
-test_xor_r8_i8(gbc_cpu_t *cpu)
-{
-    cpu_register_t *regs = &(cpu->regs);
-    WRITE_R8(regs, REG_A, 0x0f);        
-    uint8_t code[] = {0xee, 0xf1}; // XOR A, 0xf1
-    instruction_t ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0xfe);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 0);
-    assert(READ_R_FLAG(regs, FLAG_N) == 0);
-    assert(READ_R_FLAG(regs, FLAG_H) == 0);
-    assert(READ_R_FLAG(regs, FLAG_C) == 0);
-
-    WRITE_R8(regs, REG_A, 0xff);
-    code[1] = 0xff;
-    ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0x00);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 1);
-    assert(READ_R_FLAG(regs, FLAG_N) == 0);
-    assert(READ_R_FLAG(regs, FLAG_H) == 0);
-    assert(READ_R_FLAG(regs, FLAG_C) == 0);    
-}
-
-void 
-test_xor_r8_m16(gbc_cpu_t *cpu)
-{
-    cpu_register_t *regs = &(cpu->regs);
-    WRITE_R8(regs, REG_A, 0x0f);        
-    WRITE_R16(regs, REG_HL, 0x1000);
-    cpu->mem_write(0x1000, 0xf1);
-    uint8_t code[] = {0xae}; // XOR A, (HL)
-    instruction_t ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0xfe);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 0);
-    assert(READ_R_FLAG(regs, FLAG_N) == 0);
-    assert(READ_R_FLAG(regs, FLAG_H) == 0);
-    assert(READ_R_FLAG(regs, FLAG_C) == 0);
-
-    WRITE_R8(regs, REG_A, 0xff);
-    cpu->mem_write(0x1000, 0xff);
-    ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0x00);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 1);
-    assert(READ_R_FLAG(regs, FLAG_N) == 0);
-    assert(READ_R_FLAG(regs, FLAG_H) == 0);
-    assert(READ_R_FLAG(regs, FLAG_C) == 0);    
-}
-
-void
-test_cp_r8_i8(gbc_cpu_t *cpu)
-{
-    cpu_register_t *regs = &(cpu->regs);
-    CLEAR_R_FLAG(regs, FLAG_Z);
-    WRITE_R8(regs, REG_A, 0x01);    
-    uint8_t code[] = {0xfe, 0x01}; // CP A, 0x01
-    instruction_t ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0x01);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 1);
-    assert(READ_R_FLAG(regs, FLAG_N) == 1);
-    assert(READ_R_FLAG(regs, FLAG_H) == 0);
-    assert(READ_R_FLAG(regs, FLAG_C) == 0);
-
-    WRITE_R8(regs, REG_A, 0x01);
-    code[1] = 0x02;
-    ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0x01);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 0);
-    assert(READ_R_FLAG(regs, FLAG_N) == 1);
-    assert(READ_R_FLAG(regs, FLAG_H) == 1);
-    assert(READ_R_FLAG(regs, FLAG_C) == 1);
-}
-
-void
-test_cp_r8_r8(gbc_cpu_t *cpu)
-{
-    cpu_register_t *regs = &(cpu->regs);
-    CLEAR_R_FLAG(regs, FLAG_Z);    
-    WRITE_R8(regs, REG_A, 0x01);
-    WRITE_R8(regs, REG_B, 0x01);
-    uint8_t code[] = {0xb8}; // CP A, B
-    instruction_t ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0x01);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 1);
-    assert(READ_R_FLAG(regs, FLAG_N) == 1);
-    assert(READ_R_FLAG(regs, FLAG_H) == 0);
-    assert(READ_R_FLAG(regs, FLAG_C) == 0);
-
-    WRITE_R8(regs, REG_A, 0x01);
-    WRITE_R8(regs, REG_B, 0x02);
-    ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0x01);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 0);
-    assert(READ_R_FLAG(regs, FLAG_N) == 1);
-    assert(READ_R_FLAG(regs, FLAG_H) == 1);
-    assert(READ_R_FLAG(regs, FLAG_C) == 1);    
-}
-
-void
-test_cp_r8_m16(gbc_cpu_t *cpu)
-{
-    cpu_register_t *regs = &(cpu->regs);
-    WRITE_R8(regs, REG_A, 0x01);
-    WRITE_R16(regs, REG_HL, 0x1000);
-    cpu->mem_write(0x1000, 0x01);
-    uint8_t code[] = {0xbe}; // CP A, (HL)
-    instruction_t ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0x01);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 1);
-    assert(READ_R_FLAG(regs, FLAG_N) == 1);
-    assert(READ_R_FLAG(regs, FLAG_H) == 0);
-    assert(READ_R_FLAG(regs, FLAG_C) == 0);
-
-    WRITE_R8(regs, REG_A, 0x01);
-    cpu->mem_write(0x1000, 0x02);
-    ins = decode(code);
-    ins.func(cpu, &ins);
-    assert(READ_R8(regs, REG_A) == 0x01);
-    assert(READ_R_FLAG(regs, FLAG_Z) == 0);
-    assert(READ_R_FLAG(regs, FLAG_N) == 1);
-    assert(READ_R_FLAG(regs, FLAG_H) == 1);
-    assert(READ_R_FLAG(regs, FLAG_C) == 1);    
-}
-
-void
-test_instructions() 
-{
-    gbc_cpu_t cpu = gbc_cpu_new(); 
-    gbc_memory_t mem = gbc_mem_new();
-    mem.read = _mem_read;
-    mem.write = _mem_write;
-
-    cpu.mem_read = mem.read;
-    cpu.mem_write = mem.write;
-
-    test_inc_r16(&cpu);
-    test_inc_r8(&cpu);
-    test_inc_m16(&cpu);
-
-    test_dec_r16(&cpu);
-    test_dec_r8(&cpu);
-    test_dec_m16(&cpu);
-
-    test_jr_nz_i8(&cpu);
-    test_rlca(&cpu);
-    test_rla(&cpu);
-
-    test_rrca(&cpu);
-    test_rra(&cpu);    
-    test_daa(&cpu);
-    test_jr(&cpu);
-
-    test_ld_r16_i16(&cpu);
-    test_ld_r8_i8(&cpu);
-
-    test_ld_sp_hl(&cpu);
-    test_ld_hl_sp_i8(&cpu);    
-    test_ldi_r8_m16(&cpu);
-    test_ldi_m16_r8(&cpu);
-    test_ldd_m16_r8(&cpu);
-    test_ldd_r8_m16(&cpu);
-    test_ld_r8_m16(&cpu);
-    test_ld_m16_i8(&cpu);
-    test_ld_m16_r8(&cpu);
-    test_ld_im16_r16(&cpu);
-    test_ld_im16_r8(&cpu);
-    test_ld_r8_r8(&cpu);
-
-    test_add_r16_i8(&cpu);
-    test_add_r16_r16(&cpu);
-    test_add_r8_i8(&cpu);
-    test_add_r8_r8(&cpu);
-    test_add_r8_m16(&cpu);
-
-    test_adc_r8_i8(&cpu);
-    test_adc_r8_r8(&cpu);
-    test_adc_r8_m16(&cpu);
-
-    test_sub_r8_i8(&cpu);
-    test_sub_r8_r8(&cpu);
-    test_sub_r8_m16(&cpu);
-
-    test_subc_r8_i8(&cpu);
-    test_subc_r8_r8(&cpu);
-    test_subc_r8_m16(&cpu);
-
-    test_and_r8_i8(&cpu);
-    test_and_r8_r8(&cpu);
-    test_and_r8_m16(&cpu);
-
-    test_or_r8_i8(&cpu);
-    test_or_r8_r8(&cpu);
-    test_or_r8_m16(&cpu);
-
-    test_xor_r8_i8(&cpu);
-    test_xor_r8_r8(&cpu);
-    test_xor_r8_m16(&cpu);    
-
-    test_cp_r8_i8(&cpu);
-    test_cp_r8_r8(&cpu);
-    test_cp_r8_m16(&cpu);
-}
-
+#include "test_instruction.c"
 #endif

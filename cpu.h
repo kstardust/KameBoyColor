@@ -28,8 +28,8 @@ typedef struct gbc_cpu gbc_cpu_t;
 #define REGISTER_PAIR(high, low)                 \
     REG_TYPE(high, low)                          \
     {                                            \
-        uint16_t REG_16_NAME(high, low);          \
-        REG_PAIR_TYPE(high, low)         \
+        uint16_t REG_16_NAME(high, low);         \
+        REG_PAIR_TYPE(high, low)                 \
         {                                        \
             uint8_t REG_8_NAME(low);             \
             uint8_t REG_8_NAME(high);            \
@@ -96,9 +96,9 @@ uint16_t swap_i16(uint16_t value)
 #define READ_16(reg) reg
 #define WRITE_16(reg, value) (reg) = (value)
 #else
-#define READ_I16(reg) (reg)
-#define READ_16(reg) reg
-#define WRITE_16(reg, value) (reg) = (value)
+#define READ_I16(reg)
+#define READ_16(reg) swap_i16(reg)
+#define WRITE_16(reg, value) (reg) = swap_i16(value)
 #endif
 
 #define READ_I8(reg) (reg)                  /* immediate 8-bit */
