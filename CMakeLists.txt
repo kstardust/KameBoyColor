@@ -12,9 +12,10 @@ endif()
 set(SOURCES
     gbc.c
     cpu.c
+    mbc.c
     cartridge.c
     memory.c
-    utils.c
+    utils.c    
     instruction_set.c
     main.c)
 

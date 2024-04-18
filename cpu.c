@@ -11,6 +11,13 @@ gbc_cpu_new()
 }
 
 void
+gbc_cpu_connect(gbc_cpu_t *cpu, gbc_memory_t *mem)
+{
+    cpu->mem_data = mem;
+    cpu->mem_read = mem->read;
+    cpu->mem_write = mem->write;    
+}
+
 cpu_cycle(gbc_cpu_t *cpu)
 {
 }

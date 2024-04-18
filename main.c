@@ -3,13 +3,14 @@
 #include <fcntl.h>
 #include "cpu.h"
 #include "memory.h"
+#include "mbc.h"
 #include "common.h"
 #include "cartridge.h"
 #include "instruction_set.h"
 
 void test();
 
-#ifdef DEBUG
+#ifndef DEBUG
 int main()
 {
     init_instruction_set();    
@@ -23,13 +24,12 @@ int main()
 {
     init_instruction_set();
 
-    gbc_t gbc = gbc_new();
-    gbc_memory_t mem = gbc.mem;
-    gbc_cpu_t cpu = gbc.cpu;
-    cpu.mem_write = mem.write;
-    cpu.mem_read = mem.read;
+    gbc_t gbc;
+    gbc_init(&gbc);
+    gbc_memory_t *mem = &(gbc.mem);
+    gbc_cpu_t *cpu = &(gbc.cpu);
     
-    FILE* cartridge = fopen("C:\\Users\\liqilong\\Desktop\\Dev\\gbc\\test.gbc", "rb");
+    FILE* cartridge = fopen("C:\\Users\\liqilong\\Desktop\\Dev\\gbc\\tetris_dx.gbc", "rb");
     if (!cartridge) {
         printf("Failed to open cartridge\n");
         return 1;
@@ -49,6 +49,7 @@ int main()
     fclose(cartridge);
 
     cartridge_t *cart = cartridge_load((uint8_t*)data);
+    gbc_mbc_init_with_cart(&gbc.mbc, cart);
 
     if (!cart) {
         printf("Failed to load cartridge\n");
@@ -62,7 +63,7 @@ int main()
         LOG_INFO("Addr: %x\n", i+0x150);
         i += ins.size;
         if (ins.func) {
-            ins.func(&cpu, &ins);
+            ins.func(cpu, &ins);
         } else {
             LOG_ERROR("Unknown instruction [0x%x]\n", ins.opcode);
         }
@@ -77,7 +78,8 @@ int main()
 void
 test() 
 {
-    gbc_t gbc = gbc_new();
+    gbc_t gbc;
+    gbc_init(&gbc);
     gbc_memory_t mem = gbc.mem;
     gbc_cpu_t cpu = gbc.cpu;
     cpu.mem_write = mem.write;

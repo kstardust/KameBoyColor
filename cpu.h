@@ -74,9 +74,12 @@ struct gbc_cpu
     /* memory op */
     memory_read mem_read;
     memory_write mem_write;
+    void *mem_data;
 };
 
 gbc_cpu_t gbc_cpu_new();
+void gbc_cpu_connect(gbc_cpu_t *cpu, gbc_memory_t *mem);
+
 
 inline 
 uint16_t swap_i16(uint16_t value)

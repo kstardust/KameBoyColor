@@ -1,14 +1,12 @@
 #include "gbc.h"
 
-gbc_t
-gbc_new()
+void
+gbc_init(gbc_t *gbc)
 {
-    gbc_t gbc;
-    gbc.cpu = gbc_cpu_new();
-    gbc.mem = gbc_mem_new();
+    gbc->cpu = gbc_cpu_new();
+    gbc->mbc = gbc_mbc_new();
+    gbc->mem = gbc_mem_new();
 
-    gbc.cpu.mem_read = gbc.mem.read;
-    gbc.cpu.mem_write = gbc.mem.write;
-    
-    return gbc;
+    gbc_cpu_connect(&gbc->cpu, &gbc->mem);
+    gbc_mbc_connect(&gbc->mbc, &gbc->mem);
 }

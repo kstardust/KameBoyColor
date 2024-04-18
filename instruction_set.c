@@ -48,12 +48,12 @@ inc_m16(gbc_cpu_t *cpu, instruction_t *ins)
     size_t reg_offset = (size_t)ins->op1;
     cpu_register_t *regs = &(cpu->regs);
     uint16_t addr = READ_R16(regs, reg_offset);        
-    uint16_t v = cpu->mem_read(addr);    
+    uint16_t v = cpu->mem_read(cpu->mem_data, addr);    
     uint8_t hc = HALF_CARRY_ADD(v, 1);
 
     v++;
     v &= UINT8_MASK;
-    cpu->mem_write(addr, (uint8_t)v);
+    cpu->mem_write(cpu->mem_data, addr, (uint8_t)v);
 
     SET_R_FLAG_VALUE(regs, FLAG_Z, v == 0);
     CLEAR_R_FLAG(regs, FLAG_N);
@@ -63,7 +63,7 @@ inc_m16(gbc_cpu_t *cpu, instruction_t *ins)
 static void 
 dec_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
-    LOG_INFO("DEC r8: %s\n", ins->name);
+    LOG_INFO("DEC r8: %s\n", ins->name); 
 
     size_t reg_offset = (size_t)ins->op1;
     cpu_register_t *regs = &(cpu->regs);
@@ -98,12 +98,12 @@ dec_m16(gbc_cpu_t *cpu, instruction_t *ins)
     size_t reg_offset = (size_t)ins->op1;
     cpu_register_t *regs = &(cpu->regs);
     uint16_t addr = READ_R16(regs, reg_offset);        
-    uint16_t v = cpu->mem_read(addr);    
+    uint16_t v = cpu->mem_read(cpu->mem_data, addr);    
     uint8_t hc = HALF_CARRY_SUB(v, 1);
 
     v--;
     v &= UINT8_MASK;
-    cpu->mem_write(addr, (uint8_t)v);
+    cpu->mem_write(cpu->mem_data, addr, (uint8_t)v);
 
     SET_R_FLAG_VALUE(regs, FLAG_Z, v == 0);
     SET_R_FLAG(regs, FLAG_N);
@@ -353,7 +353,7 @@ ldi_r8_m16(gbc_cpu_t *cpu, instruction_t *ins)
     size_t reg_offset = (size_t)ins->op1;
     size_t reg2_offset = (size_t)ins->op2;
     uint16_t addr = READ_R16(regs, reg2_offset);
-    uint8_t value = cpu->mem_read(addr);
+    uint8_t value = cpu->mem_read(cpu->mem_data, addr);
     WRITE_R8(regs, reg_offset, value);
     addr++;
     WRITE_R16(regs, reg2_offset, addr);
@@ -369,7 +369,7 @@ ldi_m16_r8(gbc_cpu_t *cpu, instruction_t *ins)
     size_t reg2_offset = (size_t)ins->op2;
     uint16_t addr = READ_R16(regs, reg_offset);
     uint8_t value = READ_R8(regs, reg2_offset);
-    cpu->mem_write(addr, value);
+    cpu->mem_write(cpu->mem_data, addr, value);
     addr++;
     WRITE_R16(regs, reg_offset, addr);
 }
@@ -382,7 +382,7 @@ ldd_r8_m16(gbc_cpu_t *cpu, instruction_t *ins)
     size_t reg_offset = (size_t)ins->op1;
     size_t reg2_offset = (size_t)ins->op2;
     uint16_t addr = READ_R16(regs, reg2_offset);
-    uint8_t value = cpu->mem_read(addr);
+    uint8_t value = cpu->mem_read(cpu->mem_data, addr);
     WRITE_R8(regs, reg_offset, value);
     addr--;
     WRITE_R16(regs, reg2_offset, addr);    
@@ -398,7 +398,7 @@ ldd_m16_r8(gbc_cpu_t *cpu, instruction_t *ins)
     size_t reg2_offset = (size_t)ins->op2;
     uint16_t addr = READ_R16(regs, reg_offset);
     uint8_t value = READ_R8(regs, reg2_offset);
-    cpu->mem_write(addr, value);
+    cpu->mem_write(cpu->mem_data, addr, value);
     addr--;
     WRITE_R16(regs, reg_offset, addr);
 }
@@ -412,7 +412,7 @@ ld_m16_i8(gbc_cpu_t *cpu, instruction_t *ins)
     size_t reg_offset = (size_t)ins->op1;
     uint16_t addr = READ_R16(regs, reg_offset);
     uint8_t value = ins->opcode_ext.i8;
-    cpu->mem_write(addr, value);       
+    cpu->mem_write(cpu->mem_data, addr, value);       
 }
 
 static void
@@ -424,7 +424,7 @@ ld_r8_m16(gbc_cpu_t *cpu, instruction_t *ins)
     size_t reg_offset = (size_t)ins->op1;
     size_t reg2_offset = (size_t)ins->op2;
     uint16_t addr = READ_R16(regs, reg2_offset);
-    uint8_t value = cpu->mem_read(addr);
+    uint8_t value = cpu->mem_read(cpu->mem_data, addr);
     WRITE_R8(regs, reg_offset, value);    
 }
 
@@ -439,7 +439,7 @@ ld_m16_r8(gbc_cpu_t *cpu, instruction_t *ins)
 
     uint16_t addr = READ_R16(regs, reg_offset);
     uint8_t value = READ_R8(regs, reg2_offset);
-    cpu->mem_write(addr, value);    
+    cpu->mem_write(cpu->mem_data, addr, value);    
 }
 
 static void 
@@ -451,8 +451,8 @@ ld_im16_r16(gbc_cpu_t *cpu, instruction_t *ins)
     size_t reg_offset = (size_t)ins->op2;
     uint16_t addr = ins->opcode_ext.i16;
     uint16_t value = READ_R16(regs, reg_offset);    
-    cpu->mem_write(addr, value & UINT8_MASK);
-    cpu->mem_write(addr + 1, value >> 8);
+    cpu->mem_write(cpu->mem_data, addr, value & UINT8_MASK);
+    cpu->mem_write(cpu->mem_data, addr + 1, value >> 8);
 }
 
 static void 
@@ -464,7 +464,7 @@ ld_im16_r8(gbc_cpu_t *cpu, instruction_t *ins)
     size_t reg_offset = (size_t)ins->op2;
     uint16_t addr = ins->opcode_ext.i16;
     uint8_t value = READ_R8(regs, reg_offset);
-    cpu->mem_write(addr, value);    
+    cpu->mem_write(cpu->mem_data, addr, value);    
 }
 
 static void
@@ -575,7 +575,7 @@ add_r8_m16(gbc_cpu_t *cpu, instruction_t *ins)
     uint16_t addr = READ_R16(regs, (size_t)ins->op2);        
 
     uint8_t v1 = READ_R8(regs, reg_offset);
-    uint8_t v2 = cpu->mem_read(addr);
+    uint8_t v2 = cpu->mem_read(cpu->mem_data, addr);
     uint8_t hc = HALF_CARRY_ADD(v1, v2);        
     uint8_t carry = (v1 + v2) > UINT8_MASK;
     uint8_t result = v1 + v2;    
@@ -644,7 +644,7 @@ adc_r8_m16(gbc_cpu_t *cpu, instruction_t *ins)
     uint16_t addr = READ_R16(regs, (size_t)ins->op2);        
 
     uint8_t v1 = READ_R8(regs, reg_offset);
-    uint8_t v2 = cpu->mem_read(addr);
+    uint8_t v2 = cpu->mem_read(cpu->mem_data, addr);
     uint8_t carry = READ_R_FLAG(regs, FLAG_C);
 
     uint8_t hc = HALF_CARRY_ADC(v1, v2, carry);
@@ -711,7 +711,7 @@ sub_r8_m16(gbc_cpu_t *cpu, instruction_t *ins)
     uint16_t addr = READ_R16(regs, (size_t)ins->op2);        
 
     uint8_t v1 = READ_R8(regs, reg_offset);
-    uint8_t v2 = cpu->mem_read(addr);
+    uint8_t v2 = cpu->mem_read(cpu->mem_data, addr);
     uint8_t hc = HALF_CARRY_SUB(v1, v2);
     uint8_t carry = v1 < v2;
     uint8_t result = v1 - v2;
@@ -778,7 +778,7 @@ subc_r8_m16(gbc_cpu_t *cpu, instruction_t *ins)
     uint16_t addr = READ_R16(regs, (size_t)ins->op2);        
 
     uint8_t v1 = READ_R8(regs, reg_offset);
-    uint8_t v2 = cpu->mem_read(addr);
+    uint8_t v2 = cpu->mem_read(cpu->mem_data, addr);
     uint8_t carry = READ_R_FLAG(regs, FLAG_C);
 
     uint8_t hc = HALF_CARRY_SBC(v1, v2, carry);
@@ -822,7 +822,7 @@ and_r8_m16(gbc_cpu_t *cpu, instruction_t *ins)
     size_t reg_offset = (size_t)ins->op1;
     uint16_t addr = READ_R16(regs, (size_t)ins->op2);
     uint8_t v1 = READ_R8(regs, reg_offset);
-    uint8_t v2 = cpu->mem_read(addr);
+    uint8_t v2 = cpu->mem_read(cpu->mem_data, addr);
 
     uint8_t result = v1 & v2;
     WRITE_R8(regs, reg_offset, result);
@@ -900,7 +900,7 @@ or_r8_m16(gbc_cpu_t *cpu, instruction_t *ins)
     size_t reg_offset = (size_t)ins->op1;
     uint16_t addr = READ_R16(regs, (size_t)ins->op2);
     uint8_t v1 = READ_R8(regs, reg_offset);
-    uint8_t v2 = cpu->mem_read(addr);
+    uint8_t v2 = cpu->mem_read(cpu->mem_data, addr);
 
     uint8_t result = v1 | v2;
     WRITE_R8(regs, reg_offset, result);
@@ -959,7 +959,7 @@ xor_r8_m16(gbc_cpu_t *cpu, instruction_t *ins)
     size_t reg_offset = (size_t)ins->op1;
     uint16_t addr = READ_R16(regs, (size_t)ins->op2);
     uint8_t v1 = READ_R8(regs, reg_offset);
-    uint8_t v2 = cpu->mem_read(addr);
+    uint8_t v2 = cpu->mem_read(cpu->mem_data, addr);
 
     uint8_t result = v1 ^ v2;
     WRITE_R8(regs, reg_offset, result);
@@ -1019,7 +1019,7 @@ cp_r8_m16(gbc_cpu_t *cpu, instruction_t *ins)
     uint16_t addr = READ_R16(regs, (size_t)ins->op2);
 
     uint8_t v1 = READ_R8(regs, reg_offset);
-    uint8_t v2 = cpu->mem_read(addr);
+    uint8_t v2 = cpu->mem_read(cpu->mem_data, addr);
     uint8_t hc = HALF_CARRY_SUB(v1, v2);
     uint8_t carry = v1 < v2;
     uint8_t result = v1 - v2;
@@ -1040,8 +1040,8 @@ _ret(gbc_cpu_t *cpu, instruction_t *ins)
     size_t reg_offset = REG_PC;
     uint16_t sp = READ_R16(regs, REG_SP);
 
-    uint8_t lo = cpu->mem_read(sp);
-    uint8_t hi = cpu->mem_read(sp + 1);
+    uint8_t lo = cpu->mem_read(cpu->mem_data, sp);
+    uint8_t hi = cpu->mem_read(cpu->mem_data, sp + 1);
 
     WRITE_R16(regs, reg_offset, (hi << 8) | lo);
     WRITE_R16(regs, REG_SP, sp + 2);
@@ -1202,8 +1202,8 @@ pop_r16(gbc_cpu_t *cpu, instruction_t *ins)
     size_t reg_offset = (size_t)ins->op1;
     uint16_t sp = READ_R16(regs, REG_SP);
 
-    uint8_t lo = cpu->mem_read(sp);
-    uint8_t hi = cpu->mem_read(sp + 1);
+    uint8_t lo = cpu->mem_read(cpu->mem_data, sp);
+    uint8_t hi = cpu->mem_read(cpu->mem_data, sp + 1);
 
     WRITE_R16(regs, reg_offset, (hi << 8) | lo);
     WRITE_R16(regs, REG_SP, sp + 2);
@@ -1220,8 +1220,8 @@ push_r16(gbc_cpu_t *cpu, instruction_t *ins)
     uint16_t value = READ_R16(regs, reg_offset);
     uint16_t sp = READ_R16(regs, REG_SP);    
 
-    cpu->mem_write(sp - 1, value >> 8);
-    cpu->mem_write(sp - 2, value & UINT8_MASK);
+    cpu->mem_write(cpu->mem_data, sp - 1, value >> 8);
+    cpu->mem_write(cpu->mem_data, sp - 2, value & UINT8_MASK);
 
     WRITE_R16(regs, REG_SP, sp - 2);
 }
@@ -1234,7 +1234,7 @@ ldh_im8_r8(gbc_cpu_t *cpu, instruction_t *ins)
     cpu_register_t *regs = &(cpu->regs);
     size_t reg_offset = (size_t)ins->op2;
     uint16_t addr = 0xFF00 + ins->opcode_ext.i8;    
-    cpu->mem_write(addr, READ_R8(regs, reg_offset));
+    cpu->mem_write(cpu->mem_data, addr, READ_R8(regs, reg_offset));
 }
 
 static void
@@ -1245,7 +1245,7 @@ ldh_r8_im8(gbc_cpu_t *cpu, instruction_t *ins)
     cpu_register_t *regs = &(cpu->regs);
     size_t reg_offset = (size_t)ins->op1;
     uint16_t addr = 0xFF00 + ins->opcode_ext.i8;    
-    WRITE_R8(regs, reg_offset, cpu->mem_read(addr));
+    WRITE_R8(regs, reg_offset, cpu->mem_read(cpu->mem_data, addr));
 }
 
 static void
@@ -1258,7 +1258,7 @@ ldh_r8_m8(gbc_cpu_t *cpu, instruction_t *ins)
     size_t reg_offset2 = (size_t)ins->op2;
 
     uint16_t addr = 0xFF00 + READ_R8(regs, reg_offset2);
-    WRITE_R8(regs, reg_offset, cpu->mem_read(addr));
+    WRITE_R8(regs, reg_offset, cpu->mem_read(cpu->mem_data, addr));
 }
 
 static void
@@ -1271,7 +1271,7 @@ ldh_m8_r8(gbc_cpu_t *cpu, instruction_t *ins)
     size_t reg_offset2 = (size_t)ins->op2;
 
     uint16_t addr = 0xFF00 + READ_R8(regs, reg_offset);
-    cpu->mem_write(addr, READ_R8(regs, reg_offset2));
+    cpu->mem_write(cpu->mem_data, addr, READ_R8(regs, reg_offset2));
 }
 
 static void
@@ -1285,8 +1285,8 @@ _call_i16(gbc_cpu_t *cpu, instruction_t *ins)
     uint16_t sp = READ_R16(regs, REG_SP);
     pc += ins->size;
 
-    cpu->mem_write(sp - 1, pc >> 8);
-    cpu->mem_write(sp - 2, pc & UINT8_MASK);
+    cpu->mem_write(cpu->mem_data, sp - 1, pc >> 8);
+    cpu->mem_write(cpu->mem_data, sp - 2, pc & UINT8_MASK);
 
     WRITE_R16(regs, REG_SP, sp - 2);
     _jp_addr16(cpu, ins, addr);
@@ -1411,12 +1411,12 @@ cb_rlc_m16(gbc_cpu_t *cpu, instruction_t *ins)
 
     cpu_register_t *regs = &(cpu->regs);
     uint16_t addr = READ_R16(regs, (size_t)ins->op1);
-    uint8_t v = cpu->mem_read(addr);
+    uint8_t v = cpu->mem_read(cpu->mem_data, addr);
 
     uint8_t carry = v >> 7;
     uint8_t result = (v << 1) | carry;
 
-    cpu->mem_write(addr, result);
+    cpu->mem_write(cpu->mem_data, addr, result);
     SET_R_FLAG_VALUE(regs, FLAG_C, carry);
     SET_R_FLAG_VALUE(regs, FLAG_Z, result == 0);
     CLEAR_R_FLAG(regs, FLAG_N);
@@ -1450,11 +1450,11 @@ cb_rrc_m16(gbc_cpu_t *cpu, instruction_t *ins)
     cpu_register_t *regs = &(cpu->regs);
     uint16_t addr = READ_R16(regs, (size_t)ins->op1);
 
-    uint8_t value = cpu->mem_read(addr);
+    uint8_t value = cpu->mem_read(cpu->mem_data, addr);
     uint8_t carry = value & 0x1;
     uint8_t result = (value >> 1) | (carry << 7);
 
-    cpu->mem_write(addr, result);
+    cpu->mem_write(cpu->mem_data, addr, result);
     SET_R_FLAG_VALUE(regs, FLAG_C, carry);
     SET_R_FLAG_VALUE(regs, FLAG_Z, result == 0);
     CLEAR_R_FLAG(regs, FLAG_N);
@@ -1487,12 +1487,12 @@ cb_rl_m16(gbc_cpu_t *cpu, instruction_t *ins)
 
     cpu_register_t *regs = &(cpu->regs);
     uint16_t addr = READ_R16(regs, (size_t)ins->op1);
-    uint8_t value = cpu->mem_read(addr);
+    uint8_t value = cpu->mem_read(cpu->mem_data, addr);
     uint8_t carry = READ_R_FLAG(regs, FLAG_C);
     uint8_t result = (value << 1) | carry;
     carry = value >> 7;
 
-    cpu->mem_write(addr, result);
+    cpu->mem_write(cpu->mem_data, addr, result);
     SET_R_FLAG_VALUE(regs, FLAG_C, carry);
     SET_R_FLAG_VALUE(regs, FLAG_Z, result == 0);
     CLEAR_R_FLAG(regs, FLAG_N);
@@ -1525,12 +1525,12 @@ cb_rr_m16(gbc_cpu_t *cpu, instruction_t *ins)
 
     cpu_register_t *regs = &(cpu->regs);
     uint16_t addr = READ_R16(regs, (size_t)ins->op1);
-    uint8_t value = cpu->mem_read(addr);
+    uint8_t value = cpu->mem_read(cpu->mem_data, addr);
     uint8_t carry = READ_R_FLAG(regs, FLAG_C);
     uint8_t result = (value >> 1) | (carry << 7);
     carry = value & 0x1;
 
-    cpu->mem_write(addr, result);
+    cpu->mem_write(cpu->mem_data, addr, result);
     SET_R_FLAG_VALUE(regs, FLAG_C, carry);
     SET_R_FLAG_VALUE(regs, FLAG_Z, result == 0);
     CLEAR_R_FLAG(regs, FLAG_N);
@@ -1563,12 +1563,12 @@ cb_sla_m16(gbc_cpu_t *cpu, instruction_t *ins)
 
     cpu_register_t *regs = &(cpu->regs);
     uint16_t addr = READ_R16(regs, (size_t)ins->op1);
-    uint8_t value = cpu->mem_read(addr);
+    uint8_t value = cpu->mem_read(cpu->mem_data, addr);
 
     uint8_t carry = value >> 7;
     uint8_t result = value << 1;
 
-    cpu->mem_write(addr, result);
+    cpu->mem_write(cpu->mem_data, addr, result);
     SET_R_FLAG_VALUE(regs, FLAG_C, carry);
     SET_R_FLAG_VALUE(regs, FLAG_Z, result == 0);
     CLEAR_R_FLAG(regs, FLAG_N);
@@ -1601,12 +1601,12 @@ cb_sra_m16(gbc_cpu_t *cpu, instruction_t *ins)
 
     cpu_register_t *regs = &(cpu->regs);
     uint16_t addr = READ_R16(regs, (size_t)ins->op1);
-    uint8_t value = cpu->mem_read(addr);
+    uint8_t value = cpu->mem_read(cpu->mem_data, addr);
 
     uint8_t carry = value & 0x1;
     uint8_t result = (value >> 1) | (value & 0x80);    
 
-    cpu->mem_write(addr, result);
+    cpu->mem_write(cpu->mem_data, addr, result);
     SET_R_FLAG_VALUE(regs, FLAG_C, carry);
     SET_R_FLAG_VALUE(regs, FLAG_Z, result == 0);
     CLEAR_R_FLAG(regs, FLAG_N);
@@ -1639,11 +1639,11 @@ cb_swap_m16(gbc_cpu_t *cpu, instruction_t *ins)
     cpu_register_t *regs = &(cpu->regs);
     size_t reg_offset = (size_t)ins->op1;
     uint16_t addr = READ_R16(regs, reg_offset);
-    uint8_t value = cpu->mem_read(addr);
+    uint8_t value = cpu->mem_read(cpu->mem_data, addr);
 
     uint8_t result = (value >> 4) | ((value << 4) & 0xf0);
 
-    cpu->mem_write(addr, result);
+    cpu->mem_write(cpu->mem_data, addr, result);
     CLEAR_R_FLAG(regs, FLAG_N);
     CLEAR_R_FLAG(regs, FLAG_H);
     CLEAR_R_FLAG(regs, FLAG_C);
@@ -1675,12 +1675,12 @@ cb_srl_m16(gbc_cpu_t *cpu, instruction_t *ins)
     LOG_INFO("SRL: %s\n", ins->name);
     cpu_register_t *regs = &(cpu->regs);
     uint16_t addr = READ_R16(regs, (size_t)ins->op1);
-    uint8_t value = cpu->mem_read(addr);
+    uint8_t value = cpu->mem_read(cpu->mem_data, addr);
 
     uint8_t carry = value & 0x1;
     uint8_t result = value >> 1;
 
-    cpu->mem_write(addr, result);
+    cpu->mem_write(cpu->mem_data, addr, result);
     SET_R_FLAG_VALUE(regs, FLAG_C, carry);
     SET_R_FLAG_VALUE(regs, FLAG_Z, result == 0);
     CLEAR_R_FLAG(regs, FLAG_N);
@@ -1713,7 +1713,7 @@ cb_bit_m16(gbc_cpu_t *cpu, instruction_t *ins)
     uint8_t bit = (uint8_t)ins->op1;
     size_t reg_offset = (size_t)ins->op2;
     uint16_t addr = READ_R16(regs, reg_offset);
-    uint8_t value = cpu->mem_read(addr);
+    uint8_t value = cpu->mem_read(cpu->mem_data, addr);
 
     uint8_t result = value & (1 << bit);
 
@@ -1746,11 +1746,11 @@ cb_res_m16(gbc_cpu_t *cpu, instruction_t *ins)
     uint8_t bit = (uint8_t)ins->op1;
     size_t reg_offset = (size_t)ins->op2;
     uint16_t addr = READ_R16(regs, reg_offset);
-    uint8_t value = cpu->mem_read(addr);
+    uint8_t value = cpu->mem_read(cpu->mem_data, addr);
 
     uint8_t result = value & ~(1 << bit);
 
-    cpu->mem_write(addr, result);
+    cpu->mem_write(cpu->mem_data, addr, result);
 }
 
 static void
@@ -1777,11 +1777,11 @@ cb_set_m16(gbc_cpu_t *cpu, instruction_t *ins)
     uint8_t bit = (uint8_t)ins->op1;
     size_t reg_offset = (size_t)ins->op2;
     uint16_t addr = READ_R16(regs, reg_offset);
-    uint8_t value = cpu->mem_read(addr);
+    uint8_t value = cpu->mem_read(cpu->mem_data, addr);
 
     uint8_t result = value | (1 << bit);
 
-    cpu->mem_write(addr, result);
+    cpu->mem_write(cpu->mem_data, addr, result);
 }
 
 /* DO NOT MODIFY INSTUCTIONS DIRECTLY, COPY THEM BEFORE MODIFYING */

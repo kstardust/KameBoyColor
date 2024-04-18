@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "cartridge.h"
 #include "utils.h"
+#include "common.h"
 
 #define LOGO_ROW 8
 
@@ -58,8 +59,7 @@ cartridge_load(uint8_t *data)
     printf("Title: %s\n", cartridge->title);
     printf("ROM Size: %dk\n", cartridge_rom_size(cartridge) / 1024);
     
-    switch (cartridge->ram_size)
-    {
+    switch (cartridge->ram_size) {
         case 0:
             printf("RAM Size: None\n");
             break;
@@ -79,9 +79,12 @@ cartridge_load(uint8_t *data)
             printf("RAM Size: 64k\n");
             break;
         default:
-            printf("RAM Size: Unknown\n");
+            LOG_ERROR("RAM Size: Unknown\n");
+            abort();
             break;            
     }
+
+    printf("Cartridge Type: $%x\n", cartridge->cartridge_type);
 
     printf("Manufacturer Code: %c%c%c%c\n", 
         ((char*)&(cartridge->cart_manufacturer_code))[0],
