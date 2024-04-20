@@ -7,6 +7,9 @@
 typedef struct cpu_register cpu_register_t;
 typedef struct gbc_cpu gbc_cpu_t;
 
+#define CLOCK_RATE 8388608                          /* 8.38 MHz */
+#define CLOCK_CYCLE (1.0 / CLOCK_RATE * 1000000000) /* nanoseconds */
+
 #define OFFSET_OF(type, field) \
     ((size_t) &((type *)0)->field)
 
@@ -70,22 +73,17 @@ struct cpu_register
 
 struct gbc_cpu
 {    
-    cpu_register_t regs;
-    /* memory op */
-    memory_read mem_read;
+    cpu_register_t regs;    
+
+    memory_read mem_read;  /* memory op */
     memory_write mem_write;
     void *mem_data;
+
+    uint64_t cycles;
+    uint16_t ins_cycles;   /* current instruction cost */    
 };
 
-void gbc_cpu_init(gbc_cpu_t *cpu);
-void gbc_cpu_connect(gbc_cpu_t *cpu, gbc_memory_t *mem);
-
-
-inline 
-uint16_t swap_i16(uint16_t value)
-{
-    return (value >> 8) | (value << 8);
-}
+#define swap_i16(value) (uint16_t)((value >> 8) | (value << 8));
 
 //#if defined(WIN32) || defined(_WIN32) || defined(__WIN32)
 /* https://www.c-faq.com/cpp/ifendian.html */
@@ -127,5 +125,9 @@ uint16_t swap_i16(uint16_t value)
 #define SET_R_FLAG(reg, flag) WRITE_R8(reg, REG_F, (READ_R8(reg, REG_F) | flag))
 #define CLEAR_R_FLAG(reg, flag) WRITE_R8(reg, REG_F, (READ_R8(reg, REG_F) & ~flag))
 #define SET_R_FLAG_VALUE(reg, flag, value) ((value) ? (SET_R_FLAG(reg, flag)) : (CLEAR_R_FLAG(reg, flag)))
+
+void gbc_cpu_init(gbc_cpu_t *cpu);
+void gbc_cpu_connect(gbc_cpu_t *cpu, gbc_memory_t *mem);
+void gbc_cpu_cycle(gbc_cpu_t *cpu);
 
 #endif

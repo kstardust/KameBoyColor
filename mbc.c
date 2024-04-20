@@ -138,6 +138,21 @@ gbc_mbc_init_with_cart(gbc_mbc_t *mbc, cartridge_t *cart)
 static uint32_t
 translate_mbc1_addr(gbc_mbc_t *mbc, uint16_t addr)
 {
+    if (IN_RANGE(addr, MBC1_ROM_BANK_N_BEGIN, MBC1_ROM_BANK_N_END)) {
+        uint8_t bank = 0;
+        if (mbc->mode == MBC1_BANKING_MODE_ROM) {
+            bank = mbc->rom_bank | (mbc->ram_bank << MBC1_ROM_BANK_MASK_SHIFT);
+        }
+        addr = (bank << ROM_ADDR_MASK_SHIFT) | (addr & ROM_ADDR_MASK);
+
+    } else if (IN_RANGE(addr, MBC1_RAM_BEGIN, MBC1_RAM_END)) {
+        uint8_t bank = 0;
+        if (mbc->mode == MBC1_BANKING_MODE_RAM) {
+            bank = mbc->ram_bank;            
+        }
+        addr = (bank << RAM_ADDR_MASK_SHIFT) | (addr & RAM_ADDR_MASK);
+    }
+
     return addr;
 }
 
@@ -148,17 +163,36 @@ mbc1_read(gbc_mbc_t *mbc, uint16_t addr)
 
     if (IN_RANGE(addr, MBC1_ROM_BANK0_BEGIN, MBC1_ROM_BANK0_END)) {
         return cartridge_code(mbc->cart)[addr];
+
     } else if (IN_RANGE(addr, MBC1_ROM_BANK_N_BEGIN, MBC1_ROM_BANK_N_END)) {
         uint32_t mbc1_rom_addr = translate_mbc1_addr(mbc, addr);
-        
-    } else if (IN_RANGE(addr, MBC1_RAM_BEGIN, MBC1_RAM_END)) {
+        uint16_t raddr = mbc1_rom_addr & ROM_ADDR_MASK;
+        uint8_t bank = (mbc1_rom_addr >> ROM_ADDR_MASK_SHIFT) & MBC1_ROM_BANK_MASK;
 
-    } else {
-        LOG_ERROR("[MBC1]Invalid read: addr: %x\n", addr);
-        abort();
+        if (bank >= mbc->rom_bank_size) {
+            LOG_ERROR("[MBC1]Invalid read: addr: %x. Trying to read from invalid ROM bank: %d, bank_size: %d\n",
+                        addr, bank, mbc->rom_bank_size);             
+            abort();
+        }
+        
+        return mbc->rom_banks[bank * ROM_BANK_SIZE + raddr];
+
+    } else if (IN_RANGE(addr, MBC1_RAM_BEGIN, MBC1_RAM_END)) {
+        uint32_t mbc1_ram_addr = translate_mbc1_addr(mbc, addr);
+        uint16_t raddr = mbc1_ram_addr & RAM_ADDR_MASK;
+        uint8_t bank = (mbc1_ram_addr >> RAM_ADDR_MASK_SHIFT) & MBC1_RAM_BANK_MASK;
+
+        if (bank >= mbc->ram_bank_size) {
+            LOG_ERROR("[MBC1]Invalid read: addr: %x. Trying to read from invalid RAM bank: %d, bank_size: %d\n",
+                        addr, bank, mbc->ram_bank_size);             
+            abort();
+        }
+
+        return mbc->ram_banks[bank * RAM_BANK_SIZE + raddr];
     }
-    
-    return 0;
+
+    LOG_ERROR("[MBC1]Invalid read: addr: %x\n", addr);
+    abort();
 }
 
 uint8_t
@@ -169,7 +203,7 @@ mbc1_write(gbc_mbc_t *mbc, uint16_t addr, uint8_t data)
 
     if (IN_RANGE(addr, MBC1_ROM_BEGIN, MBC1_ROM_END)) {
 
-        if (IN_RANGE(addr, MBC1_REG_RAM_ENABLE_BEGIN, MBC1_REG_RAM_ENABLE_END)) {            
+        if (IN_RANGE(addr, MBC1_REG_RAM_ENABLE_BEGIN, MBC1_REG_RAM_ENABLE_END)) {
             result = data & 0x0f;
             mbc->ram_enabled = result;
             LOG_DEBUG("[MBC1]RAM enabled: %d\n", mbc->ram_enabled);

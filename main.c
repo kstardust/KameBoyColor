@@ -10,7 +10,7 @@
 
 void test();
 
-#ifdef DEBUG
+#ifndef DEBUG
 int main()
 {
     init_instruction_set();    
@@ -22,54 +22,11 @@ int main()
 
 int main()
 {
-    init_instruction_set();
-
     gbc_t gbc;
-    gbc_init(&gbc);
-    gbc_memory_t *mem = &(gbc.mem);
-    gbc_cpu_t *cpu = &(gbc.cpu);
-    
-    FILE* cartridge = fopen("C:\\Users\\liqilong\\Desktop\\Dev\\gbc\\tetris_dx.gbc", "rb");
-    if (!cartridge) {
-        printf("Failed to open cartridge\n");
-        return 1;
-    }
 
-    fseek(cartridge, 0, SEEK_END);
-    size_t size = ftell(cartridge);
-    rewind(cartridge);
+    if (gbc_init(&gbc) == 0)
+        gbc_run(&gbc);
 
-    uint8_t *data = (uint8_t*)malloc_memory(size);
-    if (!data) {
-        printf("Failed to allocate memory\n");
-        return 1;
-    }
-
-    size_t n = fread(data, 1, size, cartridge);
-    fclose(cartridge);
-
-    cartridge_t *cart = cartridge_load((uint8_t*)data);
-    gbc_mbc_init_with_cart(&gbc.mbc, cart);
-
-    if (!cart) {
-        printf("Failed to load cartridge\n");
-        return 1;
-    }
-    
-    int code_size = cartridge_code_size(cart);    
-    uint8_t *code = cartridge_code(cart);
-    for (int i = 0; i < code_size;) {
-        instruction_t ins = decode(code+i);
-        LOG_INFO("Addr: %x\n", i+0x150);
-        i += ins.size;
-        if (ins.func) {
-            ins.func(cpu, &ins);
-        } else {
-            LOG_ERROR("Unknown instruction [0x%x]\n", ins.opcode);
-        }
-        //getchar();
-    }
-    
     return 0;
 }
 

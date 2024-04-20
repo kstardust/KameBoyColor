@@ -2427,6 +2427,42 @@ decode(uint8_t *data)
     return inst;
 }
 
+instruction_t*
+decode_mem(memory_read read, uint16_t addr, void *udata)
+{
+    uint8_t opcode = read(udata, addr);
+    int size = 0;
+    instruction_t *inst_set = instruction_set;
+
+    if (opcode == PREFIX_CB) {        
+        inst_set = prefixed_instruction_set;
+        size = -1;
+        opcode = READ_I8(read(udata, addr + 1));
+    }
+    
+    instruction_t *inst = inst_set + opcode;
+
+    inst->r_cycles = inst->cycles;
+    size += inst->size;
+
+    if (size != 1) {
+        if (size == 2) {
+            inst->opcode_ext.i8 = READ_I8(read(udata, addr + 1));
+        } else if (inst->size == 3) {
+            /* immediate value is little-endian */
+            uint8_t data[2];
+            data[0] = read(udata, addr + 1);
+            data[1] = read(udata, addr + 2);
+            inst->opcode_ext.i16 = READ_I16(*(uint16_t*)data);
+        } else {
+            LOG_ERROR("Invalid instruction, imme size [%d]", inst->size);
+            abort();
+        }
+    }    
+
+    return inst;
+}
+
 #ifdef DEBUG
 #include "test_instruction.c"
 #endif

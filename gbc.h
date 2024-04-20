@@ -13,6 +13,7 @@ struct gbc {
     gbc_mbc_t mbc;
 };
 
-void gbc_init(gbc_t *gbc);
+int gbc_init(gbc_t *gbc);
+void gbc_run(gbc_t *gbc);
 
 #endif

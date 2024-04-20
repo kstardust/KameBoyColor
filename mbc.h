@@ -51,23 +51,22 @@ typedef uint8_t (*mbc_write_func)(gbc_mbc_t *mbc, uint16_t addr, uint8_t data);
 
 struct gbc_mbc 
 {
-    uint8_t *rom_banks;
-    uint8_t *ram_banks;
     uint8_t rom_bank;
     uint8_t ram_bank;
-
     uint8_t rom_bank_size;
     uint8_t ram_bank_size;
     uint8_t ram_enabled;
     uint8_t mode;
-
     uint8_t type;
 
     mbc_read_func read;
     mbc_write_func write;
-    
+
     gbc_memory_t *mem;
     cartridge_t *cart;
+
+    uint8_t *rom_banks;
+    uint8_t *ram_banks;
 };
 
 void gbc_mbc_init(gbc_mbc_t *mbc);
