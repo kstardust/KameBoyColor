@@ -10,7 +10,7 @@
 
 void test();
 
-#ifndef DEBUG
+#ifdef DEBUG
 int main()
 {
     init_instruction_set();    

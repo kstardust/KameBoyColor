@@ -10,6 +10,9 @@
 #define ROM_BANK_SIZE 0x4000    /* 16KB */
 #define RAM_BANK_SIZE 0x2000    /* 8KB */
 
+#define MBC1_ROM_BEGIN 0x0000
+#define MBC1_ROM_END   0x7fff
+
 #define MBC1_REG_RAM_ENABLE_BEGIN 0x0000
 #define MBC1_REG_RAM_ENABLE_END   0x1fff
 
@@ -22,6 +25,25 @@
 #define MBC1_REG_BANKING_MODE_BEGIN 0x6000
 #define MBC1_REG_BANKING_MODE_END   0x7fff
 
+#define MBC1_ROM_BANK0_BEGIN 0x0000
+#define MBC1_ROM_BANK0_END   0x3fff
+
+#define MBC1_ROM_BANK_N_BEGIN 0x4000
+#define MBC1_ROM_BANK_N_END   0x7fff
+
+#define MBC1_RAM_BEGIN EXRAM_BEGIN
+#define MBC1_RAM_END   EXRAM_END
+
+#define MBC1_RAM_ENABLE 0x0a
+
+#define MBC1_BANKING_MODE_ROM 0
+#define MBC1_BANKING_MODE_RAM 1
+
+#define MBC1_ROM_BANK_MASK_SHIFT 5
+#define MBC1_ROM_BANK_MASK ((1 << MBC1_ROM_BANK_MASK_SHIFT) - 1)
+
+#define MBC1_RAM_BANK_MASK_SHIFT 2
+#define MBC1_RAM_BANK_MASK ((1 << MBC1_RAM_BANK_MASK_SHIFT) - 1)
 
 typedef struct gbc_mbc gbc_mbc_t;
 typedef uint8_t (*mbc_read_func)(gbc_mbc_t *mbc, uint16_t addr);
@@ -45,9 +67,10 @@ struct gbc_mbc
     mbc_write_func write;
     
     gbc_memory_t *mem;
+    cartridge_t *cart;
 };
 
-gbc_mbc_t gbc_mbc_new();
+void gbc_mbc_init(gbc_mbc_t *mbc);
 void gbc_mbc_connect(gbc_mbc_t *mbc, gbc_memory_t *mem);
 void gbc_mbc_init_with_cart(gbc_mbc_t *mbc, cartridge_t *cart);
 

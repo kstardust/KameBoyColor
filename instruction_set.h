@@ -10,14 +10,15 @@ typedef void (*instruction_func)(gbc_cpu_t *cpu, instruction_t *ins);
 
 #define PREFIX_CB 0xcb
 
-#define INSTRUCTION_ADD(opcode, size, func, op1, op2, c1, c2, name) {(opcode), (size), (c1), (c2), (func), ((void*)(op1)), ((void*)(op2)), 0, (name)}
+#define INSTRUCTION_ADD(opcode, size, func, op1, op2, c1, c2, name) {(opcode), (size), (c1), (c2), (c1), (func), ((void*)(op1)), ((void*)(op2)), 0, (name)}
 
 struct instruction
 {   
     uint8_t opcode;
     uint8_t size;    
-    uint8_t cycles;
-    uint8_t cycles2;
+    uint8_t cycles;               /* default cost */
+    uint8_t cycles2;              /* alternative cost */
+    uint8_t r_cycles;             /* real cost */
     instruction_func func;
     void *op1;
     void *op2;
@@ -30,6 +31,6 @@ struct instruction
 };
 
 void init_instruction_set();
-instruction_t decode(uint8_t *data);
+instruction_t* decode(uint8_t *data);
 void  test_instructions();
 #endif

@@ -5,7 +5,7 @@ select_entry(gbc_memory_t *mem, uint16_t addr)
 { 
     for (int i = 0; i < MEMORY_MAP_ENTRIES; i++) {
         memory_map_entry_t *entry = &(mem->map[i]);        
-        if (addr >= entry->addr_begin && addr <= entry->addr_end) {        
+        if (addr >= entry->addr_begin && addr <= entry->addr_end) {       
             if (entry->id == 0) {
                 return NULL;                
             }
@@ -76,14 +76,66 @@ register_memory_map(gbc_memory_t *mem, memory_map_entry_t *entry)
     mem->map[entry->id-1] = *entry;    
 }
 
-gbc_memory_t
-gbc_mem_new()
+uint8_t
+mem_raw_write(void *udata, uint16_t addr, uint8_t data)
 {
-    gbc_memory_t mem;
-    memset(&mem, 0, sizeof(mem));
+    return 0;
+}
 
-    mem.write = mem_write;
-    mem.read = mem_read;
-    
-    return mem;
+uint8_t
+mem_raw_read(void *udata, uint16_t addr)
+{
+    return 0;
+}
+
+uint8_t
+bank_n_write(void *udata, uint16_t addr, uint8_t data)
+{
+    return data;
+}
+
+uint8_t
+bank_n_read(void *udata, uint16_t addr)
+{
+    return 0;
+}
+
+void
+gbc_mem_init(gbc_memory_t *mem)
+{
+    memset(mem, 0, sizeof(gbc_memory_t));
+
+    mem->write = mem_write;
+    mem->read = mem_read;
+
+    /* WRAM */
+    memory_map_entry_t entry;
+    entry.id = WRAM_BANK_0_ID;
+    entry.addr_begin = WRAM_BANK_0_BEGIN;
+    entry.addr_end = WRAM_BANK_0_END;
+    entry.read = mem_raw_read;
+    entry.write = mem_raw_write;
+    entry.udata = mem;
+
+    register_memory_map(mem, &entry);
+
+    /* GBC switchable RAM bank */
+    entry.id = WRAM_BANK_N_ID;
+    entry.addr_begin = WRAM_BANK_N_BEGIN;
+    entry.addr_end = WRAM_BANK_N_END;
+    entry.read = bank_n_read;    
+    entry.write = bank_n_write;
+    entry.udata = mem;
+
+    register_memory_map(mem, &entry);
+
+    /* High RAM */
+    entry.id = HRAM_ID;
+    entry.addr_begin = HRAM_BEGIN;
+    entry.addr_end = HRAM_END;
+    entry.read = mem_raw_read;
+    entry.write = mem_raw_write;
+    entry.udata = mem;
+
+    register_memory_map(mem, &entry);    
 }

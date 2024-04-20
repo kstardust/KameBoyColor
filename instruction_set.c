@@ -244,7 +244,7 @@ jr_nz_i8(gbc_cpu_t *cpu, instruction_t *ins)
 
     cpu_register_t *regs = &(cpu->regs);    
     if (!READ_R_FLAG(regs, FLAG_Z)) {
-        ins->cycles = ins->cycles2;
+        ins->r_cycles = ins->cycles2;
         _jr_i8(cpu, ins);        
     }
 }
@@ -256,7 +256,7 @@ jr_nc_i8(gbc_cpu_t *cpu, instruction_t *ins)
 
     cpu_register_t *regs = &(cpu->regs);
     if (!READ_R_FLAG(regs, FLAG_C)) {
-        ins->cycles = ins->cycles2;
+        ins->r_cycles = ins->cycles2;
         _jr_i8(cpu, ins);        
     }
 }
@@ -268,7 +268,7 @@ jr_z_i8(gbc_cpu_t *cpu, instruction_t *ins)
 
     cpu_register_t *regs = &(cpu->regs);
     if (READ_R_FLAG(regs, FLAG_Z)) {
-        ins->cycles = ins->cycles2;
+        ins->r_cycles = ins->cycles2;
         _jr_i8(cpu, ins);
     }
 }
@@ -280,7 +280,7 @@ jr_c_i8(gbc_cpu_t *cpu, instruction_t *ins)
     
     cpu_register_t *regs = &(cpu->regs);
     if (READ_R_FLAG(regs, FLAG_C)) {
-        ins->cycles = ins->cycles2;
+        ins->r_cycles = ins->cycles2;
         _jr_i8(cpu, ins);
     }
 }
@@ -1053,7 +1053,7 @@ ret_nz(gbc_cpu_t *cpu, instruction_t *ins)
     LOG_INFO("RET NZ: %s\n", ins->name);
 
     if (!READ_R_FLAG(&(cpu->regs), FLAG_Z)) {
-        ins->cycles = ins->cycles2;
+        ins->r_cycles = ins->cycles2;
         _ret(cpu, ins);
     } 
 }
@@ -1064,7 +1064,7 @@ ret_nc(gbc_cpu_t *cpu, instruction_t *ins)
     LOG_INFO("RET NC: %s\n", ins->name);
 
     if (!READ_R_FLAG(&(cpu->regs), FLAG_C)) {
-        ins->cycles = ins->cycles2;
+        ins->r_cycles = ins->cycles2;
         _ret(cpu, ins);
     }
 }
@@ -1075,7 +1075,7 @@ ret_z(gbc_cpu_t *cpu, instruction_t *ins)
     LOG_INFO("RET Z: %s\n", ins->name);
 
     if (READ_R_FLAG(&(cpu->regs), FLAG_Z)) {
-        ins->cycles = ins->cycles2;
+        ins->r_cycles = ins->cycles2;
         _ret(cpu, ins);
     }
 }
@@ -1086,7 +1086,7 @@ ret_c(gbc_cpu_t *cpu, instruction_t *ins)
     LOG_INFO("RET C: %s\n", ins->name);
 
     if (READ_R_FLAG(&(cpu->regs), FLAG_C)) {
-        ins->cycles = ins->cycles2;
+        ins->r_cycles = ins->cycles2;
         _ret(cpu, ins);
     }
 }
@@ -1136,7 +1136,7 @@ jp_nz_i16(gbc_cpu_t *cpu, instruction_t *ins)
     LOG_INFO("JP NZ: %s\n", ins->name);
 
     if (!READ_R_FLAG(&(cpu->regs), FLAG_Z)) {
-        ins->cycles = ins->cycles2;
+        ins->r_cycles = ins->cycles2;
         _jp_i16(cpu, ins);
     }
 }
@@ -1147,7 +1147,7 @@ jp_nc_i16(gbc_cpu_t *cpu, instruction_t *ins)
     LOG_INFO("JP NC: %s\n", ins->name);
 
     if (!READ_R_FLAG(&(cpu->regs), FLAG_C)) {
-        ins->cycles = ins->cycles2;
+        ins->r_cycles = ins->cycles2;
         _jp_i16(cpu, ins);
     }
 }
@@ -1158,7 +1158,7 @@ jp_c_i16(gbc_cpu_t *cpu, instruction_t *ins)
     LOG_INFO("JP: %s\n", ins->name);
 
     if (READ_R_FLAG(&(cpu->regs), FLAG_C)) {
-        ins->cycles = ins->cycles2;
+        ins->r_cycles = ins->cycles2;
         _jp_i16(cpu, ins);
     }
 }
@@ -1169,7 +1169,7 @@ jp_z_i16(gbc_cpu_t *cpu, instruction_t *ins)
     LOG_INFO("JP Z: %s\n", ins->name);
 
     if (READ_R_FLAG(&(cpu->regs), FLAG_Z)) {
-        ins->cycles = ins->cycles2;
+        ins->r_cycles = ins->cycles2;
         _jp_i16(cpu, ins);
     }
 }
@@ -1297,7 +1297,7 @@ call_nz_i16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("CALL NZ: %s\n", ins->name);
     if (!READ_R_FLAG(&(cpu->regs), FLAG_Z)) {
-        ins->cycles = ins->cycles2;
+        ins->r_cycles = ins->cycles2;
         _call_i16(cpu, ins);
     }
 }
@@ -1307,7 +1307,7 @@ call_nc_i16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("CALL NC: %s\n", ins->name);
     if (!READ_R_FLAG(&(cpu->regs), FLAG_C)) {
-        ins->cycles = ins->cycles2;
+        ins->r_cycles = ins->cycles2;
         _call_i16(cpu, ins);
     }    
 }
@@ -1317,7 +1317,7 @@ call_z_i16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("CALL Z: %s\n", ins->name);
     if (READ_R_FLAG(&(cpu->regs), FLAG_Z)) {
-        ins->cycles = ins->cycles2;
+        ins->r_cycles = ins->cycles2;
         _call_i16(cpu, ins);
     }    
 }
@@ -1327,7 +1327,7 @@ call_c_i16(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_INFO("CALL C: %s\n", ins->name);
     if (READ_R_FLAG(&(cpu->regs), FLAG_C)) {
-        ins->cycles = ins->cycles2;
+        ins->r_cycles = ins->cycles2;
         _call_i16(cpu, ins);
     }    
 }
@@ -1784,7 +1784,9 @@ cb_set_m16(gbc_cpu_t *cpu, instruction_t *ins)
     cpu->mem_write(cpu->mem_data, addr, result);
 }
 
-/* DO NOT MODIFY INSTUCTIONS DIRECTLY, COPY THEM BEFORE MODIFYING */
+/* The following fields in instruction will be modified during the execution:
+    r_cycles, op1, op2, opcode_ext
+ */
 static instruction_t instruction_set[INSTRUCTIONS_SET_SIZE] = {
     /* 0x00 */
     INSTRUCTION_ADD(0x00, 1, nop, NULL, NULL, 1, 1, "NOP"),
@@ -2075,295 +2077,294 @@ static instruction_t instruction_set[INSTRUCTIONS_SET_SIZE] = {
     INSTRUCTION_ADD(0xff, 1, rst, 0x38, NULL, 16, 16, "RST 38H"),
 };
  
-/* DO NOT MODIFY INSTUCTIONS DIRECTLY, COPY THEM BEFORE MODIFYING  */ 
 static instruction_t prefixed_instruction_set[INSTRUCTIONS_SET_SIZE] = {
     /* 0x00 */
-    INSTRUCTION_ADD(0x00, 1, cb_rlc_r8, REG_B, NULL, 8, 8, "RLC B"),
-    INSTRUCTION_ADD(0x01, 1, cb_rlc_r8, REG_C, NULL, 8, 8, "RLC C"),
-    INSTRUCTION_ADD(0x02, 1, cb_rlc_r8, REG_D, NULL, 8, 8, "RLC D"),
-    INSTRUCTION_ADD(0x03, 1, cb_rlc_r8, REG_E, NULL, 8, 8, "RLC E"),
-    INSTRUCTION_ADD(0x04, 1, cb_rlc_r8, REG_H, NULL, 8, 8, "RLC H"),
-    INSTRUCTION_ADD(0x05, 1, cb_rlc_r8, REG_L, NULL, 8, 8, "RLC L"),
-    INSTRUCTION_ADD(0x06, 1, cb_rlc_m16, REG_HL, NULL, 16, 16, "RLC (HL)"),
-    INSTRUCTION_ADD(0x07, 1, cb_rlc_r8, REG_A, NULL, 8, 8, "RLC A"),
-    INSTRUCTION_ADD(0x08, 1, cb_rrc_r8, REG_B, NULL, 8, 8, "RRC B"),
-    INSTRUCTION_ADD(0x09, 1, cb_rrc_r8, REG_C, NULL, 8, 8, "RRC C"),
-    INSTRUCTION_ADD(0x0a, 1, cb_rrc_r8, REG_D, NULL, 8, 8, "RRC D"),
-    INSTRUCTION_ADD(0x0b, 1, cb_rrc_r8, REG_E, NULL, 8, 8, "RRC E"),
-    INSTRUCTION_ADD(0x0c, 1, cb_rrc_r8, REG_H, NULL, 8, 8, "RRC H"),
-    INSTRUCTION_ADD(0x0d, 1, cb_rrc_r8, REG_L, NULL, 8, 8, "RRC L"),
-    INSTRUCTION_ADD(0x0e, 1, cb_rrc_m16, REG_HL, NULL, 16, 16, "RRC (HL)"),
-    INSTRUCTION_ADD(0x0f, 1, cb_rrc_r8, REG_A, NULL, 8, 8, "RRC A"),        
+    INSTRUCTION_ADD(0x00, 2, cb_rlc_r8, REG_B, NULL, 8, 8, "RLC B"),
+    INSTRUCTION_ADD(0x01, 2, cb_rlc_r8, REG_C, NULL, 8, 8, "RLC C"),
+    INSTRUCTION_ADD(0x02, 2, cb_rlc_r8, REG_D, NULL, 8, 8, "RLC D"),
+    INSTRUCTION_ADD(0x03, 2, cb_rlc_r8, REG_E, NULL, 8, 8, "RLC E"),
+    INSTRUCTION_ADD(0x04, 2, cb_rlc_r8, REG_H, NULL, 8, 8, "RLC H"),
+    INSTRUCTION_ADD(0x05, 2, cb_rlc_r8, REG_L, NULL, 8, 8, "RLC L"),
+    INSTRUCTION_ADD(0x06, 2, cb_rlc_m16, REG_HL, NULL, 16, 16, "RLC (HL)"),
+    INSTRUCTION_ADD(0x07, 2, cb_rlc_r8, REG_A, NULL, 8, 8, "RLC A"),
+    INSTRUCTION_ADD(0x08, 2, cb_rrc_r8, REG_B, NULL, 8, 8, "RRC B"),
+    INSTRUCTION_ADD(0x09, 2, cb_rrc_r8, REG_C, NULL, 8, 8, "RRC C"),
+    INSTRUCTION_ADD(0x0a, 2, cb_rrc_r8, REG_D, NULL, 8, 8, "RRC D"),
+    INSTRUCTION_ADD(0x0b, 2, cb_rrc_r8, REG_E, NULL, 8, 8, "RRC E"),
+    INSTRUCTION_ADD(0x0c, 2, cb_rrc_r8, REG_H, NULL, 8, 8, "RRC H"),
+    INSTRUCTION_ADD(0x0d, 2, cb_rrc_r8, REG_L, NULL, 8, 8, "RRC L"),
+    INSTRUCTION_ADD(0x0e, 2, cb_rrc_m16, REG_HL, NULL, 16, 16, "RRC (HL)"),
+    INSTRUCTION_ADD(0x0f, 2, cb_rrc_r8, REG_A, NULL, 8, 8, "RRC A"),        
 
     /* 0x10 */    
-    INSTRUCTION_ADD(0x10, 1, cb_rl_r8, REG_B, NULL, 8, 8, "RL B"),
-    INSTRUCTION_ADD(0x11, 1, cb_rl_r8, REG_C, NULL, 8, 8, "RL C"),
-    INSTRUCTION_ADD(0x12, 1, cb_rl_r8, REG_D, NULL, 8, 8, "RL D"),
-    INSTRUCTION_ADD(0x13, 1, cb_rl_r8, REG_E, NULL, 8, 8, "RL E"),
-    INSTRUCTION_ADD(0x14, 1, cb_rl_r8, REG_H, NULL, 8, 8, "RL H"),
-    INSTRUCTION_ADD(0x15, 1, cb_rl_r8, REG_L, NULL, 8, 8, "RL L"),
-    INSTRUCTION_ADD(0x16, 1, cb_rl_m16, REG_HL, NULL, 16, 16, "RL (HL)"),
-    INSTRUCTION_ADD(0x17, 1, cb_rl_r8, REG_A, NULL, 8, 8, "RL A"),
-    INSTRUCTION_ADD(0x18, 1, cb_rr_r8, REG_B, NULL, 8, 8, "RR B"),
-    INSTRUCTION_ADD(0x19, 1, cb_rr_r8, REG_C, NULL, 8, 8, "RR C"),
-    INSTRUCTION_ADD(0x1a, 1, cb_rr_r8, REG_D, NULL, 8, 8, "RR D"),
-    INSTRUCTION_ADD(0x1b, 1, cb_rr_r8, REG_E, NULL, 8, 8, "RR E"),
-    INSTRUCTION_ADD(0x1c, 1, cb_rr_r8, REG_H, NULL, 8, 8, "RR H"),
-    INSTRUCTION_ADD(0x1d, 1, cb_rr_r8, REG_L, NULL, 8, 8, "RR L"),
-    INSTRUCTION_ADD(0x1e, 1, cb_rr_m16, REG_HL, NULL, 16, 16, "RR (HL)"),
-    INSTRUCTION_ADD(0x1f, 1, cb_rr_r8, REG_A, NULL, 8, 8, "RR A"),
+    INSTRUCTION_ADD(0x10, 2, cb_rl_r8, REG_B, NULL, 8, 8, "RL B"),
+    INSTRUCTION_ADD(0x11, 2, cb_rl_r8, REG_C, NULL, 8, 8, "RL C"),
+    INSTRUCTION_ADD(0x12, 2, cb_rl_r8, REG_D, NULL, 8, 8, "RL D"),
+    INSTRUCTION_ADD(0x13, 2, cb_rl_r8, REG_E, NULL, 8, 8, "RL E"),
+    INSTRUCTION_ADD(0x14, 2, cb_rl_r8, REG_H, NULL, 8, 8, "RL H"),
+    INSTRUCTION_ADD(0x15, 2, cb_rl_r8, REG_L, NULL, 8, 8, "RL L"),
+    INSTRUCTION_ADD(0x16, 2, cb_rl_m16, REG_HL, NULL, 16, 16, "RL (HL)"),
+    INSTRUCTION_ADD(0x17, 2, cb_rl_r8, REG_A, NULL, 8, 8, "RL A"),
+    INSTRUCTION_ADD(0x18, 2, cb_rr_r8, REG_B, NULL, 8, 8, "RR B"),
+    INSTRUCTION_ADD(0x19, 2, cb_rr_r8, REG_C, NULL, 8, 8, "RR C"),
+    INSTRUCTION_ADD(0x1a, 2, cb_rr_r8, REG_D, NULL, 8, 8, "RR D"),
+    INSTRUCTION_ADD(0x1b, 2, cb_rr_r8, REG_E, NULL, 8, 8, "RR E"),
+    INSTRUCTION_ADD(0x1c, 2, cb_rr_r8, REG_H, NULL, 8, 8, "RR H"),
+    INSTRUCTION_ADD(0x1d, 2, cb_rr_r8, REG_L, NULL, 8, 8, "RR L"),
+    INSTRUCTION_ADD(0x1e, 2, cb_rr_m16, REG_HL, NULL, 16, 16, "RR (HL)"),
+    INSTRUCTION_ADD(0x1f, 2, cb_rr_r8, REG_A, NULL, 8, 8, "RR A"),
 
     /* 0x20 */
-    INSTRUCTION_ADD(0x20, 1, cb_sla_r8, REG_B, NULL, 8, 8, "SLA B"),
-    INSTRUCTION_ADD(0x21, 1, cb_sla_r8, REG_C, NULL, 8, 8, "SLA C"),
-    INSTRUCTION_ADD(0x22, 1, cb_sla_r8, REG_D, NULL, 8, 8, "SLA D"),
-    INSTRUCTION_ADD(0x23, 1, cb_sla_r8, REG_E, NULL, 8, 8, "SLA E"),
-    INSTRUCTION_ADD(0x24, 1, cb_sla_r8, REG_H, NULL, 8, 8, "SLA H"),
-    INSTRUCTION_ADD(0x25, 1, cb_sla_r8, REG_L, NULL, 8, 8, "SLA L"),
-    INSTRUCTION_ADD(0x26, 1, cb_sla_m16, REG_HL, NULL, 16, 16, "SLA (HL)"),
-    INSTRUCTION_ADD(0x27, 1, cb_sla_r8, REG_A, NULL, 8, 8, "SLA A"),
-    INSTRUCTION_ADD(0x28, 1, cb_sra_r8, REG_B, NULL, 8, 8, "SRA B"),
-    INSTRUCTION_ADD(0x29, 1, cb_sra_r8, REG_C, NULL, 8, 8, "SRA C"),
-    INSTRUCTION_ADD(0x2a, 1, cb_sra_r8, REG_D, NULL, 8, 8, "SRA D"),
-    INSTRUCTION_ADD(0x2b, 1, cb_sra_r8, REG_E, NULL, 8, 8, "SRA E"),
-    INSTRUCTION_ADD(0x2c, 1, cb_sra_r8, REG_H, NULL, 8, 8, "SRA H"),
-    INSTRUCTION_ADD(0x2d, 1, cb_sra_r8, REG_L, NULL, 8, 8, "SRA L"),
-    INSTRUCTION_ADD(0x2e, 1, cb_sra_m16, REG_HL, NULL, 16, 16, "SRA (HL)"),
-    INSTRUCTION_ADD(0x2f, 1, cb_sra_r8, REG_A, NULL, 8, 8, "SRA A"),
+    INSTRUCTION_ADD(0x20, 2, cb_sla_r8, REG_B, NULL, 8, 8, "SLA B"),
+    INSTRUCTION_ADD(0x21, 2, cb_sla_r8, REG_C, NULL, 8, 8, "SLA C"),
+    INSTRUCTION_ADD(0x22, 2, cb_sla_r8, REG_D, NULL, 8, 8, "SLA D"),
+    INSTRUCTION_ADD(0x23, 2, cb_sla_r8, REG_E, NULL, 8, 8, "SLA E"),
+    INSTRUCTION_ADD(0x24, 2, cb_sla_r8, REG_H, NULL, 8, 8, "SLA H"),
+    INSTRUCTION_ADD(0x25, 2, cb_sla_r8, REG_L, NULL, 8, 8, "SLA L"),
+    INSTRUCTION_ADD(0x26, 2, cb_sla_m16, REG_HL, NULL, 16, 16, "SLA (HL)"),
+    INSTRUCTION_ADD(0x27, 2, cb_sla_r8, REG_A, NULL, 8, 8, "SLA A"),
+    INSTRUCTION_ADD(0x28, 2, cb_sra_r8, REG_B, NULL, 8, 8, "SRA B"),
+    INSTRUCTION_ADD(0x29, 2, cb_sra_r8, REG_C, NULL, 8, 8, "SRA C"),
+    INSTRUCTION_ADD(0x2a, 2, cb_sra_r8, REG_D, NULL, 8, 8, "SRA D"),
+    INSTRUCTION_ADD(0x2b, 2, cb_sra_r8, REG_E, NULL, 8, 8, "SRA E"),
+    INSTRUCTION_ADD(0x2c, 2, cb_sra_r8, REG_H, NULL, 8, 8, "SRA H"),
+    INSTRUCTION_ADD(0x2d, 2, cb_sra_r8, REG_L, NULL, 8, 8, "SRA L"),
+    INSTRUCTION_ADD(0x2e, 2, cb_sra_m16, REG_HL, NULL, 16, 16, "SRA (HL)"),
+    INSTRUCTION_ADD(0x2f, 2, cb_sra_r8, REG_A, NULL, 8, 8, "SRA A"),
 
     /* 0x30 */
-    INSTRUCTION_ADD(0x30, 1, cb_swap_r8, REG_B, NULL, 8, 8, "SWAP B"),
-    INSTRUCTION_ADD(0x31, 1, cb_swap_r8, REG_C, NULL, 8, 8, "SWAP C"),    
-    INSTRUCTION_ADD(0x32, 1, cb_swap_r8, REG_D, NULL, 8, 8, "SWAP D"),
-    INSTRUCTION_ADD(0x33, 1, cb_swap_r8, REG_E, NULL, 8, 8, "SWAP E"),
-    INSTRUCTION_ADD(0x34, 1, cb_swap_r8, REG_H, NULL, 8, 8, "SWAP H"),
-    INSTRUCTION_ADD(0x35, 1, cb_swap_r8, REG_L, NULL, 8, 8, "SWAP L"),
-    INSTRUCTION_ADD(0x36, 1, cb_swap_m16, REG_HL, NULL, 16, 16, "SWAP (HL)"),
-    INSTRUCTION_ADD(0x37, 1, cb_swap_r8, REG_A, NULL, 8, 8, "SWAP A"),
-    INSTRUCTION_ADD(0x38, 1, cb_srl_r8, REG_B, NULL, 8, 8, "SRL B"),
-    INSTRUCTION_ADD(0x39, 1, cb_srl_r8, REG_C, NULL, 8, 8, "SRL C"),
-    INSTRUCTION_ADD(0x3a, 1, cb_srl_r8, REG_D, NULL, 8, 8, "SRL D"),
-    INSTRUCTION_ADD(0x3b, 1, cb_srl_r8, REG_E, NULL, 8, 8, "SRL E"),
-    INSTRUCTION_ADD(0x3c, 1, cb_srl_r8, REG_H, NULL, 8, 8, "SRL H"),
-    INSTRUCTION_ADD(0x3d, 1, cb_srl_r8, REG_L, NULL, 8, 8, "SRL L"),
-    INSTRUCTION_ADD(0x3e, 1, cb_srl_m16, REG_HL, NULL, 16, 16, "SRL (HL)"),
-    INSTRUCTION_ADD(0x3f, 1, cb_srl_r8, REG_A, NULL, 8, 8, "SRL A"),
+    INSTRUCTION_ADD(0x30, 2, cb_swap_r8, REG_B, NULL, 8, 8, "SWAP B"),
+    INSTRUCTION_ADD(0x31, 2, cb_swap_r8, REG_C, NULL, 8, 8, "SWAP C"),    
+    INSTRUCTION_ADD(0x32, 2, cb_swap_r8, REG_D, NULL, 8, 8, "SWAP D"),
+    INSTRUCTION_ADD(0x33, 2, cb_swap_r8, REG_E, NULL, 8, 8, "SWAP E"),
+    INSTRUCTION_ADD(0x34, 2, cb_swap_r8, REG_H, NULL, 8, 8, "SWAP H"),
+    INSTRUCTION_ADD(0x35, 2, cb_swap_r8, REG_L, NULL, 8, 8, "SWAP L"),
+    INSTRUCTION_ADD(0x36, 2, cb_swap_m16, REG_HL, NULL, 16, 16, "SWAP (HL)"),
+    INSTRUCTION_ADD(0x37, 2, cb_swap_r8, REG_A, NULL, 8, 8, "SWAP A"),
+    INSTRUCTION_ADD(0x38, 2, cb_srl_r8, REG_B, NULL, 8, 8, "SRL B"),
+    INSTRUCTION_ADD(0x39, 2, cb_srl_r8, REG_C, NULL, 8, 8, "SRL C"),
+    INSTRUCTION_ADD(0x3a, 2, cb_srl_r8, REG_D, NULL, 8, 8, "SRL D"),
+    INSTRUCTION_ADD(0x3b, 2, cb_srl_r8, REG_E, NULL, 8, 8, "SRL E"),
+    INSTRUCTION_ADD(0x3c, 2, cb_srl_r8, REG_H, NULL, 8, 8, "SRL H"),
+    INSTRUCTION_ADD(0x3d, 2, cb_srl_r8, REG_L, NULL, 8, 8, "SRL L"),
+    INSTRUCTION_ADD(0x3e, 2, cb_srl_m16, REG_HL, NULL, 16, 16, "SRL (HL)"),
+    INSTRUCTION_ADD(0x3f, 2, cb_srl_r8, REG_A, NULL, 8, 8, "SRL A"),
 
     /* 0x40 */
-    INSTRUCTION_ADD(0x40, 1, cb_bit_r8, 0, REG_B, 8, 8, "BIT 0, B"),
-    INSTRUCTION_ADD(0x41, 1, cb_bit_r8, 0, REG_C, 8, 8, "BIT 0, C"),        
-    INSTRUCTION_ADD(0x42, 1, cb_bit_r8, 0, REG_D, 8, 8, "BIT 0, D"),
-    INSTRUCTION_ADD(0x43, 1, cb_bit_r8, 0, REG_E, 8, 8, "BIT 0, E"),
-    INSTRUCTION_ADD(0x44, 1, cb_bit_r8, 0, REG_H, 8, 8, "BIT 0, H"),
-    INSTRUCTION_ADD(0x45, 1, cb_bit_r8, 0, REG_L, 8, 8, "BIT 0, L"),
-    INSTRUCTION_ADD(0x46, 1, cb_bit_m16, 0, REG_HL, 12, 12, "BIT 0, (HL)"),
-    INSTRUCTION_ADD(0x47, 1, cb_bit_r8, 0, REG_A, 8, 8, "BIT 0, A"),
-    INSTRUCTION_ADD(0x48, 1, cb_bit_r8, 1, REG_B, 8, 8, "BIT 1, B"),
-    INSTRUCTION_ADD(0x49, 1, cb_bit_r8, 1, REG_C, 8, 8, "BIT 1, C"),
-    INSTRUCTION_ADD(0x4a, 1, cb_bit_r8, 1, REG_D, 8, 8, "BIT 1, D"),
-    INSTRUCTION_ADD(0x4b, 1, cb_bit_r8, 1, REG_E, 8, 8, "BIT 1, E"),
-    INSTRUCTION_ADD(0x4c, 1, cb_bit_r8, 1, REG_H, 8, 8, "BIT 1, H"),
-    INSTRUCTION_ADD(0x4d, 1, cb_bit_r8, 1, REG_L, 8, 8, "BIT 1, L"),
-    INSTRUCTION_ADD(0x4e, 1, cb_bit_m16, 1, REG_HL, 12, 12, "BIT 1, (HL)"),
-    INSTRUCTION_ADD(0x4f, 1, cb_bit_r8, 1, REG_A, 8, 8, "BIT 1, A"),
+    INSTRUCTION_ADD(0x40, 2, cb_bit_r8, 0, REG_B, 8, 8, "BIT 0, B"),
+    INSTRUCTION_ADD(0x41, 2, cb_bit_r8, 0, REG_C, 8, 8, "BIT 0, C"),        
+    INSTRUCTION_ADD(0x42, 2, cb_bit_r8, 0, REG_D, 8, 8, "BIT 0, D"),
+    INSTRUCTION_ADD(0x43, 2, cb_bit_r8, 0, REG_E, 8, 8, "BIT 0, E"),
+    INSTRUCTION_ADD(0x44, 2, cb_bit_r8, 0, REG_H, 8, 8, "BIT 0, H"),
+    INSTRUCTION_ADD(0x45, 2, cb_bit_r8, 0, REG_L, 8, 8, "BIT 0, L"),
+    INSTRUCTION_ADD(0x46, 2, cb_bit_m16, 0, REG_HL, 12, 12, "BIT 0, (HL)"),
+    INSTRUCTION_ADD(0x47, 2, cb_bit_r8, 0, REG_A, 8, 8, "BIT 0, A"),
+    INSTRUCTION_ADD(0x48, 2, cb_bit_r8, 1, REG_B, 8, 8, "BIT 1, B"),
+    INSTRUCTION_ADD(0x49, 2, cb_bit_r8, 1, REG_C, 8, 8, "BIT 1, C"),
+    INSTRUCTION_ADD(0x4a, 2, cb_bit_r8, 1, REG_D, 8, 8, "BIT 1, D"),
+    INSTRUCTION_ADD(0x4b, 2, cb_bit_r8, 1, REG_E, 8, 8, "BIT 1, E"),
+    INSTRUCTION_ADD(0x4c, 2, cb_bit_r8, 1, REG_H, 8, 8, "BIT 1, H"),
+    INSTRUCTION_ADD(0x4d, 2, cb_bit_r8, 1, REG_L, 8, 8, "BIT 1, L"),
+    INSTRUCTION_ADD(0x4e, 2, cb_bit_m16, 1, REG_HL, 12, 12, "BIT 1, (HL)"),
+    INSTRUCTION_ADD(0x4f, 2, cb_bit_r8, 1, REG_A, 8, 8, "BIT 1, A"),
 
     /* 0x50 */
-    INSTRUCTION_ADD(0x50, 1, cb_bit_r8, 2, REG_B, 8, 8, "BIT 2, B"),
-    INSTRUCTION_ADD(0x51, 1, cb_bit_r8, 2, REG_C, 8, 8, "BIT 2, C"),
-    INSTRUCTION_ADD(0x52, 1, cb_bit_r8, 2, REG_D, 8, 8, "BIT 2, D"),
-    INSTRUCTION_ADD(0x53, 1, cb_bit_r8, 2, REG_E, 8, 8, "BIT 2, E"),
-    INSTRUCTION_ADD(0x54, 1, cb_bit_r8, 2, REG_H, 8, 8, "BIT 2, H"),
-    INSTRUCTION_ADD(0x55, 1, cb_bit_r8, 2, REG_L, 8, 8, "BIT 2, L"),
-    INSTRUCTION_ADD(0x56, 1, cb_bit_m16, 2, REG_HL, 12, 12, "BIT 2, (HL)"),
-    INSTRUCTION_ADD(0x57, 1, cb_bit_r8, 2, REG_A, 8, 8, "BIT 2, A"),
-    INSTRUCTION_ADD(0x58, 1, cb_bit_r8, 3, REG_B, 8, 8, "BIT 3, B"),
-    INSTRUCTION_ADD(0x59, 1, cb_bit_r8, 3, REG_C, 8, 8, "BIT 3, C"),
-    INSTRUCTION_ADD(0x5a, 1, cb_bit_r8, 3, REG_D, 8, 8, "BIT 3, D"),
-    INSTRUCTION_ADD(0x5b, 1, cb_bit_r8, 3, REG_E, 8, 8, "BIT 3, E"),
-    INSTRUCTION_ADD(0x5c, 1, cb_bit_r8, 3, REG_H, 8, 8, "BIT 3, H"),
-    INSTRUCTION_ADD(0x5d, 1, cb_bit_r8, 3, REG_L, 8, 8, "BIT 3, L"),
-    INSTRUCTION_ADD(0x5e, 1, cb_bit_m16, 3, REG_HL, 12, 12, "BIT 3, (HL)"),
-    INSTRUCTION_ADD(0x5f, 1, cb_bit_r8, 3, REG_A, 8, 8, "BIT 3, A"),
+    INSTRUCTION_ADD(0x50, 2, cb_bit_r8, 2, REG_B, 8, 8, "BIT 2, B"),
+    INSTRUCTION_ADD(0x51, 2, cb_bit_r8, 2, REG_C, 8, 8, "BIT 2, C"),
+    INSTRUCTION_ADD(0x52, 2, cb_bit_r8, 2, REG_D, 8, 8, "BIT 2, D"),
+    INSTRUCTION_ADD(0x53, 2, cb_bit_r8, 2, REG_E, 8, 8, "BIT 2, E"),
+    INSTRUCTION_ADD(0x54, 2, cb_bit_r8, 2, REG_H, 8, 8, "BIT 2, H"),
+    INSTRUCTION_ADD(0x55, 2, cb_bit_r8, 2, REG_L, 8, 8, "BIT 2, L"),
+    INSTRUCTION_ADD(0x56, 2, cb_bit_m16, 2, REG_HL, 12, 12, "BIT 2, (HL)"),
+    INSTRUCTION_ADD(0x57, 2, cb_bit_r8, 2, REG_A, 8, 8, "BIT 2, A"),
+    INSTRUCTION_ADD(0x58, 2, cb_bit_r8, 3, REG_B, 8, 8, "BIT 3, B"),
+    INSTRUCTION_ADD(0x59, 2, cb_bit_r8, 3, REG_C, 8, 8, "BIT 3, C"),
+    INSTRUCTION_ADD(0x5a, 2, cb_bit_r8, 3, REG_D, 8, 8, "BIT 3, D"),
+    INSTRUCTION_ADD(0x5b, 2, cb_bit_r8, 3, REG_E, 8, 8, "BIT 3, E"),
+    INSTRUCTION_ADD(0x5c, 2, cb_bit_r8, 3, REG_H, 8, 8, "BIT 3, H"),
+    INSTRUCTION_ADD(0x5d, 2, cb_bit_r8, 3, REG_L, 8, 8, "BIT 3, L"),
+    INSTRUCTION_ADD(0x5e, 2, cb_bit_m16, 3, REG_HL, 12, 12, "BIT 3, (HL)"),
+    INSTRUCTION_ADD(0x5f, 2, cb_bit_r8, 3, REG_A, 8, 8, "BIT 3, A"),
 
     /* 0x60 */
-    INSTRUCTION_ADD(0x60, 1, cb_bit_r8, 4, REG_B, 8, 8, "BIT 4, B"),
-    INSTRUCTION_ADD(0x61, 1, cb_bit_r8, 4, REG_C, 8, 8, "BIT 4, C"),
-    INSTRUCTION_ADD(0x62, 1, cb_bit_r8, 4, REG_D, 8, 8, "BIT 4, D"),
-    INSTRUCTION_ADD(0x63, 1, cb_bit_r8, 4, REG_E, 8, 8, "BIT 4, E"),
-    INSTRUCTION_ADD(0x64, 1, cb_bit_r8, 4, REG_H, 8, 8, "BIT 4, H"),
-    INSTRUCTION_ADD(0x65, 1, cb_bit_r8, 4, REG_L, 8, 8, "BIT 4, L"),
-    INSTRUCTION_ADD(0x66, 1, cb_bit_m16, 4, REG_HL, 12, 12, "BIT 4, (HL)"),
-    INSTRUCTION_ADD(0x67, 1, cb_bit_r8, 4, REG_A, 8, 8, "BIT 4, A"),
-    INSTRUCTION_ADD(0x68, 1, cb_bit_r8, 5, REG_B, 8, 8, "BIT 5, B"),
-    INSTRUCTION_ADD(0x69, 1, cb_bit_r8, 5, REG_C, 8, 8, "BIT 5, C"),
-    INSTRUCTION_ADD(0x6a, 1, cb_bit_r8, 5, REG_D, 8, 8, "BIT 5, D"),
-    INSTRUCTION_ADD(0x6b, 1, cb_bit_r8, 5, REG_E, 8, 8, "BIT 5, E"),
-    INSTRUCTION_ADD(0x6c, 1, cb_bit_r8, 5, REG_H, 8, 8, "BIT 5, H"),
-    INSTRUCTION_ADD(0x6d, 1, cb_bit_r8, 5, REG_L, 8, 8, "BIT 5, L"),    
-    INSTRUCTION_ADD(0x6e, 1, cb_bit_m16, 5, REG_HL, 12, 12, "BIT 5, (HL)"),
-    INSTRUCTION_ADD(0x6f, 1, cb_bit_r8, 5, REG_A, 8, 8, "BIT 5, A"),
+    INSTRUCTION_ADD(0x60, 2, cb_bit_r8, 4, REG_B, 8, 8, "BIT 4, B"),
+    INSTRUCTION_ADD(0x61, 2, cb_bit_r8, 4, REG_C, 8, 8, "BIT 4, C"),
+    INSTRUCTION_ADD(0x62, 2, cb_bit_r8, 4, REG_D, 8, 8, "BIT 4, D"),
+    INSTRUCTION_ADD(0x63, 2, cb_bit_r8, 4, REG_E, 8, 8, "BIT 4, E"),
+    INSTRUCTION_ADD(0x64, 2, cb_bit_r8, 4, REG_H, 8, 8, "BIT 4, H"),
+    INSTRUCTION_ADD(0x65, 2, cb_bit_r8, 4, REG_L, 8, 8, "BIT 4, L"),
+    INSTRUCTION_ADD(0x66, 2, cb_bit_m16, 4, REG_HL, 12, 12, "BIT 4, (HL)"),
+    INSTRUCTION_ADD(0x67, 2, cb_bit_r8, 4, REG_A, 8, 8, "BIT 4, A"),
+    INSTRUCTION_ADD(0x68, 2, cb_bit_r8, 5, REG_B, 8, 8, "BIT 5, B"),
+    INSTRUCTION_ADD(0x69, 2, cb_bit_r8, 5, REG_C, 8, 8, "BIT 5, C"),
+    INSTRUCTION_ADD(0x6a, 2, cb_bit_r8, 5, REG_D, 8, 8, "BIT 5, D"),
+    INSTRUCTION_ADD(0x6b, 2, cb_bit_r8, 5, REG_E, 8, 8, "BIT 5, E"),
+    INSTRUCTION_ADD(0x6c, 2, cb_bit_r8, 5, REG_H, 8, 8, "BIT 5, H"),
+    INSTRUCTION_ADD(0x6d, 2, cb_bit_r8, 5, REG_L, 8, 8, "BIT 5, L"),    
+    INSTRUCTION_ADD(0x6e, 2, cb_bit_m16, 5, REG_HL, 12, 12, "BIT 5, (HL)"),
+    INSTRUCTION_ADD(0x6f, 2, cb_bit_r8, 5, REG_A, 8, 8, "BIT 5, A"),
 
     /* 0x70 */
-    INSTRUCTION_ADD(0x70, 1, cb_bit_r8, 6, REG_B, 8, 8, "BIT 6, B"),
-    INSTRUCTION_ADD(0x71, 1, cb_bit_r8, 6, REG_C, 8, 8, "BIT 6, C"),
-    INSTRUCTION_ADD(0x72, 1, cb_bit_r8, 6, REG_D, 8, 8, "BIT 6, D"),
-    INSTRUCTION_ADD(0x73, 1, cb_bit_r8, 6, REG_E, 8, 8, "BIT 6, E"),
-    INSTRUCTION_ADD(0x74, 1, cb_bit_r8, 6, REG_H, 8, 8, "BIT 6, H"),
-    INSTRUCTION_ADD(0x75, 1, cb_bit_r8, 6, REG_L, 8, 8, "BIT 6, L"),
-    INSTRUCTION_ADD(0x76, 1, cb_bit_m16, 6, REG_HL, 12, 12, "BIT 6, (HL)"),
-    INSTRUCTION_ADD(0x77, 1, cb_bit_r8, 6, REG_A, 8, 8, "BIT 6, A"), 
-    INSTRUCTION_ADD(0x78, 1, cb_bit_r8, 7, REG_B, 8, 8, "BIT 7, B"),
-    INSTRUCTION_ADD(0x79, 1, cb_bit_r8, 7, REG_C, 8, 8, "BIT 7, C"),
-    INSTRUCTION_ADD(0x7a, 1, cb_bit_r8, 7, REG_D, 8, 8, "BIT 7, D"),
-    INSTRUCTION_ADD(0x7b, 1, cb_bit_r8, 7, REG_E, 8, 8, "BIT 7, E"),
-    INSTRUCTION_ADD(0x7c, 1, cb_bit_r8, 7, REG_H, 8, 8, "BIT 7, H"),
-    INSTRUCTION_ADD(0x7d, 1, cb_bit_r8, 7, REG_L, 8, 8, "BIT 7, L"),
-    INSTRUCTION_ADD(0x7e, 1, cb_bit_m16, 7, REG_HL, 12, 12, "BIT 7, (HL)"),
-    INSTRUCTION_ADD(0x7f, 1, cb_bit_r8, 7, REG_A, 8, 8, "BIT 7, A"),
+    INSTRUCTION_ADD(0x70, 2, cb_bit_r8, 6, REG_B, 8, 8, "BIT 6, B"),
+    INSTRUCTION_ADD(0x71, 2, cb_bit_r8, 6, REG_C, 8, 8, "BIT 6, C"),
+    INSTRUCTION_ADD(0x72, 2, cb_bit_r8, 6, REG_D, 8, 8, "BIT 6, D"),
+    INSTRUCTION_ADD(0x73, 2, cb_bit_r8, 6, REG_E, 8, 8, "BIT 6, E"),
+    INSTRUCTION_ADD(0x74, 2, cb_bit_r8, 6, REG_H, 8, 8, "BIT 6, H"),
+    INSTRUCTION_ADD(0x75, 2, cb_bit_r8, 6, REG_L, 8, 8, "BIT 6, L"),
+    INSTRUCTION_ADD(0x76, 2, cb_bit_m16, 6, REG_HL, 12, 12, "BIT 6, (HL)"),
+    INSTRUCTION_ADD(0x77, 2, cb_bit_r8, 6, REG_A, 8, 8, "BIT 6, A"), 
+    INSTRUCTION_ADD(0x78, 2, cb_bit_r8, 7, REG_B, 8, 8, "BIT 7, B"),
+    INSTRUCTION_ADD(0x79, 2, cb_bit_r8, 7, REG_C, 8, 8, "BIT 7, C"),
+    INSTRUCTION_ADD(0x7a, 2, cb_bit_r8, 7, REG_D, 8, 8, "BIT 7, D"),
+    INSTRUCTION_ADD(0x7b, 2, cb_bit_r8, 7, REG_E, 8, 8, "BIT 7, E"),
+    INSTRUCTION_ADD(0x7c, 2, cb_bit_r8, 7, REG_H, 8, 8, "BIT 7, H"),
+    INSTRUCTION_ADD(0x7d, 2, cb_bit_r8, 7, REG_L, 8, 8, "BIT 7, L"),
+    INSTRUCTION_ADD(0x7e, 2, cb_bit_m16, 7, REG_HL, 12, 12, "BIT 7, (HL)"),
+    INSTRUCTION_ADD(0x7f, 2, cb_bit_r8, 7, REG_A, 8, 8, "BIT 7, A"),
 
     /* 0x80 */
-    INSTRUCTION_ADD(0x80, 1, cb_res_r8, 0, REG_B, 8, 8, "RES 0, B"),
-    INSTRUCTION_ADD(0x81, 1, cb_res_r8, 0, REG_C, 8, 8, "RES 0, C"),
-    INSTRUCTION_ADD(0x82, 1, cb_res_r8, 0, REG_D, 8, 8, "RES 0, D"),
-    INSTRUCTION_ADD(0x83, 1, cb_res_r8, 0, REG_E, 8, 8, "RES 0, E"),
-    INSTRUCTION_ADD(0x84, 1, cb_res_r8, 0, REG_H, 8, 8, "RES 0, H"),
-    INSTRUCTION_ADD(0x85, 1, cb_res_r8, 0, REG_L, 8, 8, "RES 0, L"),
-    INSTRUCTION_ADD(0x86, 1, cb_res_m16, 0, REG_HL, 16, 16, "RES 0, (HL)"),
-    INSTRUCTION_ADD(0x87, 1, cb_res_r8, 0, REG_A, 8, 8, "RES 0, A"),
-    INSTRUCTION_ADD(0x88, 1, cb_res_r8, 1, REG_B, 8, 8, "RES 1, B"),
-    INSTRUCTION_ADD(0x89, 1, cb_res_r8, 1, REG_C, 8, 8, "RES 1, C"),
-    INSTRUCTION_ADD(0x8a, 1, cb_res_r8, 1, REG_D, 8, 8, "RES 1, D"),
-    INSTRUCTION_ADD(0x8b, 1, cb_res_r8, 1, REG_E, 8, 8, "RES 1, E"),
-    INSTRUCTION_ADD(0x8c, 1, cb_res_r8, 1, REG_H, 8, 8, "RES 1, H"),
-    INSTRUCTION_ADD(0x8d, 1, cb_res_r8, 1, REG_L, 8, 8, "RES 1, L"),
-    INSTRUCTION_ADD(0x8e, 1, cb_res_m16, 1, REG_HL, 16, 16, "RES 1, (HL)"),
-    INSTRUCTION_ADD(0x8f, 1, cb_res_r8, 1, REG_A, 8, 8, "RES 1, A"),
+    INSTRUCTION_ADD(0x80, 2, cb_res_r8, 0, REG_B, 8, 8, "RES 0, B"),
+    INSTRUCTION_ADD(0x81, 2, cb_res_r8, 0, REG_C, 8, 8, "RES 0, C"),
+    INSTRUCTION_ADD(0x82, 2, cb_res_r8, 0, REG_D, 8, 8, "RES 0, D"),
+    INSTRUCTION_ADD(0x83, 2, cb_res_r8, 0, REG_E, 8, 8, "RES 0, E"),
+    INSTRUCTION_ADD(0x84, 2, cb_res_r8, 0, REG_H, 8, 8, "RES 0, H"),
+    INSTRUCTION_ADD(0x85, 2, cb_res_r8, 0, REG_L, 8, 8, "RES 0, L"),
+    INSTRUCTION_ADD(0x86, 2, cb_res_m16, 0, REG_HL, 16, 16, "RES 0, (HL)"),
+    INSTRUCTION_ADD(0x87, 2, cb_res_r8, 0, REG_A, 8, 8, "RES 0, A"),
+    INSTRUCTION_ADD(0x88, 2, cb_res_r8, 1, REG_B, 8, 8, "RES 1, B"),
+    INSTRUCTION_ADD(0x89, 2, cb_res_r8, 1, REG_C, 8, 8, "RES 1, C"),
+    INSTRUCTION_ADD(0x8a, 2, cb_res_r8, 1, REG_D, 8, 8, "RES 1, D"),
+    INSTRUCTION_ADD(0x8b, 2, cb_res_r8, 1, REG_E, 8, 8, "RES 1, E"),
+    INSTRUCTION_ADD(0x8c, 2, cb_res_r8, 1, REG_H, 8, 8, "RES 1, H"),
+    INSTRUCTION_ADD(0x8d, 2, cb_res_r8, 1, REG_L, 8, 8, "RES 1, L"),
+    INSTRUCTION_ADD(0x8e, 2, cb_res_m16, 1, REG_HL, 16, 16, "RES 1, (HL)"),
+    INSTRUCTION_ADD(0x8f, 2, cb_res_r8, 1, REG_A, 8, 8, "RES 1, A"),
 
     /* 0x90 */
-    INSTRUCTION_ADD(0x90, 1, cb_res_r8, 2, REG_B, 8, 8, "RES 2, B"),
-    INSTRUCTION_ADD(0x91, 1, cb_res_r8, 2, REG_C, 8, 8, "RES 2, C"),
-    INSTRUCTION_ADD(0x92, 1, cb_res_r8, 2, REG_D, 8, 8, "RES 2, D"),
-    INSTRUCTION_ADD(0x93, 1, cb_res_r8, 2, REG_E, 8, 8, "RES 2, E"),
-    INSTRUCTION_ADD(0x94, 1, cb_res_r8, 2, REG_H, 8, 8, "RES 2, H"),
-    INSTRUCTION_ADD(0x95, 1, cb_res_r8, 2, REG_L, 8, 8, "RES 2, L"),
-    INSTRUCTION_ADD(0x96, 1, cb_res_m16, 2, REG_HL, 16, 16, "RES 2, (HL)"),
-    INSTRUCTION_ADD(0x97, 1, cb_res_r8, 2, REG_A, 8, 8, "RES 2, A"),
-    INSTRUCTION_ADD(0x98, 1, cb_res_r8, 3, REG_B, 8, 8, "RES 3, B"),
-    INSTRUCTION_ADD(0x99, 1, cb_res_r8, 3, REG_C, 8, 8, "RES 3, C"),
-    INSTRUCTION_ADD(0x9a, 1, cb_res_r8, 3, REG_D, 8, 8, "RES 3, D"),
-    INSTRUCTION_ADD(0x9b, 1, cb_res_r8, 3, REG_E, 8, 8, "RES 3, E"),
-    INSTRUCTION_ADD(0x9c, 1, cb_res_r8, 3, REG_H, 8, 8, "RES 3, H"),
-    INSTRUCTION_ADD(0x9d, 1, cb_res_r8, 3, REG_L, 8, 8, "RES 3, L"),
-    INSTRUCTION_ADD(0x9e, 1, cb_res_m16, 3, REG_HL, 16, 16, "RES 3, (HL)"),
-    INSTRUCTION_ADD(0x9f, 1, cb_res_r8, 3, REG_A, 8, 8, "RES 3, A"),
+    INSTRUCTION_ADD(0x90, 2, cb_res_r8, 2, REG_B, 8, 8, "RES 2, B"),
+    INSTRUCTION_ADD(0x91, 2, cb_res_r8, 2, REG_C, 8, 8, "RES 2, C"),
+    INSTRUCTION_ADD(0x92, 2, cb_res_r8, 2, REG_D, 8, 8, "RES 2, D"),
+    INSTRUCTION_ADD(0x93, 2, cb_res_r8, 2, REG_E, 8, 8, "RES 2, E"),
+    INSTRUCTION_ADD(0x94, 2, cb_res_r8, 2, REG_H, 8, 8, "RES 2, H"),
+    INSTRUCTION_ADD(0x95, 2, cb_res_r8, 2, REG_L, 8, 8, "RES 2, L"),
+    INSTRUCTION_ADD(0x96, 2, cb_res_m16, 2, REG_HL, 16, 16, "RES 2, (HL)"),
+    INSTRUCTION_ADD(0x97, 2, cb_res_r8, 2, REG_A, 8, 8, "RES 2, A"),
+    INSTRUCTION_ADD(0x98, 2, cb_res_r8, 3, REG_B, 8, 8, "RES 3, B"),
+    INSTRUCTION_ADD(0x99, 2, cb_res_r8, 3, REG_C, 8, 8, "RES 3, C"),
+    INSTRUCTION_ADD(0x9a, 2, cb_res_r8, 3, REG_D, 8, 8, "RES 3, D"),
+    INSTRUCTION_ADD(0x9b, 2, cb_res_r8, 3, REG_E, 8, 8, "RES 3, E"),
+    INSTRUCTION_ADD(0x9c, 2, cb_res_r8, 3, REG_H, 8, 8, "RES 3, H"),
+    INSTRUCTION_ADD(0x9d, 2, cb_res_r8, 3, REG_L, 8, 8, "RES 3, L"),
+    INSTRUCTION_ADD(0x9e, 2, cb_res_m16, 3, REG_HL, 16, 16, "RES 3, (HL)"),
+    INSTRUCTION_ADD(0x9f, 2, cb_res_r8, 3, REG_A, 8, 8, "RES 3, A"),
 
     /* 0xa0 */
-    INSTRUCTION_ADD(0xa0, 1, cb_res_r8, 4, REG_B, 8, 8, "RES 4, B"),
-    INSTRUCTION_ADD(0xa1, 1, cb_res_r8, 4, REG_C, 8, 8, "RES 4, C"),
-    INSTRUCTION_ADD(0xa2, 1, cb_res_r8, 4, REG_D, 8, 8, "RES 4, D"),
-    INSTRUCTION_ADD(0xa3, 1, cb_res_r8, 4, REG_E, 8, 8, "RES 4, E"),
-    INSTRUCTION_ADD(0xa4, 1, cb_res_r8, 4, REG_H, 8, 8, "RES 4, H"),
-    INSTRUCTION_ADD(0xa5, 1, cb_res_r8, 4, REG_L, 8, 8, "RES 4, L"),
-    INSTRUCTION_ADD(0xa6, 1, cb_res_m16, 4, REG_HL, 16, 16, "RES 4, (HL)"),
-    INSTRUCTION_ADD(0xa7, 1, cb_res_r8, 4, REG_A, 8, 8, "RES 4, A"),
-    INSTRUCTION_ADD(0xa8, 1, cb_res_r8, 5, REG_B, 8, 8, "RES 5, B"),
-    INSTRUCTION_ADD(0xa9, 1, cb_res_r8, 5, REG_C, 8, 8, "RES 5, C"),
-    INSTRUCTION_ADD(0xaa, 1, cb_res_r8, 5, REG_D, 8, 8, "RES 5, D"),
-    INSTRUCTION_ADD(0xab, 1, cb_res_r8, 5, REG_E, 8, 8, "RES 5, E"),
-    INSTRUCTION_ADD(0xac, 1, cb_res_r8, 5, REG_H, 8, 8, "RES 5, H"),
-    INSTRUCTION_ADD(0xad, 1, cb_res_r8, 5, REG_L, 8, 8, "RES 5, L"),
-    INSTRUCTION_ADD(0xae, 1, cb_res_m16, 5, REG_HL, 16, 16, "RES 5, (HL)"),
-    INSTRUCTION_ADD(0xaf, 1, cb_res_r8, 5, REG_A, 8, 8, "RES 5, A"),
+    INSTRUCTION_ADD(0xa0, 2, cb_res_r8, 4, REG_B, 8, 8, "RES 4, B"),
+    INSTRUCTION_ADD(0xa1, 2, cb_res_r8, 4, REG_C, 8, 8, "RES 4, C"),
+    INSTRUCTION_ADD(0xa2, 2, cb_res_r8, 4, REG_D, 8, 8, "RES 4, D"),
+    INSTRUCTION_ADD(0xa3, 2, cb_res_r8, 4, REG_E, 8, 8, "RES 4, E"),
+    INSTRUCTION_ADD(0xa4, 2, cb_res_r8, 4, REG_H, 8, 8, "RES 4, H"),
+    INSTRUCTION_ADD(0xa5, 2, cb_res_r8, 4, REG_L, 8, 8, "RES 4, L"),
+    INSTRUCTION_ADD(0xa6, 2, cb_res_m16, 4, REG_HL, 16, 16, "RES 4, (HL)"),
+    INSTRUCTION_ADD(0xa7, 2, cb_res_r8, 4, REG_A, 8, 8, "RES 4, A"),
+    INSTRUCTION_ADD(0xa8, 2, cb_res_r8, 5, REG_B, 8, 8, "RES 5, B"),
+    INSTRUCTION_ADD(0xa9, 2, cb_res_r8, 5, REG_C, 8, 8, "RES 5, C"),
+    INSTRUCTION_ADD(0xaa, 2, cb_res_r8, 5, REG_D, 8, 8, "RES 5, D"),
+    INSTRUCTION_ADD(0xab, 2, cb_res_r8, 5, REG_E, 8, 8, "RES 5, E"),
+    INSTRUCTION_ADD(0xac, 2, cb_res_r8, 5, REG_H, 8, 8, "RES 5, H"),
+    INSTRUCTION_ADD(0xad, 2, cb_res_r8, 5, REG_L, 8, 8, "RES 5, L"),
+    INSTRUCTION_ADD(0xae, 2, cb_res_m16, 5, REG_HL, 16, 16, "RES 5, (HL)"),
+    INSTRUCTION_ADD(0xaf, 2, cb_res_r8, 5, REG_A, 8, 8, "RES 5, A"),
 
     /* 0xb0 */
-    INSTRUCTION_ADD(0xb0, 1, cb_res_r8, 6, REG_B, 8, 8, "RES 6, B"),
-    INSTRUCTION_ADD(0xb1, 1, cb_res_r8, 6, REG_C, 8, 8, "RES 6, C"),
-    INSTRUCTION_ADD(0xb2, 1, cb_res_r8, 6, REG_D, 8, 8, "RES 6, D"),
-    INSTRUCTION_ADD(0xb3, 1, cb_res_r8, 6, REG_E, 8, 8, "RES 6, E"),
-    INSTRUCTION_ADD(0xb4, 1, cb_res_r8, 6, REG_H, 8, 8, "RES 6, H"),
-    INSTRUCTION_ADD(0xb5, 1, cb_res_r8, 6, REG_L, 8, 8, "RES 6, L"),
-    INSTRUCTION_ADD(0xb6, 1, cb_res_m16, 6, REG_HL, 16, 16, "RES 6, (HL)"),
-    INSTRUCTION_ADD(0xb7, 1, cb_res_r8, 6, REG_A, 8, 8, "RES 6, A"),
-    INSTRUCTION_ADD(0xb8, 1, cb_res_r8, 7, REG_B, 8, 8, "RES 7, B"),
-    INSTRUCTION_ADD(0xb9, 1, cb_res_r8, 7, REG_C, 8, 8, "RES 7, C"),
-    INSTRUCTION_ADD(0xba, 1, cb_res_r8, 7, REG_D, 8, 8, "RES 7, D"),
-    INSTRUCTION_ADD(0xbb, 1, cb_res_r8, 7, REG_E, 8, 8, "RES 7, E"),
-    INSTRUCTION_ADD(0xbc, 1, cb_res_r8, 7, REG_H, 8, 8, "RES 7, H"),
-    INSTRUCTION_ADD(0xbd, 1, cb_res_r8, 7, REG_L, 8, 8, "RES 7, L"),
-    INSTRUCTION_ADD(0xbe, 1, cb_res_m16, 7, REG_HL, 16, 16, "RES 7, (HL)"),
-    INSTRUCTION_ADD(0xbf, 1, cb_res_r8, 7, REG_A, 8, 8, "RES 7, A"),            
+    INSTRUCTION_ADD(0xb0, 2, cb_res_r8, 6, REG_B, 8, 8, "RES 6, B"),
+    INSTRUCTION_ADD(0xb1, 2, cb_res_r8, 6, REG_C, 8, 8, "RES 6, C"),
+    INSTRUCTION_ADD(0xb2, 2, cb_res_r8, 6, REG_D, 8, 8, "RES 6, D"),
+    INSTRUCTION_ADD(0xb3, 2, cb_res_r8, 6, REG_E, 8, 8, "RES 6, E"),
+    INSTRUCTION_ADD(0xb4, 2, cb_res_r8, 6, REG_H, 8, 8, "RES 6, H"),
+    INSTRUCTION_ADD(0xb5, 2, cb_res_r8, 6, REG_L, 8, 8, "RES 6, L"),
+    INSTRUCTION_ADD(0xb6, 2, cb_res_m16, 6, REG_HL, 16, 16, "RES 6, (HL)"),
+    INSTRUCTION_ADD(0xb7, 2, cb_res_r8, 6, REG_A, 8, 8, "RES 6, A"),
+    INSTRUCTION_ADD(0xb8, 2, cb_res_r8, 7, REG_B, 8, 8, "RES 7, B"),
+    INSTRUCTION_ADD(0xb9, 2, cb_res_r8, 7, REG_C, 8, 8, "RES 7, C"),
+    INSTRUCTION_ADD(0xba, 2, cb_res_r8, 7, REG_D, 8, 8, "RES 7, D"),
+    INSTRUCTION_ADD(0xbb, 2, cb_res_r8, 7, REG_E, 8, 8, "RES 7, E"),
+    INSTRUCTION_ADD(0xbc, 2, cb_res_r8, 7, REG_H, 8, 8, "RES 7, H"),
+    INSTRUCTION_ADD(0xbd, 2, cb_res_r8, 7, REG_L, 8, 8, "RES 7, L"),
+    INSTRUCTION_ADD(0xbe, 2, cb_res_m16, 7, REG_HL, 16, 16, "RES 7, (HL)"),
+    INSTRUCTION_ADD(0xbf, 2, cb_res_r8, 7, REG_A, 8, 8, "RES 7, A"),            
 
     /* 0xc0 */
-    INSTRUCTION_ADD(0xc0, 1, cb_set_r8, 0, REG_B, 8, 8, "SET 0, B"),
-    INSTRUCTION_ADD(0xc1, 1, cb_set_r8, 0, REG_C, 8, 8, "SET 0, C"),
-    INSTRUCTION_ADD(0xc2, 1, cb_set_r8, 0, REG_D, 8, 8, "SET 0, D"),
-    INSTRUCTION_ADD(0xc3, 1, cb_set_r8, 0, REG_E, 8, 8, "SET 0, E"),
-    INSTRUCTION_ADD(0xc4, 1, cb_set_r8, 0, REG_H, 8, 8, "SET 0, H"),
-    INSTRUCTION_ADD(0xc5, 1, cb_set_r8, 0, REG_L, 8, 8, "SET 0, L"),
-    INSTRUCTION_ADD(0xc6, 1, cb_set_m16, 0, REG_HL, 16, 16, "SET 0, (HL)"),
-    INSTRUCTION_ADD(0xc7, 1, cb_set_r8, 0, REG_A, 8, 8, "SET 0, A"),
-    INSTRUCTION_ADD(0xc8, 1, cb_set_r8, 1, REG_B, 8, 8, "SET 1, B"),
-    INSTRUCTION_ADD(0xc9, 1, cb_set_r8, 1, REG_C, 8, 8, "SET 1, C"),
-    INSTRUCTION_ADD(0xca, 1, cb_set_r8, 1, REG_D, 8, 8, "SET 1, D"),
-    INSTRUCTION_ADD(0xcb, 1, cb_set_r8, 1, REG_E, 8, 8, "SET 1, E"),
-    INSTRUCTION_ADD(0xcc, 1, cb_set_r8, 1, REG_H, 8, 8, "SET 1, H"),
-    INSTRUCTION_ADD(0xcd, 1, cb_set_r8, 1, REG_L, 8, 8, "SET 1, L"),
-    INSTRUCTION_ADD(0xce, 1, cb_set_m16, 1, REG_HL, 16, 16, "SET 1, (HL)"),
-    INSTRUCTION_ADD(0xcf, 1, cb_set_r8, 1, REG_A, 8, 8, "SET 1, A"),
+    INSTRUCTION_ADD(0xc0, 2, cb_set_r8, 0, REG_B, 8, 8, "SET 0, B"),
+    INSTRUCTION_ADD(0xc1, 2, cb_set_r8, 0, REG_C, 8, 8, "SET 0, C"),
+    INSTRUCTION_ADD(0xc2, 2, cb_set_r8, 0, REG_D, 8, 8, "SET 0, D"),
+    INSTRUCTION_ADD(0xc3, 2, cb_set_r8, 0, REG_E, 8, 8, "SET 0, E"),
+    INSTRUCTION_ADD(0xc4, 2, cb_set_r8, 0, REG_H, 8, 8, "SET 0, H"),
+    INSTRUCTION_ADD(0xc5, 2, cb_set_r8, 0, REG_L, 8, 8, "SET 0, L"),
+    INSTRUCTION_ADD(0xc6, 2, cb_set_m16, 0, REG_HL, 16, 16, "SET 0, (HL)"),
+    INSTRUCTION_ADD(0xc7, 2, cb_set_r8, 0, REG_A, 8, 8, "SET 0, A"),
+    INSTRUCTION_ADD(0xc8, 2, cb_set_r8, 1, REG_B, 8, 8, "SET 1, B"),
+    INSTRUCTION_ADD(0xc9, 2, cb_set_r8, 1, REG_C, 8, 8, "SET 1, C"),
+    INSTRUCTION_ADD(0xca, 2, cb_set_r8, 1, REG_D, 8, 8, "SET 1, D"),
+    INSTRUCTION_ADD(0xcb, 2, cb_set_r8, 1, REG_E, 8, 8, "SET 1, E"),
+    INSTRUCTION_ADD(0xcc, 2, cb_set_r8, 1, REG_H, 8, 8, "SET 1, H"),
+    INSTRUCTION_ADD(0xcd, 2, cb_set_r8, 1, REG_L, 8, 8, "SET 1, L"),
+    INSTRUCTION_ADD(0xce, 2, cb_set_m16, 1, REG_HL, 16, 16, "SET 1, (HL)"),
+    INSTRUCTION_ADD(0xcf, 2, cb_set_r8, 1, REG_A, 8, 8, "SET 1, A"),
 
     /* 0xd0 */
-    INSTRUCTION_ADD(0xd0, 1, cb_set_r8, 2, REG_B, 8, 8, "SET 2, B"),
-    INSTRUCTION_ADD(0xd1, 1, cb_set_r8, 2, REG_C, 8, 8, "SET 2, C"),
-    INSTRUCTION_ADD(0xd2, 1, cb_set_r8, 2, REG_D, 8, 8, "SET 2, D"),
-    INSTRUCTION_ADD(0xd3, 1, cb_set_r8, 2, REG_E, 8, 8, "SET 2, E"),
-    INSTRUCTION_ADD(0xd4, 1, cb_set_r8, 2, REG_H, 8, 8, "SET 2, H"),
-    INSTRUCTION_ADD(0xd5, 1, cb_set_r8, 2, REG_L, 8, 8, "SET 2, L"),
-    INSTRUCTION_ADD(0xd6, 1, cb_set_m16, 2, REG_HL, 16, 16, "SET 2, (HL)"),
-    INSTRUCTION_ADD(0xd7, 1, cb_set_r8, 2, REG_A, 8, 8, "SET 2, A"),
-    INSTRUCTION_ADD(0xd8, 1, cb_set_r8, 3, REG_B, 8, 8, "SET 3, B"),
-    INSTRUCTION_ADD(0xd9, 1, cb_set_r8, 3, REG_C, 8, 8, "SET 3, C"),
-    INSTRUCTION_ADD(0xda, 1, cb_set_r8, 3, REG_D, 8, 8, "SET 3, D"),
-    INSTRUCTION_ADD(0xdb, 1, cb_set_r8, 3, REG_E, 8, 8, "SET 3, E"),
-    INSTRUCTION_ADD(0xdc, 1, cb_set_r8, 3, REG_H, 8, 8, "SET 3, H"),
-    INSTRUCTION_ADD(0xdd, 1, cb_set_r8, 3, REG_L, 8, 8, "SET 3, L"),
-    INSTRUCTION_ADD(0xde, 1, cb_set_m16, 3, REG_HL, 16, 16, "SET 3, (HL)"),
-    INSTRUCTION_ADD(0xdf, 1, cb_set_r8, 3, REG_A, 8, 8, "SET 3, A"),
+    INSTRUCTION_ADD(0xd0, 2, cb_set_r8, 2, REG_B, 8, 8, "SET 2, B"),
+    INSTRUCTION_ADD(0xd1, 2, cb_set_r8, 2, REG_C, 8, 8, "SET 2, C"),
+    INSTRUCTION_ADD(0xd2, 2, cb_set_r8, 2, REG_D, 8, 8, "SET 2, D"),
+    INSTRUCTION_ADD(0xd3, 2, cb_set_r8, 2, REG_E, 8, 8, "SET 2, E"),
+    INSTRUCTION_ADD(0xd4, 2, cb_set_r8, 2, REG_H, 8, 8, "SET 2, H"),
+    INSTRUCTION_ADD(0xd5, 2, cb_set_r8, 2, REG_L, 8, 8, "SET 2, L"),
+    INSTRUCTION_ADD(0xd6, 2, cb_set_m16, 2, REG_HL, 16, 16, "SET 2, (HL)"),
+    INSTRUCTION_ADD(0xd7, 2, cb_set_r8, 2, REG_A, 8, 8, "SET 2, A"),
+    INSTRUCTION_ADD(0xd8, 2, cb_set_r8, 3, REG_B, 8, 8, "SET 3, B"),
+    INSTRUCTION_ADD(0xd9, 2, cb_set_r8, 3, REG_C, 8, 8, "SET 3, C"),
+    INSTRUCTION_ADD(0xda, 2, cb_set_r8, 3, REG_D, 8, 8, "SET 3, D"),
+    INSTRUCTION_ADD(0xdb, 2, cb_set_r8, 3, REG_E, 8, 8, "SET 3, E"),
+    INSTRUCTION_ADD(0xdc, 2, cb_set_r8, 3, REG_H, 8, 8, "SET 3, H"),
+    INSTRUCTION_ADD(0xdd, 2, cb_set_r8, 3, REG_L, 8, 8, "SET 3, L"),
+    INSTRUCTION_ADD(0xde, 2, cb_set_m16, 3, REG_HL, 16, 16, "SET 3, (HL)"),
+    INSTRUCTION_ADD(0xdf, 2, cb_set_r8, 3, REG_A, 8, 8, "SET 3, A"),
 
     /* 0xe0 */
-    INSTRUCTION_ADD(0xe0, 1, cb_set_r8, 4, REG_B, 8, 8, "SET 4, B"),
-    INSTRUCTION_ADD(0xe1, 1, cb_set_r8, 4, REG_C, 8, 8, "SET 4, C"),
-    INSTRUCTION_ADD(0xe2, 1, cb_set_r8, 4, REG_D, 8, 8, "SET 4, D"),
-    INSTRUCTION_ADD(0xe3, 1, cb_set_r8, 4, REG_E, 8, 8, "SET 4, E"),
-    INSTRUCTION_ADD(0xe4, 1, cb_set_r8, 4, REG_H, 8, 8, "SET 4, H"),
-    INSTRUCTION_ADD(0xe5, 1, cb_set_r8, 4, REG_L, 8, 8, "SET 4, L"),
-    INSTRUCTION_ADD(0xe6, 1, cb_set_m16, 4, REG_HL, 16, 16, "SET 4, (HL)"),
-    INSTRUCTION_ADD(0xe7, 1, cb_set_r8, 4, REG_A, 8, 8, "SET 4, A"),
-    INSTRUCTION_ADD(0xe8, 1, cb_set_r8, 5, REG_B, 8, 8, "SET 5, B"),
-    INSTRUCTION_ADD(0xe9, 1, cb_set_r8, 5, REG_C, 8, 8, "SET 5, C"),
-    INSTRUCTION_ADD(0xea, 1, cb_set_r8, 5, REG_D, 8, 8, "SET 5, D"),
-    INSTRUCTION_ADD(0xeb, 1, cb_set_r8, 5, REG_E, 8, 8, "SET 5, E"),
-    INSTRUCTION_ADD(0xec, 1, cb_set_r8, 5, REG_H, 8, 8, "SET 5, H"),
-    INSTRUCTION_ADD(0xed, 1, cb_set_r8, 5, REG_L, 8, 8, "SET 5, L"),
-    INSTRUCTION_ADD(0xee, 1, cb_set_m16, 5, REG_HL, 16, 16, "SET 5, (HL)"),
-    INSTRUCTION_ADD(0xef, 1, cb_set_r8, 5, REG_A, 8, 8, "SET 5, A"),
+    INSTRUCTION_ADD(0xe0, 2, cb_set_r8, 4, REG_B, 8, 8, "SET 4, B"),
+    INSTRUCTION_ADD(0xe1, 2, cb_set_r8, 4, REG_C, 8, 8, "SET 4, C"),
+    INSTRUCTION_ADD(0xe2, 2, cb_set_r8, 4, REG_D, 8, 8, "SET 4, D"),
+    INSTRUCTION_ADD(0xe3, 2, cb_set_r8, 4, REG_E, 8, 8, "SET 4, E"),
+    INSTRUCTION_ADD(0xe4, 2, cb_set_r8, 4, REG_H, 8, 8, "SET 4, H"),
+    INSTRUCTION_ADD(0xe5, 2, cb_set_r8, 4, REG_L, 8, 8, "SET 4, L"),
+    INSTRUCTION_ADD(0xe6, 2, cb_set_m16, 4, REG_HL, 16, 16, "SET 4, (HL)"),
+    INSTRUCTION_ADD(0xe7, 2, cb_set_r8, 4, REG_A, 8, 8, "SET 4, A"),
+    INSTRUCTION_ADD(0xe8, 2, cb_set_r8, 5, REG_B, 8, 8, "SET 5, B"),
+    INSTRUCTION_ADD(0xe9, 2, cb_set_r8, 5, REG_C, 8, 8, "SET 5, C"),
+    INSTRUCTION_ADD(0xea, 2, cb_set_r8, 5, REG_D, 8, 8, "SET 5, D"),
+    INSTRUCTION_ADD(0xeb, 2, cb_set_r8, 5, REG_E, 8, 8, "SET 5, E"),
+    INSTRUCTION_ADD(0xec, 2, cb_set_r8, 5, REG_H, 8, 8, "SET 5, H"),
+    INSTRUCTION_ADD(0xed, 2, cb_set_r8, 5, REG_L, 8, 8, "SET 5, L"),
+    INSTRUCTION_ADD(0xee, 2, cb_set_m16, 5, REG_HL, 16, 16, "SET 5, (HL)"),
+    INSTRUCTION_ADD(0xef, 2, cb_set_r8, 5, REG_A, 8, 8, "SET 5, A"),
 
     /* 0xf0 */
-    INSTRUCTION_ADD(0xf0, 1, cb_set_r8, 6, REG_B, 8, 8, "SET 6, B"),
-    INSTRUCTION_ADD(0xf1, 1, cb_set_r8, 6, REG_C, 8, 8, "SET 6, C"),
-    INSTRUCTION_ADD(0xf2, 1, cb_set_r8, 6, REG_D, 8, 8, "SET 6, D"),
-    INSTRUCTION_ADD(0xf3, 1, cb_set_r8, 6, REG_E, 8, 8, "SET 6, E"),
-    INSTRUCTION_ADD(0xf4, 1, cb_set_r8, 6, REG_H, 8, 8, "SET 6, H"),
-    INSTRUCTION_ADD(0xf5, 1, cb_set_r8, 6, REG_L, 8, 8, "SET 6, L"),
-    INSTRUCTION_ADD(0xf6, 1, cb_set_m16, 6, REG_HL, 16, 16, "SET 6, (HL)"),
-    INSTRUCTION_ADD(0xf7, 1, cb_set_r8, 6, REG_A, 8, 8, "SET 6, A"),
-    INSTRUCTION_ADD(0xf8, 1, cb_set_r8, 7, REG_B, 8, 8, "SET 7, B"),
-    INSTRUCTION_ADD(0xf9, 1, cb_set_r8, 7, REG_C, 8, 8, "SET 7, C"),
-    INSTRUCTION_ADD(0xfa, 1, cb_set_r8, 7, REG_D, 8, 8, "SET 7, D"),
-    INSTRUCTION_ADD(0xfb, 1, cb_set_r8, 7, REG_E, 8, 8, "SET 7, E"),
-    INSTRUCTION_ADD(0xfc, 1, cb_set_r8, 7, REG_H, 8, 8, "SET 7, H"),
-    INSTRUCTION_ADD(0xfd, 1, cb_set_r8, 7, REG_L, 8, 8, "SET 7, L"),
-    INSTRUCTION_ADD(0xfe, 1, cb_set_m16, 7, REG_HL, 16, 16, "SET 7, (HL)"),
-    INSTRUCTION_ADD(0xff, 1, cb_set_r8, 7, REG_A, 8, 8, "SET 7, A"),            
+    INSTRUCTION_ADD(0xf0, 2, cb_set_r8, 6, REG_B, 8, 8, "SET 6, B"),
+    INSTRUCTION_ADD(0xf1, 2, cb_set_r8, 6, REG_C, 8, 8, "SET 6, C"),
+    INSTRUCTION_ADD(0xf2, 2, cb_set_r8, 6, REG_D, 8, 8, "SET 6, D"),
+    INSTRUCTION_ADD(0xf3, 2, cb_set_r8, 6, REG_E, 8, 8, "SET 6, E"),
+    INSTRUCTION_ADD(0xf4, 2, cb_set_r8, 6, REG_H, 8, 8, "SET 6, H"),
+    INSTRUCTION_ADD(0xf5, 2, cb_set_r8, 6, REG_L, 8, 8, "SET 6, L"),
+    INSTRUCTION_ADD(0xf6, 2, cb_set_m16, 6, REG_HL, 16, 16, "SET 6, (HL)"),
+    INSTRUCTION_ADD(0xf7, 2, cb_set_r8, 6, REG_A, 8, 8, "SET 6, A"),
+    INSTRUCTION_ADD(0xf8, 2, cb_set_r8, 7, REG_B, 8, 8, "SET 7, B"),
+    INSTRUCTION_ADD(0xf9, 2, cb_set_r8, 7, REG_C, 8, 8, "SET 7, C"),
+    INSTRUCTION_ADD(0xfa, 2, cb_set_r8, 7, REG_D, 8, 8, "SET 7, D"),
+    INSTRUCTION_ADD(0xfb, 2, cb_set_r8, 7, REG_E, 8, 8, "SET 7, E"),
+    INSTRUCTION_ADD(0xfc, 2, cb_set_r8, 7, REG_H, 8, 8, "SET 7, H"),
+    INSTRUCTION_ADD(0xfd, 2, cb_set_r8, 7, REG_L, 8, 8, "SET 7, L"),
+    INSTRUCTION_ADD(0xfe, 2, cb_set_m16, 7, REG_HL, 16, 16, "SET 7, (HL)"),
+    INSTRUCTION_ADD(0xff, 2, cb_set_r8, 7, REG_A, 8, 8, "SET 7, A"),            
 };
 
 void 
@@ -2393,35 +2394,35 @@ init_instruction_set()
     }
 }
 
-instruction_t 
+instruction_t*
 decode(uint8_t *data)
 {
-    uint8_t opcode = data[0];    
-    int prefix_size = 0;
+    uint8_t opcode = data[0];
+    int size = 0;
     instruction_t *inst_set = instruction_set;
 
     if (opcode == PREFIX_CB) {        
         inst_set = prefixed_instruction_set;
-        prefix_size = 1;
+        size = -1;
         opcode = READ_I8(data[1]);
     }
     
-    instruction_t inst = inst_set[opcode];
-    inst.opcode = opcode;
+    instruction_t *inst = inst_set + opcode;
 
-    if (inst.size != 1) {
-        if (inst.size == 2) {
-            inst.opcode_ext.i8 = READ_I8(*(data + 1));            
-        } else if (inst.size == 3) {
+    inst->r_cycles = inst->cycles;
+    size += inst->size;
+
+    if (size != 1) {
+        if (size == 2) {
+            inst->opcode_ext.i8 = READ_I8(*(data + 1));            
+        } else if (inst->size == 3) {
             /* immediate value is little-endian */
-            inst.opcode_ext.i16 = READ_I16(*(uint16_t*)(data + 1));
+            inst->opcode_ext.i16 = READ_I16(*(uint16_t*)(data + 1));
         } else {
-            LOG_ERROR("Invalid instruction, imme size [%d]", inst.size);
+            LOG_ERROR("Invalid instruction, imme size [%d]", inst->size);
             abort();
         }
-    }
-
-    inst.size += prefix_size;
+    }    
 
     return inst;
 }

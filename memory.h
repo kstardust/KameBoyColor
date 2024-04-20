@@ -3,6 +3,9 @@
 
 #include "common.h"
 
+#define WRAM_BANK_SIZE 0x1000 /* 4KB */
+#define WRAM_BANKS     8
+
 #define MEMORY_MAP_ENTRIES 12
 
 #define ROM_BANK_0_ID 1
@@ -53,6 +56,13 @@
 #define IE_REGISTER_BEGIN 0xffff
 #define IE_REGISTER_END 0xffff
 
+#define RAM_ADDR_MASK 0x1fff   /* 13-bits 8KB */
+#define RAM_ADDR_MASK_SHIFT 13
+
+#define ROM_ADDR_MASK 0x3fff   /* 14-bits 16KB */
+#define ROM_ADDR_MASK_SHIFT 14
+
+
 typedef struct gbc_memory gbc_memory_t;
 typedef struct memory_bank memory_bank_t;
 typedef struct memory_map_entry memory_map_entry_t;
@@ -70,12 +80,13 @@ struct memory_map_entry
     void *udata;
 };
 
+/* It is actually, bus */
 struct gbc_memory
 {
     memory_read read;
-    memory_write write;
+    memory_write write;    
     memory_map_entry_t map[MEMORY_MAP_ENTRIES];
-    uint8_t *data;
+    uint8_t wram[WRAM_BANKS * WRAM_BANKS];
 };
 
 struct memory_bank
@@ -87,7 +98,7 @@ struct memory_bank
     uint8_t *data;
 };
 
-gbc_memory_t gbc_mem_new();
+void gbc_mem_init(gbc_memory_t *mem);
 void register_memory_map(gbc_memory_t *mem, memory_map_entry_t *entry);
 
 #endif 

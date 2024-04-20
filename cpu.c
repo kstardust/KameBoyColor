@@ -2,12 +2,10 @@
 #include "cpu.h"
 #include "instruction_set.h"
 
-gbc_cpu_t 
-gbc_cpu_new()
+void
+gbc_cpu_init(gbc_cpu_t *cpu)
 {
-    gbc_cpu_t cpu;
-    memset(&cpu, 0, sizeof(cpu.regs));
-    return cpu;
+    memset(cpu, 0, sizeof(gbc_cpu_t));
 }
 
 void

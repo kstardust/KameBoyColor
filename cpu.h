@@ -77,7 +77,7 @@ struct gbc_cpu
     void *mem_data;
 };
 
-gbc_cpu_t gbc_cpu_new();
+void gbc_cpu_init(gbc_cpu_t *cpu);
 void gbc_cpu_connect(gbc_cpu_t *cpu, gbc_memory_t *mem);
 
 
