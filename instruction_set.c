@@ -225,7 +225,7 @@ _jr_i8(gbc_cpu_t *cpu, instruction_t *ins)
     LOG_INFO("\n_JR: %s\n", ins->name);
     cpu_register_t *regs = &(cpu->regs);
     int8_t offset = (int8_t)ins->opcode_ext.i8;
-    uint16_t pc = READ_R16(regs, REG_PC);
+    uint16_t pc = READ_R16(regs, REG_PC);    
     pc += offset;    
     WRITE_R16(regs, REG_PC, pc);
 }
@@ -1115,7 +1115,7 @@ rst(gbc_cpu_t *cpu, instruction_t *ins)
 static void
 _jp_addr16(gbc_cpu_t *cpu, instruction_t *ins, uint16_t addr)
 {
-    LOG_INFO("\t_JP ADDR16: %s\n", ins->name);
+    LOG_INFO("\t_JP ADDR16: %s %x\n", ins->name, addr);
 
     cpu_register_t *regs = &(cpu->regs);
     WRITE_R16(regs, REG_PC, addr);
@@ -1283,7 +1283,6 @@ _call_i16(gbc_cpu_t *cpu, instruction_t *ins)
     uint16_t addr = ins->opcode_ext.i16;
     uint16_t pc = READ_R16(regs, REG_PC);
     uint16_t sp = READ_R16(regs, REG_SP);
-    pc += ins->size;
 
     cpu->mem_write(cpu->mem_data, sp - 1, pc >> 8);
     cpu->mem_write(cpu->mem_data, sp - 2, pc & UINT8_MASK);

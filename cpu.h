@@ -8,7 +8,7 @@ typedef struct cpu_register cpu_register_t;
 typedef struct gbc_cpu gbc_cpu_t;
 
 #define CLOCK_RATE 8388608                          /* 8.38 MHz */
-#define CLOCK_CYCLE (1.0 / CLOCK_RATE * 1000000000) /* nanoseconds */
+#define CLOCK_CYCLE (1000000000.0 / CLOCK_RATE)     /* nanoseconds */
 
 #define OFFSET_OF(type, field) \
     ((size_t) &((type *)0)->field)

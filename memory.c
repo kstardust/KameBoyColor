@@ -18,7 +18,7 @@ select_entry(gbc_memory_t *mem, uint16_t addr)
 uint8_t
 mem_write(void *udata, uint16_t addr, uint8_t data)
 {
-    printf("Writing to memory at address %x [%x]\n", addr, data);
+    LOG_DEBUG("Writing to memory at address %x [%x]\n", addr, data);
     gbc_memory_t *mem = (gbc_memory_t*)udata;
     memory_map_entry_t *entry = select_entry(mem, addr);
 
@@ -33,7 +33,8 @@ mem_write(void *udata, uint16_t addr, uint8_t data)
 uint8_t 
 mem_read(void *udata, uint16_t addr)
 {
-    printf("Reading from memory at address %x\n", addr);
+    LOG_DEBUG("Reading from memory at address %x\n", addr);
+
     gbc_memory_t *mem = (gbc_memory_t*)udata;
     memory_map_entry_t *entry = select_entry(mem, addr);
 
@@ -41,14 +42,14 @@ mem_read(void *udata, uint16_t addr)
         LOG_ERROR("No memory map entry found for address %x\n", addr);
         abort();
     }    
-    
+
     return entry->read(entry->udata, addr);
 }
 
 void
 register_memory_map(gbc_memory_t *mem, memory_map_entry_t *entry)
 {    
-    LOG_INFO("Registering memory map entry with id %d [0x%x] - [0x%x]\n", entry->id, entry->addr_begin, entry->addr_end);
+    LOG_DEBUG("Registering memory map entry with id %d [0x%x] - [0x%x]\n", entry->id, entry->addr_begin, entry->addr_end);
 
     if (entry->id >= MEMORY_MAP_ENTRIES) {
         LOG_ERROR("Memory map entry id %d is out of bounds\n", entry->id);
@@ -79,13 +80,46 @@ register_memory_map(gbc_memory_t *mem, memory_map_entry_t *entry)
 uint8_t
 mem_raw_write(void *udata, uint16_t addr, uint8_t data)
 {
-    return 0;
+    gbc_memory_t *mem = (gbc_memory_t*)udata;
+
+    if (IN_RANGE(addr, HRAM_BEGIN, HRAM_END)) {
+        mem->hraw[addr - HRAM_BEGIN] = data;
+        return data;
+
+    } else if (IN_RANGE(addr, WRAM_BANK_0_BEGIN, WRAM_BANK_0_END)) {
+        mem->wram[addr - WRAM_BANK_0_BEGIN] = data;
+        return data;
+
+    } else if (IN_RANGE(addr, WRAM_BANK_N_BEGIN, WRAM_BANK_N_END)) {        
+        LOG_ERROR("TODO BANK N WRAM\n");
+        abort();
+        return data;
+
+    }
+    
+    LOG_ERROR("Invalid write, %x is not a valid WRAM addr \n", addr);
+    abort();
 }
 
 uint8_t
 mem_raw_read(void *udata, uint16_t addr)
 {
-    return 0;
+    gbc_memory_t *mem = (gbc_memory_t*)udata;
+
+    if (IN_RANGE(addr, HRAM_BEGIN, HRAM_END)) {
+        return mem->hraw[addr - HRAM_BEGIN];
+
+    } else if (IN_RANGE(addr, WRAM_BANK_0_BEGIN, WRAM_BANK_0_END)) {
+        return mem->wram[addr - WRAM_BANK_0_BEGIN];
+
+    } else if (IN_RANGE(addr, WRAM_BANK_N_BEGIN, WRAM_BANK_N_END)) {
+        LOG_ERROR("TODO BANK N WRAM\n");
+        abort();
+        return 0;
+    }
+
+    LOG_ERROR("Invalid read, %x is not a valid WRAM addr \n", addr);
+    abort();    
 }
 
 uint8_t

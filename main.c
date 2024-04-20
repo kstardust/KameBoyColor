@@ -8,17 +8,8 @@
 #include "cartridge.h"
 #include "instruction_set.h"
 
-void test();
 
-#ifndef DEBUG
-int main()
-{
-    init_instruction_set();    
-    test();
-    return 0;
-}
-
-#else
+#ifndef RUN_TEST
 
 int main()
 {
@@ -30,7 +21,15 @@ int main()
     return 0;
 }
 
-#endif
+#else
+
+void test();
+int main()
+{
+    init_instruction_set();    
+    test();
+    return 0;
+}
 
 void
 test() 
@@ -143,3 +142,5 @@ test()
     test_instructions();
     return;
 }
+
+#endif

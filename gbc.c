@@ -7,9 +7,9 @@ gbc_init(gbc_t *gbc)
 {
     init_instruction_set();
 
-    gbc_cpu_init(&gbc->cpu);
-    gbc_mbc_init(&gbc->mbc);
     gbc_mem_init(&gbc->mem);
+    gbc_cpu_init(&gbc->cpu);    
+    gbc_mbc_init(&gbc->mbc);    
 
     gbc_cpu_connect(&gbc->cpu, &gbc->mem);
     gbc_mbc_connect(&gbc->mbc, &gbc->mem);
@@ -45,6 +45,18 @@ gbc_init(gbc_t *gbc)
 }
 
 void
+print_stat(gbc_t *gbc)
+{
+    gbc_cpu_t *cpu = &gbc->cpu;
+    cpu_register_t *r = &cpu->regs;
+
+    printf("{PC: 0x%x, SP: 0x%x, AF: 0x%x, BC: 0x%x, DE: 0x%x, HL: 0x, C: %d, Z: %d, N: %d, H: %d}\n",
+           READ_R16(r, REG_PC), READ_R16(r, REG_SP), READ_R16(r, REG_AF),
+           READ_R16(r, REG_BC), READ_R16(r, REG_DE), READ_R16(r, REG_HL),
+           READ_R_FLAG(r, FLAG_C), READ_R_FLAG(r, FLAG_Z), READ_R_FLAG(r, FLAG_N), READ_R_FLAG(r, FLAG_H));
+}
+
+void
 gbc_run(gbc_t *gbc)
 {                
     for (;;) {
@@ -53,7 +65,11 @@ gbc_run(gbc_t *gbc)
         gbc_cpu_cycle(&gbc->cpu);
         
         /* TODO compensate for the cost longer than CLOCK_CYCLE */
-        while (get_time() - t < CLOCK_CYCLE)            
+        while (get_time() - t < CLOCK_CYCLE)
             ;
+
+        #ifdef DEBUG
+        print_stat(gbc);
+        #endif
     }    
 }

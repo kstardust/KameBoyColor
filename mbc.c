@@ -16,10 +16,8 @@ uint8_t mbc1_write(gbc_mbc_t *mbc, uint16_t addr, uint8_t data);
 uint8_t mbc3_read(gbc_mbc_t *mbc, uint16_t addr);
 uint8_t mbc3_write(gbc_mbc_t *mbc, uint16_t addr, uint8_t data);
 
-#define IN_RANGE(addr, begin, end) ((addr) >= (begin) && (addr) <= (end))
-
 uint8_t mbc_read(void *udata, uint16_t addr)
-{
+{    
     gbc_mbc_t *mbc = (gbc_mbc_t*)udata;
     return mbc->read(mbc, addr);
 }
@@ -161,8 +159,8 @@ mbc1_read(gbc_mbc_t *mbc, uint16_t addr)
 {
     LOG_DEBUG("[MBC1]Reading from MBC1 at address %x\n", addr);
 
-    if (IN_RANGE(addr, MBC1_ROM_BANK0_BEGIN, MBC1_ROM_BANK0_END)) {
-        return cartridge_code(mbc->cart)[addr];
+    if (IN_RANGE(addr, MBC1_ROM_BANK0_BEGIN, MBC1_ROM_BANK0_END)) {        
+        return ((uint8_t*)mbc->cart)[addr];
 
     } else if (IN_RANGE(addr, MBC1_ROM_BANK_N_BEGIN, MBC1_ROM_BANK_N_END)) {
         uint32_t mbc1_rom_addr = translate_mbc1_addr(mbc, addr);

@@ -36,5 +36,6 @@
 #define HALF_CARRY_SUB_16(a, b) ((((a) & 0xfff) < ((b) & 0xfff)) ? 1 : 0)
 #define HALF_CARRY_SBC_16(a, b, c) (((((a)-(c)) & 0xfff) < ((b) & 0xfff)) ? 1 : 0)
 
+#define IN_RANGE(addr, begin, end) ((addr) >= (begin) && (addr) <= (end))
 
 #endif

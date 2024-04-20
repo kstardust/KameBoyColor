@@ -1545,6 +1545,7 @@ test_call_i16(gbc_cpu_t *cpu)
     WRITE_R16(regs, REG_SP, 0x1000);
     uint8_t code[] = {0xcd, 0xff, 0xee}; // CALL 0xeeff
     instruction_t *ins = decode(code);
+    WRITE_R16(regs, REG_PC, 0x1234 + ins->size);
     ins->func(cpu, ins);
     assert(READ_R16(regs, REG_PC) == 0xeeff);
     assert(READ_R16(regs, REG_SP) == 0x0ffe);
@@ -1577,12 +1578,14 @@ test_call_ret(gbc_cpu_t *cpu)
     code[3] = cpu->mem_read(cpu->mem_data, pc+3);
 
     instruction_t *ins = decode(code);
+    WRITE_R16(regs, REG_PC, READ_R16(regs, REG_PC) + ins->size);
     ins->func(cpu, ins);    
     assert(READ_R16(regs, REG_PC) == 0x0ffe);
     assert(READ_R16(regs, REG_SP) == 0x1ffe);
 
     code[0] = cpu->mem_read(cpu->mem_data, READ_R16(regs, REG_PC));
     ins = decode(code);
+    WRITE_R16(regs, REG_PC, READ_R16(regs, REG_PC) + ins->size);
     ins->func(cpu, ins);
     assert(READ_R16(regs, REG_PC) == 0x0ef3);
     assert(READ_R16(regs, REG_SP) == 0x2000);
