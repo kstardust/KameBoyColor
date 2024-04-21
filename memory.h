@@ -44,9 +44,9 @@
 #define IO_NOT_USABLE_BEGIN 0xfea0
 #define IO_NOT_USABLE_END 0xfeff
 
-#define IO_ID 10
-#define IO_BEGIN 0xff00
-#define IO_END 0xff7f
+#define IO_PORT_ID 10
+#define IO_PORT_BEGIN 0xff00
+#define IO_PORT_END 0xff7f
 
 #define HRAM_ID 11
 #define HRAM_BEGIN 0xff80
@@ -61,6 +61,73 @@
 
 #define ROM_ADDR_MASK 0x3fff   /* 14-bits 16KB */
 #define ROM_ADDR_MASK_SHIFT 14
+
+/* IO Ports */
+#define IO_PORT_BASE IO_PORT_BEGIN
+#define IO_PORT_P1   0x00
+#define IO_PORT_SB   0x01
+#define IO_PORT_SC   0x02
+#define IO_PORT_DIV  0x04
+#define IO_PORT_TIMA 0x05
+#define IO_PORT_TMA  0x06
+#define IO_PORT_TAC  0x07
+#define IO_PORT_IF   0x0f
+#define IO_PORT_NR10 0x10
+#define IO_PORT_NR11 0x11
+#define IO_PORT_NR12 0x12
+#define IO_PORT_NR13 0x13
+#define IO_PORT_NR14 0x14
+#define IO_PORT_NR21 0x16
+#define IO_PORT_NR22 0x17
+#define IO_PORT_NR23 0x18
+#define IO_PORT_NR24 0x19
+#define IO_PORT_NR30 0x1a
+#define IO_PORT_NR31 0x1b
+#define IO_PORT_NR32 0x1c
+#define IO_PORT_NR33 0x1d
+#define IO_PORT_NR34 0x1e
+#define IO_PORT_NR41 0x20
+#define IO_PORT_NR42 0x21
+#define IO_PORT_NR43 0x22
+#define IO_PORT_NR44 0x23
+#define IO_PORT_NR50 0x24
+#define IO_PORT_NR51 0x25
+#define IO_PORT_NR52 0x26
+#define IO_PORT_WAVE_RAM 0x30 /* 0x30 - 0x3f */
+#define IO_PORT_LCDC 0x40
+#define IO_PORT_STAT 0x41
+#define IO_PORT_SCY  0x42
+#define IO_PORT_SCX  0x43
+#define IO_PORT_LY   0x44
+#define IO_PORT_LYC  0x45
+#define IO_PORT_DMA  0x46
+#define IO_PORT_BGP  0x47
+#define IO_PORT_OBP0 0x48
+#define IO_PORT_OBP1 0x49
+#define IO_PORT_WY   0x4a
+#define IO_PORT_WX   0x4b
+#define IO_PORT_KEY1 0x4d
+#define IO_PORT_VBK  0x4f
+#define IO_PORT_HDMA1 0x51
+#define IO_PORT_HDMA2 0x52
+#define IO_PORT_HDMA3 0x53
+#define IO_PORT_HDMA4 0x54
+#define IO_PORT_HDMA5 0x55
+#define IO_PORT_RP   0x56    
+#define IO_PORT_BCPS_BCPI 0x68
+#define IO_PORT_BCPD_BGPD 0x69
+#define IO_PORT_OCPS_OCPI 0x6a
+#define IO_PORT_OCPD_OBPD 0x6b
+#define IO_PORT_OPRI 0x6c
+#define IO_PORT_SVBK 0x70
+#define IO_PORT_PCM12 0x76
+#define IO_PORT_PCM34 0x77
+
+#define IO_ADDR_PORT(addr) ((addr) - IO_PORT_BASE)
+#define IO_PORT_ADDR(port) ((port) + IO_PORT_BASE)
+
+#define IO_PORT_READ(mem, port) ((mem)->io_ports[(port)])
+#define IO_PORT_WRITE(mem, port, data) ((mem)->io_ports[(port)] = (data))
 
 
 typedef struct gbc_memory gbc_memory_t;
@@ -84,10 +151,11 @@ struct memory_map_entry
 struct gbc_memory
 {
     memory_read read;
-    memory_write write;    
+    memory_write write;
     memory_map_entry_t map[MEMORY_MAP_ENTRIES];
     uint8_t wram[WRAM_BANKS * WRAM_BANKS];
     uint8_t hraw[HRAM_END - HRAM_BEGIN + 1];
+    uint8_t io_ports[IO_PORT_END - IO_PORT_BEGIN + 1];
 };
 
 struct memory_bank

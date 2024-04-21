@@ -18,12 +18,12 @@ select_entry(gbc_memory_t *mem, uint16_t addr)
 uint8_t
 mem_write(void *udata, uint16_t addr, uint8_t data)
 {
-    LOG_DEBUG("Writing to memory at address %x [%x]\n", addr, data);
+    LOG_DEBUG("[MEM] Writing to memory at address %x [%x]\n", addr, data);
     gbc_memory_t *mem = (gbc_memory_t*)udata;
     memory_map_entry_t *entry = select_entry(mem, addr);
 
     if (entry == NULL) {
-        LOG_ERROR("No memory map entry found for address %x\n", addr);
+        LOG_ERROR("[MEM] No memory map entry found for address %x\n", addr);
         abort();
     }
 
@@ -33,13 +33,13 @@ mem_write(void *udata, uint16_t addr, uint8_t data)
 uint8_t 
 mem_read(void *udata, uint16_t addr)
 {
-    LOG_DEBUG("Reading from memory at address %x\n", addr);
+    LOG_DEBUG("[MEM] Reading from memory at address %x\n", addr);
 
     gbc_memory_t *mem = (gbc_memory_t*)udata;
     memory_map_entry_t *entry = select_entry(mem, addr);
 
     if (entry == NULL) {
-        LOG_ERROR("No memory map entry found for address %x\n", addr);
+        LOG_ERROR("[MEM] No memory map entry found for address %x\n", addr);
         abort();
     }    
 
@@ -49,27 +49,27 @@ mem_read(void *udata, uint16_t addr)
 void
 register_memory_map(gbc_memory_t *mem, memory_map_entry_t *entry)
 {    
-    LOG_DEBUG("Registering memory map entry with id %d [0x%x] - [0x%x]\n", entry->id, entry->addr_begin, entry->addr_end);
+    LOG_DEBUG("[MEM] Registering memory map entry with id %d [0x%x] - [0x%x]\n", entry->id, entry->addr_begin, entry->addr_end);
 
-    if (entry->id >= MEMORY_MAP_ENTRIES) {
-        LOG_ERROR("Memory map entry id %d is out of bounds\n", entry->id);
+    if (entry->id > MEMORY_MAP_ENTRIES) {
+        LOG_ERROR("[MEM] Memory map entry id %d is out of bounds\n", entry->id);
         abort();
     }
 
     if (entry->addr_begin > entry->addr_end) {
-        LOG_ERROR("Memory map entry id %d has invalid address range [%x] - [%x]\n", entry->id, entry->addr_begin, entry->addr_end);
+        LOG_ERROR("[MEM] Memory map entry id %d has invalid address range [%x] - [%x]\n", entry->id, entry->addr_begin, entry->addr_end);
         abort();
     }
 
     if (mem->map[entry->id-1].id != 0) {
-        LOG_ERROR("Memory map entry id %d is already registered\n", entry->id);
+        LOG_ERROR("[MEM] Memory map entry id %d is already registered\n", entry->id);
         abort();
     }
 
     for (int i = 0; i < MEMORY_MAP_ENTRIES; i++) {
         memory_map_entry_t *e = &mem->map[i];        
         if (e->id && e->addr_begin <= entry->addr_end && e->addr_end >= entry->addr_begin) {
-            LOG_ERROR("Memory map entry id %d overlaps with existing entry id %d\n", entry->id, e->id);
+            LOG_ERROR("[MEM] Memory map entry id %d overlaps with existing entry id %d\n", entry->id, e->id);
             abort();
         }
     }
@@ -90,14 +90,9 @@ mem_raw_write(void *udata, uint16_t addr, uint8_t data)
         mem->wram[addr - WRAM_BANK_0_BEGIN] = data;
         return data;
 
-    } else if (IN_RANGE(addr, WRAM_BANK_N_BEGIN, WRAM_BANK_N_END)) {        
-        LOG_ERROR("TODO BANK N WRAM\n");
-        abort();
-        return data;
-
     }
     
-    LOG_ERROR("Invalid write, %x is not a valid WRAM addr \n", addr);
+    LOG_ERROR("[MEM] Invalid write, %x is not a valid WRAM addr \n", addr);
     abort();
 }
 
@@ -112,26 +107,49 @@ mem_raw_read(void *udata, uint16_t addr)
     } else if (IN_RANGE(addr, WRAM_BANK_0_BEGIN, WRAM_BANK_0_END)) {
         return mem->wram[addr - WRAM_BANK_0_BEGIN];
 
-    } else if (IN_RANGE(addr, WRAM_BANK_N_BEGIN, WRAM_BANK_N_END)) {
-        LOG_ERROR("TODO BANK N WRAM\n");
-        abort();
-        return 0;
     }
 
-    LOG_ERROR("Invalid read, %x is not a valid WRAM addr \n", addr);
+    LOG_ERROR("[MEM] Invalid read, %x is not a valid WRAM addr \n", addr);
     abort();    
 }
 
 uint8_t
-bank_n_write(void *udata, uint16_t addr, uint8_t data)
+io_port_read(void *udata, uint16_t addr)
 {
+    LOG_DEBUG("[MEM] Reading from IO port at address %x\n", addr);    
+    return IO_PORT_READ((gbc_memory_t*)udata, IO_ADDR_PORT(addr));
+}
+
+uint8_t
+io_port_write(void *udata, uint16_t addr, uint8_t data)
+{
+    LOG_DEBUG("[MEM] Writing to IO port at address %x [%x]\n", addr, data);
+    IO_PORT_WRITE((gbc_memory_t*)udata, IO_ADDR_PORT(addr), data);
+    return data;
+}
+
+uint8_t
+bank_n_write(void *udata, uint16_t addr, uint8_t data)
+{    
+    gbc_memory_t *mem = (gbc_memory_t*)udata;
+    uint8_t bank = IO_PORT_READ(mem, IO_PORT_SVBK) & 0x7;
+
+    LOG_DEBUG("[MEM] Writing to switchable RAM bank [%x] at address %x [%x]\n", bank, addr, data);
+
+    uint16_t offset = WRAM_BANK_N_BEGIN + (bank * WRAM_BANK_SIZE);
     return data;
 }
 
 uint8_t
 bank_n_read(void *udata, uint16_t addr)
 {
-    return 0;
+    gbc_memory_t *mem = (gbc_memory_t*)udata;
+    uint8_t bank = IO_PORT_READ(mem, IO_PORT_SVBK) & 0x7;
+
+    LOG_DEBUG("[MEM] Reading from switchable RAM bank [%x] at address %x\n", bank, addr);
+    
+    uint16_t offset = WRAM_BANK_N_BEGIN + (bank * WRAM_BANK_SIZE);
+    return mem->wram[addr - offset];
 }
 
 void
@@ -172,4 +190,14 @@ gbc_mem_init(gbc_memory_t *mem)
     entry.udata = mem;
 
     register_memory_map(mem, &entry);    
+
+    /* IO Port */
+    entry.id = IO_PORT_ID;
+    entry.addr_begin = IO_PORT_BEGIN;
+    entry.addr_end = IO_PORT_END;
+    entry.read = io_port_read;
+    entry.write = io_port_write;
+    entry.udata = mem;
+
+    register_memory_map(mem, &entry);
 }

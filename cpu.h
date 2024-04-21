@@ -81,6 +81,7 @@ struct gbc_cpu
 
     uint64_t cycles;
     uint16_t ins_cycles;   /* current instruction cost */    
+    uint8_t ier;          /* interrupt enable */
 };
 
 #define swap_i16(value) (uint16_t)((value >> 8) | (value << 8));

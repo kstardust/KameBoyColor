@@ -1,5 +1,4 @@
 #include "gbc.h"
-#include "cpu.h"
 #include "instruction_set.h"
 
 int
@@ -8,11 +7,13 @@ gbc_init(gbc_t *gbc)
     init_instruction_set();
 
     gbc_mem_init(&gbc->mem);
-    gbc_cpu_init(&gbc->cpu);    
+    gbc_cpu_init(&gbc->cpu);
     gbc_mbc_init(&gbc->mbc);    
+    gbc_io_init(&gbc->io);
 
     gbc_cpu_connect(&gbc->cpu, &gbc->mem);
     gbc_mbc_connect(&gbc->mbc, &gbc->mem);
+    gbc_io_connect(&gbc->io, &gbc->mem);
 
     FILE* cartridge = fopen("/Users/Kevin/Development/GBC/tetris_dx.gbc", "rb");
     if (!cartridge) {
@@ -61,15 +62,15 @@ gbc_run(gbc_t *gbc)
 {                
     for (;;) {
 
-        uint64_t t = get_time();
-        gbc_cpu_cycle(&gbc->cpu);
+        //uint64_t t = get_time();
+        gbc_cpu_cycle(&gbc->cpu);  
         
         /* TODO compensate for the cost longer than CLOCK_CYCLE */
-        while (get_time() - t < CLOCK_CYCLE)
-            ;
+        //while (get_time() - t < CLOCK_CYCLE)
+        //    ;
 
         #ifdef DEBUG
-        print_stat(gbc);
+        print_stat(gbc);        
         #endif
     }    
 }

@@ -58,6 +58,7 @@ cartridge_load(uint8_t *data)
 
     printf("Title: %s\n", cartridge->title);
     printf("ROM Size: %dk\n", cartridge_rom_size(cartridge) / 1024);
+    printf("ROM Banks: %d\n", cartridge_rom_banks(cartridge));
     
     switch (cartridge->ram_size) {
         case 0:

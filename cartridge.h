@@ -59,6 +59,7 @@ struct cartridge
 };
 
 #define cartridge_rom_size(cart)    (32 * (1 << (cart)->rom_size) * 1024)
+#define cartridge_rom_banks(cart)   (cart->rom_size > 0 ? (2 << cart->rom_size) : 0)
 #define cartridge_code(cart)        ((uint8_t*)&(cart->code))
 #define cartridge_code_size(cart)   (cartridge_code(cart) - (uint8_t*)(cart) + cartridge_rom_size((cart)))
 

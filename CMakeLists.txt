@@ -15,6 +15,7 @@ set(SOURCES
     mbc.c
     cartridge.c
     memory.c
+    io.c
     utils.c    
     instruction_set.c
     main.c)
