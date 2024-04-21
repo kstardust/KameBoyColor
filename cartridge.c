@@ -87,7 +87,7 @@ cartridge_load(uint8_t *data)
 
     printf("Cartridge Type: $%x\n", cartridge->cartridge_type);
 
-    printf("Manufacturer Code: %c%c%c%c\n", 
+    printf("Manufacturer Code: %x %x %x %x\n",
         ((char*)&(cartridge->cart_manufacturer_code))[0],
         ((char*)&(cartridge->cart_manufacturer_code))[1],
         ((char*)&(cartridge->cart_manufacturer_code))[2],
