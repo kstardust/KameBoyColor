@@ -64,7 +64,7 @@ endif()
 if (WIN32)
     SET(IMGUI_LIBS libglfw3.a gdi32 opengl32 imm32 ucrt)    
 elseif(APPLE)
-    set(IMGUI_LIBS libglfw.a "-framework OpenGL" "-framework Cocoa" "-framework IOKit" "-framework CoreVideo")
+    set(IMGUI_LIBS glfw "-framework OpenGL" "-framework Cocoa" "-framework IOKit" "-framework CoreVideo")
 endif()
 
 include_directories(${IMGUI_INCLUDE_DIRS})
