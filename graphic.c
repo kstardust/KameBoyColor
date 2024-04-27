@@ -6,7 +6,7 @@ gbc_graphic_init(gbc_graphic_t *graphic)
     memset(graphic, 0, sizeof(gbc_graphic_t));    
 }
 
-uint8_t
+static uint8_t
 vram_read(void *udata, uint16_t addr)
 {
     LOG_DEBUG("[GRAPHIC] Reading from VRAM %x\n", addr);
@@ -14,7 +14,7 @@ vram_read(void *udata, uint16_t addr)
     return 0;
 }
 
-uint8_t
+static uint8_t
 vram_write(void *udata, uint16_t addr, uint8_t data)
 {
     LOG_DEBUG("[GRAPHIC] Writing to VRAM %x [%x]\n", addr, data);
@@ -22,7 +22,7 @@ vram_write(void *udata, uint16_t addr, uint8_t data)
     return 0;
 }
 
-uint8_t
+static uint8_t
 oam_read(void *udata, uint16_t addr)
 {
     LOG_DEBUG("[GRAPHIC] Reading from OAM %x\n", addr);
@@ -30,7 +30,7 @@ oam_read(void *udata, uint16_t addr)
     return 0;
 }
 
-uint8_t
+static uint8_t
 oam_write(void *udata, uint16_t addr, uint8_t data)
 {
     LOG_DEBUG("[GRAPHIC] Writing to OAM %x [%x]\n", addr, data);

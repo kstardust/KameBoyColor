@@ -16,4 +16,7 @@ struct gbc_graphic
     gbc_memory_t *mem;
 };
 
+void gbc_graphic_connect(gbc_graphic_t *graphic, gbc_memory_t *mem);
+void gbc_graphic_init(gbc_graphic_t *graphic);
+
 #endif

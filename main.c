@@ -14,7 +14,7 @@
 
 int main()
 {   
-    gui_main(0, NULL);
+    //gui_main(0, NULL);
     gbc_t gbc;
 
     if (gbc_init(&gbc) == 0)
