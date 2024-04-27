@@ -8,11 +8,13 @@
 #include "cartridge.h"
 #include "instruction_set.h"
 
+#include "gui.h"
 
 #ifndef RUN_TEST
 
-int gbc_main()
-{
+int main()
+{   
+    gui_main(0, NULL);
     gbc_t gbc;
 
     if (gbc_init(&gbc) == 0)
