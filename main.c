@@ -11,7 +11,7 @@
 
 #ifndef RUN_TEST
 
-int main()
+int gbc_main()
 {
     gbc_t gbc;
 
