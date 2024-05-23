@@ -1,11 +1,12 @@
 #include "mywindow.h"
+#include "gui.h"
 #include <imgui.h>
 #include <vector>
 #include <ctime>
 #include <random>
 
-const int width = 100;
-const int height = 100;
+const int width = 160;
+const int height = 144;
 const int pixel_size = 4;
 std::vector<ImU32> framebuffer(width * height, IM_COL32(0, 0, 0, 255)); // Initialize with black color
 
@@ -35,6 +36,10 @@ void InitMyWindow() {
     std::srand(std::time(nullptr));
 }
 
+unsigned char GuiWrite(void *udata, unsigned short addr, unsigned char data) {    
+    //framebuffer[addr] = IM_COL32(data, data, data, data);
+    return 0;
+}
 
 void ShowMyWindow() {        
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
@@ -44,7 +49,7 @@ void ShowMyWindow() {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));    
     ImGui::Begin("GBC");
     ImDrawList* draw_list = ImGui::GetWindowDrawList();
-    FillFramebuffer(framebuffer);
+    // FillFramebuffer(framebuffer);
     DrawFramebuffer(draw_list, framebuffer, ImGui::GetCursorScreenPos());
     ImGui::End();
     ImGui::PopStyleVar();

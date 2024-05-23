@@ -269,6 +269,8 @@ uint8_t
 mbc3_read(gbc_mbc_t *mbc, uint16_t addr)
 {
     LOG_DEBUG("[MBC3] Reading from MBC3 at address %x\n", addr);
+    /* TODO */
+    assert(0);
     return 0;
 }
 
@@ -276,6 +278,8 @@ uint8_t
 mbc3_write(gbc_mbc_t *mbc, uint16_t addr, uint8_t data)
 {
     LOG_DEBUG("[MBC3] Writing to MBC3 at address %x [%x]\n", addr, data);
+    /* TODO */
+    assert(0);
     return data;
 }
 

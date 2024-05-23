@@ -1,5 +1,6 @@
 #include "gbc.h"
 #include "instruction_set.h"
+#include "gui/gui.h"
 
 int
 gbc_init(gbc_t *gbc)
@@ -17,7 +18,7 @@ gbc_init(gbc_t *gbc)
     gbc_io_connect(&gbc->io, &gbc->mem);
     gbc_graphic_connect(&gbc->graphic, &gbc->mem);
 
-    FILE* cartridge = fopen("/Users/Kevin/Development/GBC/tetris_dx.gbc", "rb");
+    FILE* cartridge = fopen("C:\\Users\\liqilong\\Desktop\\Dev\\GameBoyColor\\tetris_dx.gbc", "rb");
     if (!cartridge) {
         printf("Failed to open cartridge\n");
         return 1;
@@ -43,7 +44,8 @@ gbc_init(gbc_t *gbc)
         printf("Failed to load cartridge\n");
         return 1;
     }
-
+    /* initial values https://gbdev.io/pandocs/Power_Up_Sequence.html  */
+    IO_PORT_WRITE(&(gbc->mem), IO_PORT_LCDC, 0x91);
     return 0;
 }
 
@@ -62,11 +64,18 @@ print_stat(gbc_t *gbc)
 void
 gbc_run(gbc_t *gbc)
 {                
+    uint64_t lastf = get_time(), now = 0, delta = 0;
+    uint64_t counter = 0;    
+    
     for (;;) {
-
-        //uint64_t t = get_time();
-        gbc_cpu_cycle(&gbc->cpu);  
         
+        now = get_time();
+        delta = now - lastf;        
+        lastf = now;
+
+        gbc_cpu_cycle(&gbc->cpu);
+        gbc_graphic_cycle(&gbc->graphic, delta);
+
         /* TODO compensate for the cost longer than CLOCK_CYCLE */
         //while (get_time() - t < CLOCK_CYCLE)
         //    ;

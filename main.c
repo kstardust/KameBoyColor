@@ -15,11 +15,16 @@
 int main()
 {   
     //gui_main(0, NULL);
+    GuiInit();
     gbc_t gbc;
 
-    if (gbc_init(&gbc) == 0)
+    if (gbc_init(&gbc) == 0) {
+        gbc.graphic.screen_write = GuiWrite;
+        gbc.graphic.screen_update = GuiUpdate;
         gbc_run(&gbc);
+    }
 
+    GuiDestroy();
     return 0;
 }
 

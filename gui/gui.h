@@ -5,7 +5,10 @@
 extern "C" {
 #endif
 
-int gui_main(int, char**);
+int GuiInit();
+void GuiDestroy();
+void GuiUpdate(void *udata);
+unsigned char GuiWrite(void *udata, unsigned short addr, unsigned char data);
 
 #ifdef __cplusplus
 }
