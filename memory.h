@@ -153,7 +153,7 @@ struct gbc_memory
     memory_read read;
     memory_write write;
     memory_map_entry_t map[MEMORY_MAP_ENTRIES];
-    uint8_t wram[WRAM_BANKS * WRAM_BANKS];
+    uint8_t wram[WRAM_BANK_SIZE * WRAM_BANKS];
     uint8_t hraw[HRAM_END - HRAM_BEGIN + 1];
     uint8_t io_ports[IO_PORT_END - IO_PORT_BEGIN + 1];
 };
