@@ -56,7 +56,7 @@ elseif(APPLE)
         ${HOMEBREW_PATH}/include
     )
 
-    link_directories(        
+    link_directories(
         ${HOMEBREW_PATH}/lib
     )
 endif()

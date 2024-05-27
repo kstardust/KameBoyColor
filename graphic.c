@@ -21,12 +21,12 @@ gbc_graphic_cycle(gbc_graphic_t *graphic, uint64_t delta)
     
     if (graphic->t_delta < GRAPHIC_UPDATE_TIME) {
         return;
-    }
-    graphic->t_delta = 0;
+    }    
 
     uint8_t io_lcdc = IO_PORT_READ(graphic->mem, IO_PORT_LCDC);
     
-    if (io_lcdc & LCDC_PPU_ENABLE) {                
+    if (io_lcdc & LCDC_PPU_ENABLE) {
+        graphic->t_delta = 0;
         uint8_t io_stat = IO_PORT_READ(graphic->mem, IO_PORT_STAT);
 
         uint8_t scanline_cycle = graphic->scanline_cycles;
@@ -51,7 +51,7 @@ gbc_graphic_cycle(gbc_graphic_t *graphic, uint64_t delta)
             /* V-BLANK */        
             graphic->mode = PPU_MODE_1;
         }
-        
+    
         scanline_cycle++;
         
         if (scanline_cycle == CYCLES_PER_SCANLINE) {
@@ -80,7 +80,14 @@ gbc_graphic_cycle(gbc_graphic_t *graphic, uint64_t delta)
         }
 
         IO_PORT_WRITE(graphic->mem, IO_PORT_STAT, io_stat);    
-    }    
+    } else  {
+        if (graphic->t_delta < GRAPHIC_UPDATE_TIME * CYCLES_PER_SCANLINE * TOTAL_SCANLINES) {
+            return;
+        }
+        graphic->screen_update(graphic->screen_udata);
+        graphic->t_delta = 0;
+        LOG_INFO("[GRAPHIC] PPU is disabled\n");
+    }
 }
 
 static uint8_t
