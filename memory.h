@@ -131,7 +131,6 @@
 
 
 typedef struct gbc_memory gbc_memory_t;
-typedef struct memory_bank memory_bank_t;
 typedef struct memory_map_entry memory_map_entry_t;
 
 typedef uint8_t (*memory_read)(void *udata, uint16_t addr);
@@ -156,15 +155,6 @@ struct gbc_memory
     uint8_t wram[WRAM_BANK_SIZE * WRAM_BANKS];
     uint8_t hraw[HRAM_END - HRAM_BEGIN + 1];
     uint8_t io_ports[IO_PORT_END - IO_PORT_BEGIN + 1];
-};
-
-struct memory_bank
-{    
-    uint8_t id;
-    uint16_t size;
-    memory_read read;
-    memory_write write;
-    uint8_t *data;
 };
 
 void gbc_mem_init(gbc_memory_t *mem);
