@@ -12,7 +12,7 @@ elseif(WIN32)
     set(CMAKE_C_FLAGS "-D_UCRT")
     set(CMAKE_CXX_FLAGS "-D_UCRT")
     set(MSYS2_PATH "F:\\msys2")
-endif()    
+endif()
 
 # Set up the source files
 set(SOURCES
@@ -43,15 +43,14 @@ set(IMGUI_SOURCES
 set(IMGUI_INCLUDE_DIRS gui/ gui/imgui gui/imgui/backends)
 
 if (WIN32)
-    list(APPEND IMGUI_INCLUDE_DIRS 
-        ${MSYS2_PATH}/mingw64/include
-        ${MSYS2_PATH}/ucrt64/include
+    list(APPEND IMGUI_INCLUDE_DIRS         
+        ${MSYS2_PATH}/clang64/include
     )
 
-    link_directories(
-        ${MSYS2_PATH}/mingw64/lib
-        ${MSYS2_PATH}/ucrt64/lib
-    )    
+    link_directories(                
+        ${MSYS2_PATH}/clang64/lib
+        ${MSYS2_PATH}/mingw64/lib      
+    )
 elseif(APPLE)
     list(APPEND IMGUI_INCLUDE_DIRS
         ${HOMEBREW_PATH}/include
@@ -63,10 +62,14 @@ elseif(APPLE)
 endif()
 
 if (WIN32)
-    SET(IMGUI_LIBS libglfw3.a gdi32 opengl32 imm32 ucrt)    
+    SET(IMGUI_LIBS libglfw3.a gdi32 opengl32 imm32 ucrt pthread)
 elseif(APPLE)
     set(IMGUI_LIBS glfw "-framework OpenGL" "-framework Cocoa" "-framework IOKit" "-framework CoreVideo")
 endif()
+
+add_compile_options(-g)
+#add_compile_options(-fsanitize=address)
+#add_link_options(-fsanitize=address)
 
 include_directories(${IMGUI_INCLUDE_DIRS})
 add_executable(main ${SOURCES} ${IMGUI_SOURCES})

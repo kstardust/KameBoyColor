@@ -1,4 +1,5 @@
 #include "memory.h"
+#include "graphic.h"
 
 memory_map_entry_t*
 select_entry(gbc_memory_t *mem, uint16_t addr)
@@ -152,6 +153,32 @@ bank_n_read(void *udata, uint16_t addr)
     return mem->wram[addr - offset];
 }
 
+uint8_t
+not_usable_write(void *udata, uint16_t addr, uint8_t data)
+{    
+    LOG_ERROR("[MEM] Writing to Not-Usable memory at address %x [%x]\n", addr, data);
+    /* I have not found any information on what happens when writing to this memory */
+    return 0;
+}
+
+uint8_t
+not_usable_read(void *udata, uint16_t addr)
+{
+    /* It is actually readable, this implementation emulates CGB revision E */
+    LOG_DEBUG("[MEM] Reading from Not-Usable memory at address %x\n", addr);    
+    
+    uint8_t lcdsr = IO_PORT_READ((gbc_memory_t*)udata, IO_PORT_STAT);
+
+    uint8_t mode = lcdsr & PPU_MODE_MASK;
+    if (mode == PPU_MODE_2 || mode == PPU_MODE_3) {
+        return 0xff;
+    }
+
+    addr = addr & 0xf0;
+    addr |= addr >> 4;
+    return addr;
+}
+
 void
 gbc_mem_init(gbc_memory_t *mem)
 {
@@ -200,4 +227,15 @@ gbc_mem_init(gbc_memory_t *mem)
     entry.udata = mem;
 
     register_memory_map(mem, &entry);
+
+    /* 0xFEA0 - 0xFEFF, CGB revision E */
+    entry.id = IO_NOT_USABLE_ID;
+    entry.addr_begin = IO_NOT_USABLE_BEGIN;
+    entry.addr_end = IO_NOT_USABLE_END;
+    entry.read = not_usable_read;
+    entry.write = not_usable_write;
+    entry.udata = mem;
+
+    register_memory_map(mem, &entry);
+    
 }

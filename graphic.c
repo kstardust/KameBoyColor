@@ -39,7 +39,7 @@ gbc_graphic_cycle(gbc_graphic_t *graphic, uint64_t delta)
             } else if (scanline_cycle > CYCLE_MODEL_3_START) {
                 /* DRAWING  */                
                 if (graphic->mode != PPU_MODE_3) {
-                    //gbc_graphic_draw_line(graphic, scanline);
+                    gbc_graphic_draw_line(graphic, scanline);
                 }
 
                 graphic->mode = PPU_MODE_3;                                
@@ -53,10 +53,11 @@ gbc_graphic_cycle(gbc_graphic_t *graphic, uint64_t delta)
         }
         
         scanline_cycle++;
+        
         if (scanline_cycle == CYCLES_PER_SCANLINE) {
             scanline_cycle = 0;
-            scanline++;
-            if (scanline > TOTAL_SCANLINES) {
+            scanline++;                        
+            if (scanline > TOTAL_SCANLINES) {                
                 graphic->screen_update(graphic->screen_udata);
                 scanline = 0;
             }
@@ -65,12 +66,12 @@ gbc_graphic_cycle(gbc_graphic_t *graphic, uint64_t delta)
         graphic->scanline_cycles = scanline_cycle;
         graphic->scanline = scanline;    
 
-        uint8_t lyc = (graphic->mem, IO_PORT_LYC);    
+        uint8_t lyc = IO_PORT_READ(graphic->mem, IO_PORT_LYC);    
 
         IO_PORT_WRITE(graphic->mem, IO_PORT_LY, scanline);    
 
-        io_stat &= ~0x03;
-        io_stat |= graphic->mode;
+        io_stat &= ~PPU_MODE_MASK;
+        io_stat |= graphic->mode & PPU_MODE_MASK;
 
         io_stat &= ~0x04;
         if (lyc == scanline) {

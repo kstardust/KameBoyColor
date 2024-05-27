@@ -40,6 +40,7 @@ TODO: Using cpu cycles may be better?
 #define PPU_MODE_1 1   /* V-BLANK */
 #define PPU_MODE_2 2   /* OAM SCAN */
 #define PPU_MODE_3 3   /* DRAWING */
+#define PPU_MODE_MASK 0x03
 
 #define LCDC_PPU_ENABLE 0x80
 #define LCDC_WINDOW_TILE_MAP 0x40
