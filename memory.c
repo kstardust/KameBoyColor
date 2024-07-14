@@ -135,7 +135,7 @@ bank_n_write(void *udata, uint16_t addr, uint8_t data)
     gbc_memory_t *mem = (gbc_memory_t*)udata;
     uint8_t bank = IO_PORT_READ(mem, IO_PORT_SVBK) & 0x7;
 
-    LOG_DEBUG("[MEM] Writing to switchable RAM bank [%x] at address %x [%x]\n", bank, addr, data);
+    LOG_DEBUG("[MEM] Writing to switchable RAM bank [%x] at address %x [%x]\n", bank, addr, data);    
 
     uint16_t offset = WRAM_BANK_N_BEGIN + (bank * WRAM_BANK_SIZE);
     return data;

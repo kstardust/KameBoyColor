@@ -12,8 +12,38 @@
 
 #ifndef RUN_TEST
 
+#define PIXEL_TILE_INDEX(td, x, y)  \
+    ((td)[y * 2] & (1 << (7 - x)) ? 1 : 0) + \
+    ((td)[y * 2 + 1] & (1 << (7 - x)) ? 2 : 0)
+
+
 int main()
-{   
+{           
+    uint8_t td[16] = {
+        0x3C, 0x7E, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 
+        0x7E, 0x5E, 0x7E, 0x0A, 0x7C, 0x56, 0x38, 0x7C
+    };
+    // print every pixel in binary
+    for (int y = 0; y < 8; y++) {        
+        for (int x = 0; x < 8; x++) {            
+            uint8_t z =  PIXEL_TILE_INDEX(td, x, y);
+            if (z== 0) {
+                printf("00 ");
+            }
+            if (z==1) {
+                printf("01 ");
+            }
+            if (z==2) {
+                printf("10 ");
+            }
+            if (z==3) {
+                printf("11 ");
+            }                
+        }
+        printf("\n");
+    }
+    return 0;
+        
     //gui_main(0, NULL);
     GuiInit();
     gbc_t gbc;

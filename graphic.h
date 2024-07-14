@@ -5,6 +5,8 @@
 #include "memory.h"
 
 typedef struct gbc_graphic gbc_graphic_t;
+typedef struct gbc_tile gbc_tile_t;
+typedef struct gbc_tile_attr gbc_tile_attr_t;
 
 #define VRAM_BANK_SIZE (VRAM_END-VRAM_BEGIN+1)
 #define OAM_SIZE (OAM_END-OAM_BEGIN+1)
@@ -51,6 +53,10 @@ TODO: Using cpu cycles may be better?
 #define LCDC_OBJ_ENABLE 0x02
 #define LCDC_BG_ENABLE 0x01
 
+#define TILE_TYPE_OBJ  1
+#define TILE_TYPE_BG   2
+#define TILE_TYPE_WIN  3
+
 struct gbc_graphic
 {
     uint8_t vram[VRAM_BANK_SIZE * 2]; /* 2x8KB */
@@ -68,9 +74,20 @@ struct gbc_graphic
     uint64_t t_delta;      /* nanoseconds */
 };
 
+struct gbc_tile
+{
+    uint8_t data[16];
+};
+
+struct gbc_tile_attr
+{
+    uint8_t data[16];
+};
 
 void gbc_graphic_connect(gbc_graphic_t *graphic, gbc_memory_t *mem);
 void gbc_graphic_init(gbc_graphic_t *graphic);
 void gbc_graphic_cycle(gbc_graphic_t *graphic, uint64_t delta);
+gbc_tile_attr_t *gbc_graphic_get_tile_attr(gbc_graphic_t *graphic, uint8_t type, uint8_t idx);
+gbc_tile_t *gbc_graphic_get_tile(gbc_graphic_t *graphic, uint8_t type, uint8_t idx);
 
 #endif

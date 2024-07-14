@@ -1,9 +1,38 @@
 #include "graphic.h"
 
+static void* vram_addr(void *udata, uint16_t addr);
+static void* oam_addr(void *udata, uint16_t addr);
+
+/* each tile is 8x8, top-left is 0,0 */
+#define PIXEL_TILE_INDEX(td, x, y)  \
+    ((td)->data[y * 2] & (1 << (7 - x)) ? 1 : 0) + \
+    ((td)->data[y * 2 + 1] & (1 << (7 - x)) ? 2 : 0)
+
+
 void 
 gbc_graphic_init(gbc_graphic_t *graphic)
 {    
     memset(graphic, 0, sizeof(gbc_graphic_t));    
+}
+
+gbc_tile_attr_t*
+gbc_graphic_get_tile_attr(gbc_graphic_t *graphic, uint8_t type, uint8_t idx) 
+{
+    if (type == TILE_TYPE_OBJ || 
+        (IO_PORT_READ(graphic->mem, IO_PORT_LCDC) & LCDC_BG_WINDOW_TILE_DATA)) {
+        return (gbc_tile_attr_t*)(oam_addr(graphic, 0x8000) + idx * 16);
+    }    
+    return (gbc_tile_attr_t*)oam_addr(graphic, 0x9000 + (int8_t)idx * 16);
+}
+
+gbc_tile_t*
+gbc_graphic_get_tile(gbc_graphic_t *graphic, uint8_t type, uint8_t idx)
+{
+    if (type == TILE_TYPE_OBJ || 
+        (IO_PORT_READ(graphic->mem, IO_PORT_LCDC) & LCDC_BG_WINDOW_TILE_DATA)) {
+        return (gbc_tile_t*)(vram_addr(graphic, 0x8000) + idx * 16);
+    }    
+    return (gbc_tile_t*)vram_addr(graphic, 0x9000 + (int8_t)idx * 16);
 }
 
 static void 
@@ -16,12 +45,11 @@ void
 gbc_graphic_cycle(gbc_graphic_t *graphic, uint64_t delta)
 {
     /* TODO: it's still too slow */
-
     graphic->t_delta += delta;
     
-    if (graphic->t_delta < GRAPHIC_UPDATE_TIME) {
+    if (graphic->t_delta < GRAPHIC_UPDATE_TIME) {        
         return;
-    }    
+    }
 
     uint8_t io_lcdc = IO_PORT_READ(graphic->mem, IO_PORT_LCDC);
     
@@ -80,26 +108,31 @@ gbc_graphic_cycle(gbc_graphic_t *graphic, uint64_t delta)
         }
 
         IO_PORT_WRITE(graphic->mem, IO_PORT_STAT, io_stat);    
-    } else  {
+    } else  {        
         if (graphic->t_delta < GRAPHIC_UPDATE_TIME * CYCLES_PER_SCANLINE * TOTAL_SCANLINES) {
             return;
-        }
+        }        
         graphic->screen_update(graphic->screen_udata);
         graphic->t_delta = 0;
-        LOG_INFO("[GRAPHIC] PPU is disabled\n");
     }
 }
 
-static uint8_t
-vram_read(void *udata, uint16_t addr)
-{    
+static void*
+vram_addr(void *udata, uint16_t addr)
+{
     gbc_graphic_t *graphic = (gbc_graphic_t*)udata;
     uint8_t bank = IO_PORT_READ(graphic->mem, IO_PORT_VBK) & 0x01;
     LOG_DEBUG("[GRAPHIC] Reading from VRAM %x, bank: %d\n", addr, bank);
 
     uint16_t real_addr = (bank * VRAM_BANK_SIZE) + addr - VRAM_BEGIN;
 
-    return graphic->vram[real_addr];
+    return graphic->vram + real_addr;
+}
+
+static uint8_t
+vram_read(void *udata, uint16_t addr)
+{    
+    return *(uint8_t*)vram_addr(udata, addr);
 }
 
 static uint8_t
@@ -115,14 +148,20 @@ vram_write(void *udata, uint16_t addr, uint8_t data)
     return data;
 }
 
-static uint8_t
-oam_read(void *udata, uint16_t addr)
+static void*
+oam_addr(void *udata, uint16_t addr)
 {
     LOG_DEBUG("[GRAPHIC] Reading from OAM %x\n", addr);
     gbc_graphic_t *graphic = (gbc_graphic_t*)udata;
 
     uint16_t real_addr = addr - OAM_BEGIN;
-    return graphic->oam[real_addr];    
+    return graphic->oam + real_addr;
+}
+
+static uint8_t
+oam_read(void *udata, uint16_t addr)
+{
+    return *(uint8_t*)oam_addr(udata, addr);
 }
 
 static uint8_t
