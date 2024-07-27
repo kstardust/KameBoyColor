@@ -428,6 +428,17 @@ ld_r8_m16(gbc_cpu_t *cpu, instruction_t *ins)
     WRITE_R8(regs, reg_offset, value);    
 }
 
+static void
+ld_r8_im16(gbc_cpu_t *cpu, instruction_t *ins)
+{
+    LOG_INFO("LD r8, m16: %s\n", ins->name);
+
+    cpu_register_t *regs = &(cpu->regs);
+    uint16_t addr = ins->opcode_ext.i16;
+    uint8_t value = cpu->mem_read(cpu->mem_data, addr);
+    WRITE_R8(regs, REG_A, value);    
+}
+
 static void 
 ld_m16_r8(gbc_cpu_t *cpu, instruction_t *ins)
 {
@@ -2068,7 +2079,7 @@ static instruction_t instruction_set[INSTRUCTIONS_SET_SIZE] = {
     INSTRUCTION_ADD(0xf7, 1, rst, 0x30, NULL, 16, 16, "RST 30H"),
     INSTRUCTION_ADD(0xf8, 2, ld_hl_sp_i8, NULL, NULL, 12, 12, "LD HL, SP+n8"),
     INSTRUCTION_ADD(0xf9, 1, ld_sp_hl, NULL, NULL, 8, 8, "LD SP, HL"),
-    INSTRUCTION_ADD(0xfa, 3, ld_r8_m16, REG_A, NULL, 16, 16, "LD A, (n16)"),
+    INSTRUCTION_ADD(0xfa, 3, ld_r8_im16, REG_A, NULL, 16, 16, "LD A, (n16)"),
     INSTRUCTION_ADD(0xfb, 1, ei, NULL, NULL, 4, 4, "EI"),
     INSTRUCTION_ADD(0xfc, 1, NULL, NULL, NULL, 4, 4, "NOP"),
     INSTRUCTION_ADD(0xfd, 1, NULL, NULL, NULL, 4, 4, "NOP"),
