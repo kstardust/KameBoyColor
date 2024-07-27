@@ -14,7 +14,7 @@ malloc_memory(size_t size)
 void 
 free_memory(void *ptr)
 {
-    free(ptr);
+    free(ptr);        
 }
 
 uint64_t

@@ -7,6 +7,8 @@
 typedef struct gbc_graphic gbc_graphic_t;
 typedef struct gbc_tile gbc_tile_t;
 typedef struct gbc_tile_attr gbc_tile_attr_t;
+typedef struct gbc_tilemap gbc_tilemap_t;
+typedef struct gbc_tilemap_attr gbc_tilemap_attr_t;
 
 #define VRAM_BANK_SIZE (VRAM_END-VRAM_BEGIN+1)
 #define OAM_SIZE (OAM_END-OAM_BEGIN+1)
@@ -35,8 +37,11 @@ TODO: Using cpu cycles may be better?
 #define CYCLE_MODEL_0_START    4
 #define CYCLES_PER_SCANLINE         (DOTS_PER_SCANLINE / DOTS_PER_CYCLE)
 
-#define TOTAL_SCANLINES 153
-#define VISIBLE_SCANLINES 143
+#define TOTAL_SCANLINES 153      /* 0 - 153 */
+#define VISIBLE_SCANLINES 143    /* 0 - 143 */
+
+#define VISIBLE_HORIZONTAL_PIXELS 160
+#define VISIBLE_VERTICAL_PIXELS 144
 
 #define PPU_MODE_0 0   /* H-BLANK */
 #define PPU_MODE_1 1   /* V-BLANK */
@@ -82,6 +87,18 @@ struct gbc_tile
 struct gbc_tile_attr
 {
     uint8_t data[16];
+};
+
+struct gbc_tilemap
+{
+    /* 32 x 32 tiles */
+    uint8_t data[32][32];
+};
+
+struct gbc_tilemap_attr
+{
+    /* 32 x 32 tiles */
+    uint8_t data[32][32];
 };
 
 void gbc_graphic_connect(gbc_graphic_t *graphic, gbc_memory_t *mem);

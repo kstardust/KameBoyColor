@@ -78,7 +78,7 @@ gbc_run(gbc_t *gbc)
         lastf = now;
 
         gbc_cpu_cycle(&gbc->cpu);
-        gbc_graphic_cycle(&gbc->graphic, delta);
+        gbc_graphic_cycle(&gbc->graphic, delta);        
 
         /* TODO compensate for the cost longer than CLOCK_CYCLE */
         //while (get_time() - t < CLOCK_CYCLE)

@@ -37,7 +37,21 @@ void InitMyWindow() {
 }
 
 unsigned char GuiWrite(void *udata, unsigned short addr, unsigned char data) {    
-    framebuffer[addr] = IM_COL32(std::rand() % 255, std::rand() % 255, std::rand() % 255, std::rand() % 255);
+    /* TODO: TEST , data is 2bits */
+    if (data == 0) {
+        /* black */
+        framebuffer[addr] = IM_COL32(0, 0, 0, 255);
+    } else if (data == 1) {
+        framebuffer[addr] = IM_COL32(255, 0, 0, 255);
+    } else if (data == 2) {
+        framebuffer[addr] = IM_COL32(0, 255, 0, 255);
+    } else if (data == 3) {
+        framebuffer[addr] = IM_COL32(0, 0, 255, 255);
+    } else {
+        /* error */
+        framebuffer[addr] = IM_COL32(0, 255, 255, 255);
+    }
+    // framebuffer[addr] = IM_COL32(std::rand() % 255, std::rand() % 255, std::rand() % 255, std::rand() % 255);
     return 0;
 }
 
