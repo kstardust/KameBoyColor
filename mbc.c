@@ -162,14 +162,14 @@ mbc1_read(gbc_mbc_t *mbc, uint16_t addr)
 {
     LOG_DEBUG("[MBC1] Reading from MBC1 at address %x\n", addr);
 
-    if (IN_RANGE(addr, MBC1_ROM_BANK0_BEGIN, MBC1_ROM_BANK0_END)) {                
+    if (IN_RANGE(addr, MBC1_ROM_BANK0_BEGIN, MBC1_ROM_BANK0_END)) {
         return mbc->rom_banks[addr];
 
     } else if (IN_RANGE(addr, MBC1_ROM_BANK_N_BEGIN, MBC1_ROM_BANK_N_END)) {
         uint32_t mbc1_rom_addr = translate_mbc1_addr(mbc, addr);
-        uint16_t raddr = mbc1_rom_addr & ROM_ADDR_MASK;
+        uint16_t raddr = mbc1_rom_addr & ROM_ADDR_MASK;        
         uint8_t bank = (mbc1_rom_addr >> ROM_ADDR_MASK_SHIFT) & MBC1_ROM_BANK_MASK;
-
+        if (bank == 0) bank = 1; /* If the bank number is 0, it is treated as bank 1 */
         LOG_DEBUG("[MBC1] Reading from MBC1 ROM Bank [%x] at address %x\n", bank, raddr);
 
         if (bank >= mbc->rom_bank_size) {
