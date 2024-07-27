@@ -431,7 +431,7 @@ ld_r8_m16(gbc_cpu_t *cpu, instruction_t *ins)
 static void
 ld_r8_im16(gbc_cpu_t *cpu, instruction_t *ins)
 {
-    LOG_INFO("LD r8, m16: %s\n", ins->name);
+    LOG_INFO("LD r8, im16: %s\n", ins->name);
 
     cpu_register_t *regs = &(cpu->regs);
     uint16_t addr = ins->opcode_ext.i16;
