@@ -21,7 +21,8 @@ gbc_init(gbc_t *gbc)
     #if defined (WIN32)
     FILE* cartridge = fopen("C:\\Users\\liqilong\\Desktop\\Dev\\GameBoyColor\\tetris_dx.gbc", "rb");
     #else
-    FILE* cartridge = fopen("/Users/Kevin/Development/GBC/tetris_dx.gbc", "rb");    
+    //FILE* cartridge = fopen("/Users/Kevin/Development/GBC/tetris_dx.gbc", "rb");
+    FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/03-op sp,hl.gb", "rb");    
     #endif
     if (!cartridge) {
         printf("Failed to open cartridge\n");
@@ -78,7 +79,8 @@ gbc_run(gbc_t *gbc)
         lastf = now;
 
         gbc_cpu_cycle(&gbc->cpu);
-        gbc_graphic_cycle(&gbc->graphic, delta);        
+        //gbc_graphic_cycle(&gbc->graphic, delta);
+        gbc_io_cycle(&gbc->io);        
 
         /* TODO compensate for the cost longer than CLOCK_CYCLE */
         //while (get_time() - t < CLOCK_CYCLE)

@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include "utils.h"
 
-#define NDEBUG
+#define DEBUG
 
 #ifdef DEBUG
 #define LOG_INFO(fmt, ...) printf("[info]"fmt, ##__VA_ARGS__)
