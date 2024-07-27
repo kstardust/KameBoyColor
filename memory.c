@@ -115,6 +115,22 @@ mem_raw_read(void *udata, uint16_t addr)
 }
 
 uint8_t
+mem_echo_write(void *udata, uint16_t addr, uint8_t data)
+{
+    gbc_memory_t *mem = (gbc_memory_t*)udata;
+    addr = addr - WRAM_ECHO_BEGIN + WRAM_BANK_0_BEGIN;
+    return mem_raw_write(mem, addr, data);
+}
+
+uint8_t
+mem_echo_read(void *udata, uint16_t addr)
+{
+    gbc_memory_t *mem = (gbc_memory_t*)udata;
+    addr = addr - WRAM_ECHO_BEGIN + WRAM_BANK_0_BEGIN;
+    return mem_raw_read(mem, addr);
+}
+
+uint8_t
 io_port_read(void *udata, uint16_t addr)
 {
     LOG_DEBUG("[MEM] Reading from IO port at address %x\n", addr);    
@@ -238,5 +254,15 @@ gbc_mem_init(gbc_memory_t *mem)
     entry.udata = mem;
 
     register_memory_map(mem, &entry);
+
+    /* Echo RAM */
+    entry.id = WRAM_ECHO_ID;
+    entry.addr_begin = WRAM_ECHO_BEGIN;
+    entry.addr_end = WRAM_ECHO_END;
     
+    entry.read = mem_echo_read;
+    entry.write = mem_echo_write;
+    entry.udata = mem;
+
+    register_memory_map(mem, &entry);    
 }
