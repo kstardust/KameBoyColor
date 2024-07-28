@@ -35,7 +35,11 @@ gbc_mbc_init(gbc_mbc_t *mbc)
     mbc->ram_bank = 0;
     mbc->ram_enabled = 0;
     mbc->mode = 0;
-    mbc->mem = NULL;    
+    mbc->mem = NULL;  
+
+    /* Default to MBC1 */
+    mbc->read = mbc1_read;
+    mbc->write = mbc1_write;            
 }
 
 void

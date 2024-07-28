@@ -42,7 +42,7 @@ mem_read(void *udata, uint16_t addr)
     if (entry == NULL) {
         LOG_ERROR("[MEM] No memory map entry found for address %x\n", addr);
         abort();
-    }    
+    }
 
     return entry->read(entry->udata, addr);
 }
@@ -154,7 +154,7 @@ bank_n_write(void *udata, uint16_t addr, uint8_t data)
     LOG_DEBUG("[MEM] Writing to switchable RAM bank [%x] at address %x [%x]\n", bank, addr, data);    
 
     uint16_t offset = WRAM_BANK_N_BEGIN + (bank * WRAM_BANK_SIZE);
-    mem->wram[addr - offset] = data; 
+    mem->wram[addr + offset] = data; 
     return data;
 }
 
@@ -167,7 +167,7 @@ bank_n_read(void *udata, uint16_t addr)
     LOG_DEBUG("[MEM] Reading from switchable RAM bank [%x] at address %x\n", bank, addr);
     
     uint16_t offset = WRAM_BANK_N_BEGIN + (bank * WRAM_BANK_SIZE);
-    return mem->wram[addr - offset];
+    return mem->wram[addr + offset];
 }
 
 uint8_t
