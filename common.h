@@ -7,15 +7,26 @@
 #include <stdlib.h>
 #include "utils.h"
 
-#define DEBUG
+#define LOG_LEVEL_DEBUG 1
+#define LOG_LEVEL_INFO  2
+#define LOG_LEVEL_ERROR 3
 
-#ifdef DEBUG
+#define LOGLEVEL LOG_LEVEL_INFO
+
+#if LOGLEVEL == LOG_LEVEL_DEBUG
 #define LOG_INFO(fmt, ...) printf("[info]"fmt, ##__VA_ARGS__)
 #define LOG_DEBUG(fmt, ...) printf("[debug]"fmt, ##__VA_ARGS__)
-#else
+#endif
+
+#if LOGLEVEL == LOG_LEVEL_INFO
+#define LOG_INFO(fmt, ...) printf("[info]"fmt, ##__VA_ARGS__)
+#define LOG_DEBUG(fmt, ...)
+#endif
+
+#if LOGLEVEL == LOG_LEVEL_ERROR
 #define LOG_INFO(fmt, ...)
 #define LOG_DEBUG(fmt, ...)
-#endif  
+#endif
 
 #define LOG_ERROR(fmt, ...) printf("[error]"fmt, ##__VA_ARGS__)
 
