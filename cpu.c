@@ -8,7 +8,7 @@ gbc_cpu_init(gbc_cpu_t *cpu)
     memset(cpu, 0, sizeof(gbc_cpu_t));
 
     /* https://gbdev.io/pandocs/Power_Up_Sequence.html#cpu-registers */
-    WRITE_R16(cpu, REG_PC, 0x0100);
+    //WRITE_R16(cpu, REG_PC, 0x0100);
     WRITE_R16(cpu, REG_SP, 0xFFFE);
     cpu->ier = 0;
 }

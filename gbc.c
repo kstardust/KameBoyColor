@@ -22,7 +22,8 @@ gbc_init(gbc_t *gbc)
     FILE* cartridge = fopen("C:\\Users\\liqilong\\Desktop\\Dev\\GameBoyColor\\tetris_dx.gbc", "rb");
     #else
     //FILE* cartridge = fopen("/Users/Kevin/Development/GBC/tetris_dx.gbc", "rb");
-    FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/03-op sp,hl.gb", "rb");    
+    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cgb_boot.bin", "rb");        
+    FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/01-special.gb", "rb");    
     #endif
     if (!cartridge) {
         printf("Failed to open cartridge\n");
@@ -41,9 +42,12 @@ gbc_init(gbc_t *gbc)
 
     size_t n = fread(data, 1, size, cartridge);
     fclose(cartridge);
-
+    
     cartridge_t *cart = cartridge_load((uint8_t*)data);
     gbc_mbc_init_with_cart(&gbc->mbc, cart);
+    
+    // FOR BOOT ROM TESTING
+    // gbc->mbc.rom_banks = data;
 
     if (!cart) {
         printf("Failed to load cartridge\n");
@@ -79,7 +83,7 @@ gbc_run(gbc_t *gbc)
         lastf = now;
 
         gbc_cpu_cycle(&gbc->cpu);
-        //gbc_graphic_cycle(&gbc->graphic, delta);
+        gbc_graphic_cycle(&gbc->graphic, delta);
         gbc_io_cycle(&gbc->io);        
 
         /* TODO compensate for the cost longer than CLOCK_CYCLE */
