@@ -69,7 +69,13 @@ gbc_cpu_cycle(gbc_cpu_t *cpu)
     }
 
     WRITE_R16(cpu, REG_PC, pc + ins->size);
-    ins->func(cpu, ins);    
+    ins->func(cpu, ins);
+
+    /* https://forums.nesdev.org/viewtopic.php?t=12815 
+        The lower 4 bits of the F register are always 0    
+        Blargg test cpu_instrs/01-special
+    */
+    WRITE_R8(cpu, REG_F, READ_R8(cpu, REG_F) & 0xF0);
 
     cpu->ins_cycles = ins->cycles - 1;
 }

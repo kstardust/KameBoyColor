@@ -117,10 +117,10 @@ struct gbc_cpu
 #define WRITE_R8(reg, field, value) WRITE_8((*(uint8_t*) ((uint8_t*)(reg)+(field))), (value))
 
 
-#define FLAG_Z 0b1000  /* zero flag */
-#define FLAG_N 0b0100  /* subtraction flag (BCD) */
-#define FLAG_H 0b0010  /* half carry flag (BCD) */
-#define FLAG_C 0b0001  /* carry flag */
+#define FLAG_Z 0b10000000  /* zero flag */
+#define FLAG_N 0b01000000  /* subtraction flag (BCD) */
+#define FLAG_H 0b00100000  /* half carry flag (BCD) */
+#define FLAG_C 0b00010000  /* carry flag */
 
 #define READ_R_FLAG(reg, flag) ((READ_R8(reg, REG_F) & flag) ? 1 : 0)
 #define SET_R_FLAG(reg, flag) WRITE_R8(reg, REG_F, (READ_R8(reg, REG_F) | flag))

@@ -90,7 +90,7 @@ gbc_run(gbc_t *gbc)
         //while (get_time() - t < CLOCK_CYCLE)
         //    ;
 
-        #ifdef DEBUG
+        #if LOGLEVEL == LOG_LEVEL_DEBUG
         print_stat(gbc);        
         #endif
     }    
