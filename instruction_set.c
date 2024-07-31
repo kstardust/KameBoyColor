@@ -321,8 +321,8 @@ ld_hl_sp_i8(gbc_cpu_t *cpu, instruction_t *ins)
     cpu_register_t *regs = &(cpu->regs);
     int8_t offset = ins->opcode_ext.i8;
     uint16_t sp = READ_R16(regs, REG_SP);
-    /* TODO: is this correct? what if offset is negative? */
-    uint8_t carry = ((sp & 0xff) + offset) > UINT8_MASK;
+
+    uint8_t carry = ((sp & UINT8_MASK) + (uint8_t)offset) > UINT8_MASK;
     uint8_t halfc = HALF_CARRY_ADD(sp, offset);
 
     uint16_t hl = sp + offset;
@@ -524,9 +524,9 @@ add_r16_i8(gbc_cpu_t *cpu, instruction_t *ins)
     int8_t value = ins->opcode_ext.i8;
     uint16_t v = READ_R16(regs, reg_offset);
     uint8_t hc = HALF_CARRY_ADD(v, value);
-    uint8_t carry = ((v & UINT8_MASK) + value) > UINT8_MASK;
+    uint8_t carry = ((v & UINT8_MASK) + (uint8_t)value) > UINT8_MASK;
     v += value;
-    
+
     WRITE_R16(regs, reg_offset, v);
     
     CLEAR_R_FLAG(regs, FLAG_Z);
