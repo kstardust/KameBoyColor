@@ -42,10 +42,10 @@
 #define HALF_CARRY_ADC_16(a, b, c) (((((a) & 0xfff) + ((b) & 0xfff) + ((c) & 0xfff)) & 0x1000) == 0x1000)
 
 #define HALF_CARRY_SUB(a, b) ((((a) & UINT4_MASK) < ((b) & UINT4_MASK)) ? 1 : 0)
-#define HALF_CARRY_SBC(a, b, c) (((((a)-(c)) & UINT4_MASK) < ((b) & UINT4_MASK)) ? 1 : 0)
+#define HALF_CARRY_SBC(a, b, c) (((((a & UINT4_MASK) - (c & UINT4_MASK))) < ((b) & UINT4_MASK)) ? 1 : 0)
 
 #define HALF_CARRY_SUB_16(a, b) ((((a) & 0xfff) < ((b) & 0xfff)) ? 1 : 0)
-#define HALF_CARRY_SBC_16(a, b, c) (((((a)-(c)) & 0xfff) < ((b) & 0xfff)) ? 1 : 0)
+#define HALF_CARRY_SBC_16(a, b, c) (((((a & 0xfff)-(c & 0xfff))) < ((b) & 0xfff)) ? 1 : 0)
 
 #define IN_RANGE(addr, begin, end) ((addr) >= (begin) && (addr) <= (end))
 
