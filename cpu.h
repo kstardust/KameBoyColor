@@ -137,7 +137,7 @@ struct gbc_cpu
 #define INTERRUPT_SERIAL   0x8
 #define INTERRUPT_JOYPAD   0x10
 #define INTERRUPT_MASK     0x1F
-#define REQUEST_INTERRUPT(cpu, flag) ((cpu)->ifr |= (flag))
+#define CPU_REQUEST_INTERRUPT(cpu, flag) (*(cpu)->ifp |= (flag))
 
 #define INT_HANDLER_VBLANK   0x40
 #define INT_HANDLER_LCD_STAT 0x48

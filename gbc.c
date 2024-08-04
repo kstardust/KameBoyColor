@@ -9,12 +9,14 @@ gbc_init(gbc_t *gbc)
 
     gbc_mem_init(&gbc->mem);
     gbc_cpu_init(&gbc->cpu);
-    gbc_mbc_init(&gbc->mbc);    
+    gbc_mbc_init(&gbc->mbc);
+    gbc_timer_init(&gbc->timer);
     gbc_io_init(&gbc->io);
     gbc_graphic_init(&gbc->graphic);
 
     gbc_cpu_connect(&gbc->cpu, &gbc->mem);
     gbc_mbc_connect(&gbc->mbc, &gbc->mem);
+    gbc_timer_connect(&gbc->timer, &gbc->mem);
     gbc_io_connect(&gbc->io, &gbc->mem);
     gbc_graphic_connect(&gbc->graphic, &gbc->mem);
 
@@ -24,8 +26,8 @@ gbc_init(gbc_t *gbc)
     //FILE* cartridge = fopen("/Users/Kevin/Development/GBC/tetris_dx.gbc", "rb");
     // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cgb_boot.bin", "rb");        
     
-    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/01-special.gb", "rb"); // OK
-    FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/02-interrupts.gb", "rb");
+    FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/01-special.gb", "rb"); // OK
+    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/02-interrupts.gb", "rb");
     // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/03-op sp,hl.gb", "rb"); // OK
     // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/04-op r,imm.gb", "rb"); // OK
     // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/05-op rp.gb", "rb"); // OK
@@ -35,6 +37,7 @@ gbc_init(gbc_t *gbc)
     // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/09-op r,r.gb", "rb"); // OK
     // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/10-bit ops.gb", "rb"); // OK
     // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/11-op a,(hl).gb", "rb"); // OK
+    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/cpu_instrs.gb", "rb"); // OK
     #endif
     if (!cartridge) {
         printf("Failed to open cartridge\n");
@@ -70,18 +73,6 @@ gbc_init(gbc_t *gbc)
 }
 
 void
-print_stat(gbc_t *gbc)
-{
-    gbc_cpu_t *cpu = &gbc->cpu;
-    cpu_register_t *r = &cpu->regs;
-
-    printf("{PC: 0x%x, SP: 0x%x, AF: 0x%x, BC: 0x%x, DE: 0x%x, HL: 0x%x, C: %d, Z: %d, N: %d, H: %d}\n",
-           READ_R16(r, REG_PC), READ_R16(r, REG_SP), READ_R16(r, REG_AF),
-           READ_R16(r, REG_BC), READ_R16(r, REG_DE), READ_R16(r, REG_HL),
-           READ_R_FLAG(r, FLAG_C), READ_R_FLAG(r, FLAG_Z), READ_R_FLAG(r, FLAG_N), READ_R_FLAG(r, FLAG_H));
-}
-
-void
 gbc_run(gbc_t *gbc)
 {                
     uint64_t lastf = get_time(), now = 0, delta = 0;
@@ -94,15 +85,12 @@ gbc_run(gbc_t *gbc)
         lastf = now;
 
         gbc_cpu_cycle(&gbc->cpu);
+        gbc_timer_cycle(&gbc->timer);
         gbc_graphic_cycle(&gbc->graphic, delta);
         gbc_io_cycle(&gbc->io);        
 
         /* TODO compensate for the cost longer than CLOCK_CYCLE */
         //while (get_time() - t < CLOCK_CYCLE)
         //    ;
-
-        #if LOGLEVEL == LOG_LEVEL_DEBUG
-        print_stat(gbc);        
-        #endif
     }    
 }

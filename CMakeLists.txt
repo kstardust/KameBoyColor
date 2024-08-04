@@ -23,6 +23,7 @@ set(SOURCES
     memory.c
     graphic.c
     io.c
+    timer.c
     utils.c
     instruction_set.c
     main.c)

@@ -129,6 +129,8 @@
 #define IO_PORT_READ(mem, port) ((mem)->io_ports[(port)])
 #define IO_PORT_WRITE(mem, port, data) ((mem)->io_ports[(port)] = (data))
 
+#define REQUEST_INTERRUPT(mem, intp) ((mem)->io_ports[IO_PORT_IF] |= (intp))
+
 typedef struct gbc_memory gbc_memory_t;
 typedef struct memory_map_entry memory_map_entry_t;
 

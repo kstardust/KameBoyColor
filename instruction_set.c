@@ -1119,13 +1119,6 @@ reti(gbc_cpu_t *cpu, instruction_t *ins)
 }
 
 static void
-rst(gbc_cpu_t *cpu, instruction_t *ins)
-{
-    /* TODO */    
-    LOG_DEBUG("RST: %s\n", ins->name);
-}
-
-static void
 _jp_addr16(gbc_cpu_t *cpu, instruction_t *ins, uint16_t addr)
 {
     LOG_DEBUG("\t_JP ADDR16: %s %x\n", ins->name, addr);
@@ -1288,12 +1281,11 @@ ldh_m8_r8(gbc_cpu_t *cpu, instruction_t *ins)
 }
 
 static void
-_call_i16(gbc_cpu_t *cpu, instruction_t *ins)
+_call_addr(gbc_cpu_t *cpu, instruction_t *ins, uint16_t addr)
 {
-    LOG_DEBUG("\t_CALL I16: %s\n", ins->name);
+    LOG_DEBUG("\t_CALL ADDR: %x\n", addr);
 
     cpu_register_t *regs = &(cpu->regs);
-    uint16_t addr = ins->opcode_ext.i16;
     uint16_t pc = READ_R16(regs, REG_PC);
     uint16_t sp = READ_R16(regs, REG_SP);
 
@@ -1302,6 +1294,23 @@ _call_i16(gbc_cpu_t *cpu, instruction_t *ins)
 
     WRITE_R16(regs, REG_SP, sp - 2);
     _jp_addr16(cpu, ins, addr);
+}
+
+static void
+rst(gbc_cpu_t *cpu, instruction_t *ins)
+{
+    LOG_DEBUG("RST: %s\n", ins->name);
+    uint16_t addr = (uint16_t)ins->op1;
+    _call_addr(cpu, ins, addr);
+}
+
+static void
+_call_i16(gbc_cpu_t *cpu, instruction_t *ins)
+{
+    LOG_DEBUG("\t_CALL I16: %s\n", ins->name);
+
+    uint16_t addr = ins->opcode_ext.i16;
+    _call_addr(cpu, ins, addr);
 }
 
 void 
@@ -1403,6 +1412,7 @@ static void
 ei(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_DEBUG("EI: %s\n", ins->name);
+    /* EI itself and the next instruction */
     cpu->ime_insts = 2;
 }
 

@@ -81,12 +81,25 @@ gbc_cpu_interrupt(gbc_cpu_t *cpu)
         assert(pc != 0);
         int_call_i16(cpu, pc);
         /* costs 5 cycles, this function counts as 1 cycle */
-        cpu->cycles = 4;
+        cpu->ins_cycles = 4;
 
         return 1;
     }
 
     return 0;
+}
+
+static void
+print_cpu_stat(gbc_cpu_t *cpu)
+{
+    cpu_register_t *r = &cpu->regs;
+
+    printf("{PC: 0x%x, SP: 0x%x, AF: 0x%x, BC: 0x%x, DE: 0x%x, HL: 0x%x, C: %d, Z: %d, N: %d, H: %d, IME: %x, IE: %x, IF: %x}: M-Cycles: %d\n",            
+           READ_R16(r, REG_PC), READ_R16(r, REG_SP), READ_R16(r, REG_AF),
+           READ_R16(r, REG_BC), READ_R16(r, REG_DE), READ_R16(r, REG_HL),
+           READ_R_FLAG(r, FLAG_C), READ_R_FLAG(r, FLAG_Z), READ_R_FLAG(r, FLAG_N), READ_R_FLAG(r, FLAG_H),
+              cpu->ime, cpu->ier, *cpu->ifp, cpu->cycles / 4
+           );
 }
 
 void
@@ -115,6 +128,9 @@ gbc_cpu_cycle(gbc_cpu_t *cpu)
     }
 
     if (gbc_cpu_interrupt(cpu)) {
+        #if LOGLEVEL == LOG_LEVEL_DEBUG
+        print_cpu_stat(cpu);
+        #endif
         return;
     }
 
@@ -140,4 +156,8 @@ gbc_cpu_cycle(gbc_cpu_t *cpu)
     WRITE_R8(cpu, REG_F, READ_R8(cpu, REG_F) & 0xF0);
 
     cpu->ins_cycles = ins->cycles - 1;
+
+    #if LOGLEVEL == LOG_LEVEL_DEBUG
+    print_cpu_stat(cpu);
+    #endif    
 }

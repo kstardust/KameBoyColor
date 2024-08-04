@@ -6,6 +6,7 @@
 #include "io.h"
 #include "mbc.h"
 #include "graphic.h"
+#include "timer.h"
 
 typedef struct gbc gbc_t;
 
@@ -15,6 +16,7 @@ struct gbc {
     gbc_mbc_t mbc;
     gbc_io_t io;
     gbc_graphic_t graphic;
+    gbc_timer_t timer;
 };
 
 int gbc_init(gbc_t *gbc);

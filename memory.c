@@ -147,6 +147,10 @@ uint8_t
 io_port_write(void *udata, uint16_t addr, uint8_t data)
 {
     LOG_DEBUG("[MEM] Writing to IO port at address %x [%x]\n", addr, data);
+    if (addr == IO_PORT_DIV) {
+        /* Writing to DIV resets it */
+        data = 0;        
+    }
     IO_PORT_WRITE((gbc_memory_t*)udata, IO_ADDR_PORT(addr), data);
     return data;
 }
@@ -271,5 +275,7 @@ gbc_mem_init(gbc_memory_t *mem)
     entry.write = mem_echo_write;
     entry.udata = mem;
 
-    register_memory_map(mem, &entry);    
+    register_memory_map(mem, &entry);
+
+    IO_PORT_WRITE(mem, IO_PORT_TAC, 0xF8);
 }
