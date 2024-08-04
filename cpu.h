@@ -78,10 +78,14 @@ struct gbc_cpu
     memory_read mem_read;  /* memory op */
     memory_write mem_write;
     void *mem_data;
+    uint8_t *ifp;           /* interrupt flag 'pointer'(it is a pointer to io port) */
 
     uint64_t cycles;
-    uint16_t ins_cycles;   /* current instruction cost */    
-    uint8_t ier;          /* interrupt enable */
+    uint16_t ins_cycles;   /* current instruction cost */
+    uint8_t ime;           /* interrupt master enable */
+    uint8_t ier;           /* interrupt enable register */
+    uint8_t ime_insts:4;   /* instruction count to set ime */
+    uint8_t halt:4;        /* halt state */
 };
 
 #define swap_i16(value) (uint16_t)((value >> 8) | (value << 8));
@@ -126,6 +130,20 @@ struct gbc_cpu
 #define SET_R_FLAG(reg, flag) WRITE_R8(reg, REG_F, (READ_R8(reg, REG_F) | flag))
 #define CLEAR_R_FLAG(reg, flag) WRITE_R8(reg, REG_F, (READ_R8(reg, REG_F) & ~flag))
 #define SET_R_FLAG_VALUE(reg, flag, value) ((value) ? (SET_R_FLAG(reg, flag)) : (CLEAR_R_FLAG(reg, flag)))
+
+#define INTERRUPT_VBLANK   0x1
+#define INTERRUPT_LCD_STAT 0x2
+#define INTERRUPT_TIMER    0x4 
+#define INTERRUPT_SERIAL   0x8
+#define INTERRUPT_JOYPAD   0x10
+#define INTERRUPT_MASK     0x1F
+#define REQUEST_INTERRUPT(cpu, flag) ((cpu)->ifr |= (flag))
+
+#define INT_HANDLER_VBLANK   0x40
+#define INT_HANDLER_LCD_STAT 0x48
+#define INT_HANDLER_TIMER    0x50
+#define INT_HANDLER_SERIAL   0x58
+#define INT_HANDLER_JOYPAD   0x60
 
 void gbc_cpu_init(gbc_cpu_t *cpu);
 void gbc_cpu_connect(gbc_cpu_t *cpu, gbc_memory_t *mem);

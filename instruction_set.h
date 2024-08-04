@@ -33,5 +33,7 @@ struct instruction
 void init_instruction_set();
 instruction_t* decode(uint8_t *data);
 instruction_t* decode_mem(memory_read read, uint16_t addr, void *udata);
-void  test_instructions();
+void test_instructions();
+void int_call_i16(gbc_cpu_t *cpu, uint16_t addr);
+
 #endif

@@ -1113,8 +1113,9 @@ ret(gbc_cpu_t *cpu, instruction_t *ins)
 static void
 reti(gbc_cpu_t *cpu, instruction_t *ins)
 {
-    /* TODO */
     LOG_DEBUG("RETI: %s\n", ins->name);
+    _ret(cpu, ins);
+    cpu->ime = 1;
 }
 
 static void
@@ -1303,6 +1304,22 @@ _call_i16(gbc_cpu_t *cpu, instruction_t *ins)
     _jp_addr16(cpu, ins, addr);
 }
 
+void 
+int_call_i16(gbc_cpu_t *cpu, uint16_t addr) 
+{
+    LOG_DEBUG("INT CALL I16\n");
+    cpu_register_t *regs = &(cpu->regs);
+    
+    uint16_t pc = READ_R16(regs, REG_PC);
+    uint16_t sp = READ_R16(regs, REG_SP);
+
+    cpu->mem_write(cpu->mem_data, sp - 1, pc >> 8);
+    cpu->mem_write(cpu->mem_data, sp - 2, pc & UINT8_MASK);
+
+    WRITE_R16(regs, REG_SP, sp - 2);
+    WRITE_R16(regs, REG_PC, addr);
+}
+
 static void
 call_nz_i16(gbc_cpu_t *cpu, instruction_t *ins)
 {
@@ -1377,23 +1394,23 @@ ccf(gbc_cpu_t *cpu, instruction_t *ins)
 
 static void 
 di(gbc_cpu_t *cpu, instruction_t *ins)
-{
-    /* TODO DISABLE INTERRUPTS */
+{    
     LOG_DEBUG("DI: %s\n", ins->name);
+    cpu->ime = 0;
 }
 
 static void
 ei(gbc_cpu_t *cpu, instruction_t *ins)
 {
-    /* TODO ENABLE INTERRUPTS */    
     LOG_DEBUG("EI: %s\n", ins->name);
+    cpu->ime_insts = 2;
 }
 
 static void 
 halt(gbc_cpu_t *cpu, instruction_t *ins)
 {
-    /* TODO */
     LOG_DEBUG("HALT: %s\n", ins->name);
+    cpu->halt = 1;
 }
 
 static void

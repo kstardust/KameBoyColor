@@ -11,7 +11,7 @@
 #define LOG_LEVEL_INFO  2
 #define LOG_LEVEL_ERROR 3
 
-#define LOGLEVEL LOG_LEVEL_INFO
+#define LOGLEVEL LOG_LEVEL_DEBUG
 
 #if LOGLEVEL == LOG_LEVEL_DEBUG
 #define LOG_INFO(fmt, ...) printf("[info]"fmt, ##__VA_ARGS__)

@@ -6,8 +6,6 @@
 #define WRAM_BANK_SIZE 0x1000 /* 4KB */
 #define WRAM_BANKS     8
 
-#define MEMORY_MAP_ENTRIES 12
-
 #define ROM_BANK_0_ID 1
 #define ROM_BANK_0_BEGIN 0x0000
 #define ROM_BANK_0_END 0x3fff
@@ -55,6 +53,8 @@
 #define IE_REGISTER_ID 12
 #define IE_REGISTER_BEGIN 0xffff
 #define IE_REGISTER_END 0xffff
+
+#define MEMORY_MAP_ENTRIES 12
 
 #define RAM_ADDR_MASK 0x1fff   /* 13-bits 8KB */
 #define RAM_ADDR_MASK_SHIFT 13
@@ -129,7 +129,6 @@
 #define IO_PORT_READ(mem, port) ((mem)->io_ports[(port)])
 #define IO_PORT_WRITE(mem, port, data) ((mem)->io_ports[(port)] = (data))
 
-
 typedef struct gbc_memory gbc_memory_t;
 typedef struct memory_map_entry memory_map_entry_t;
 
@@ -159,5 +158,6 @@ struct gbc_memory
 
 void gbc_mem_init(gbc_memory_t *mem);
 void register_memory_map(gbc_memory_t *mem, memory_map_entry_t *entry);
+void* connect_io_port(gbc_memory_t *mem, uint16_t addr);
 
 #endif 

@@ -47,6 +47,12 @@ mem_read(void *udata, uint16_t addr)
     return entry->read(entry->udata, addr);
 }
 
+void* 
+connect_io_port(gbc_memory_t *mem, uint16_t port)
+{
+    return (mem->io_ports + port);
+}
+
 void
 register_memory_map(gbc_memory_t *mem, memory_map_entry_t *entry)
 {    
