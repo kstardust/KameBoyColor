@@ -7,8 +7,7 @@ stop(gbc_cpu_t *cpu, instruction_t *ins)
 {
     /* TODO */
     LOG_DEBUG("STOP: %s\n", ins->name);
-    while (1) ;
-    assert(0);
+    LOG_ERROR("STOP instruction(cpu speed mode) is not implemented\n");    
 }
 
 static void 
