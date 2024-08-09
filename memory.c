@@ -160,10 +160,14 @@ bank_n_write(void *udata, uint16_t addr, uint8_t data)
 {    
     gbc_memory_t *mem = (gbc_memory_t*)udata;
     uint8_t bank = IO_PORT_READ(mem, IO_PORT_SVBK) & 0x7;    
+    if (bank == 0) {
+        /* a value of 00h will select Bank 1 either. */
+        bank = 1;
+    }
 
     LOG_DEBUG("[MEM] Writing to switchable RAM bank [%x] at address %x [%x]\n", bank, addr, data);    
 
-    uint16_t bank_base = ((bank+1) * WRAM_BANK_SIZE);
+    uint16_t bank_base = (bank * WRAM_BANK_SIZE);
     mem->wram[addr - WRAM_BANK_N_BEGIN + bank_base] = data;
 
     return data;
@@ -174,10 +178,13 @@ bank_n_read(void *udata, uint16_t addr)
 {
     gbc_memory_t *mem = (gbc_memory_t*)udata;
     uint8_t bank = IO_PORT_READ(mem, IO_PORT_SVBK) & 0x7;
-
+    if (bank == 0) {
+        /* a value of 00h will select Bank 1 either. */
+        bank = 1;
+    }
     LOG_DEBUG("[MEM] Reading from switchable RAM bank [%x] at address %x\n", bank, addr);
         
-    uint16_t bank_base = ((bank+1) * WRAM_BANK_SIZE);
+    uint16_t bank_base = (bank * WRAM_BANK_SIZE);
     return mem->wram[addr - WRAM_BANK_N_BEGIN + bank_base];
 }
 
@@ -230,7 +237,7 @@ gbc_mem_init(gbc_memory_t *mem)
     entry.id = WRAM_BANK_N_ID;
     entry.addr_begin = WRAM_BANK_N_BEGIN;
     entry.addr_end = WRAM_BANK_N_END;
-    entry.read = bank_n_read;    
+    entry.read = bank_n_read;
     entry.write = bank_n_write;
     entry.udata = mem;
 
