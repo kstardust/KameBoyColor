@@ -155,7 +155,7 @@ gbc_cpu_cycle(gbc_cpu_t *cpu)
     */
     WRITE_R8(cpu, REG_F, READ_R8(cpu, REG_F) & 0xF0);
 
-    cpu->ins_cycles = ins->cycles - 1;
+    cpu->ins_cycles = ins->r_cycles - 1;
 
     #if LOGLEVEL == LOG_LEVEL_DEBUG
     print_cpu_stat(cpu);

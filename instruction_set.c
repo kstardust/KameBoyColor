@@ -1826,7 +1826,7 @@ cb_set_m16(gbc_cpu_t *cpu, instruction_t *ins)
  */
 static instruction_t instruction_set[INSTRUCTIONS_SET_SIZE] = {
     /* 0x00 */
-    INSTRUCTION_ADD(0x00, 1, nop, NULL, NULL, 1, 1, "NOP"),
+    INSTRUCTION_ADD(0x00, 1, nop, NULL, NULL, 4, 4, "NOP"),
     INSTRUCTION_ADD(0x01, 3, ld_r16_i16, REG_BC, NULL, 12, 12, "LD BC, n16"),
     INSTRUCTION_ADD(0x02, 1, ld_m16_r8, REG_BC, REG_A, 8, 8, "LD (BC), A"),
     INSTRUCTION_ADD(0x03, 1, inc_r16, REG_BC, NULL, 8, 8, "INC BC"),
