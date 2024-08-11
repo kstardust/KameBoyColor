@@ -1326,6 +1326,8 @@ int_call_i16(gbc_cpu_t *cpu, uint16_t addr)
 
     WRITE_R16(regs, REG_SP, sp - 2);
     WRITE_R16(regs, REG_PC, addr);
+    /* costs 20cycles (5 M-cycles), this function counts as 1 cycle */
+    cpu->ins_cycles = 19;
 }
 
 static void

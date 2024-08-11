@@ -80,9 +80,6 @@ gbc_cpu_interrupt(gbc_cpu_t *cpu)
 
         assert(pc != 0);
         int_call_i16(cpu, pc);
-        /* costs 5 cycles, this function counts as 1 cycle */
-        cpu->ins_cycles = 4;
-
         return 1;
     }
 
