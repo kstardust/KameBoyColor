@@ -39,7 +39,7 @@ gbc_mbc_init(gbc_mbc_t *mbc)
 
     /* Default to MBC1 */
     mbc->read = mbc1_read;
-    mbc->write = mbc1_write;            
+    mbc->write = mbc1_write;    
 }
 
 void
@@ -83,7 +83,10 @@ gbc_mbc_init_with_cart(gbc_mbc_t *mbc, cartridge_t *cart)
 
     uint8_t ram_size = 0;
     switch (cart->ram_size) {
-        case 0: ram_size = 0; break;        
+        /* 0 should mean no RAM, but the blargg's test roms 'interrupt_time.gb' accesses 0xa0001 with a 
+            0 external ram size in caridge header. I dont know if it is a bug in the test rom.
+        */
+        case 0: ram_size = 1; break;        
         case 2: ram_size = 1; break;
         case 3: ram_size = 4; break;
         case 4: ram_size = 16; break;
