@@ -147,11 +147,22 @@ uint8_t
 io_port_write(void *udata, uint16_t addr, uint8_t data)
 {
     LOG_DEBUG("[MEM] Writing to IO port at address %x [%x]\n", addr, data);
-    if (addr == IO_PORT_DIV) {
+    uint8_t port = IO_ADDR_PORT(addr);
+    if (port == IO_PORT_DIV) {
         /* Writing to DIV resets it */
         data = 0;        
     }
-    IO_PORT_WRITE((gbc_memory_t*)udata, IO_ADDR_PORT(addr), data);
+    #if LOGLEVEL == LOG_LEVEL_DEBUG
+    if (port == IO_PORT_TAC) {
+        LOG_DEBUG("[Timer] Writing to TAC register [%x]\n", data);
+    } else if (port == IO_PORT_TMA) {
+        LOG_DEBUG("[Timer] Writing to TMA register [%x]\n", data);
+    } else if (port == IO_PORT_TIMA) {
+        LOG_DEBUG("[Timer] Writing to TIMA register [%x]\n", data);
+    }
+    #endif
+
+    IO_PORT_WRITE((gbc_memory_t*)udata, port, data);
     return data;
 }
 
