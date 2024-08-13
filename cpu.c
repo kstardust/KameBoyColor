@@ -91,7 +91,7 @@ print_cpu_stat(gbc_cpu_t *cpu)
 {
     cpu_register_t *r = &cpu->regs;
 
-    printf("{PC: 0x%x, SP: 0x%x, AF: 0x%x, BC: 0x%x, DE: 0x%x, HL: 0x%x, C: %d, Z: %d, N: %d, H: %d, IME: %x, IE: %x, IF: %x}: M-Cycles: %d\n",            
+    printf("{PC: 0x%x, SP: 0x%x, AF: 0x%x, BC: 0x%x, DE: 0x%x, HL: 0x%x, C: %d, Z: %d, N: %d, H: %d, IME: %x, IE: %x, IF: %x}: M-Cycles: %d\n",
            READ_R16(r, REG_PC), READ_R16(r, REG_SP), READ_R16(r, REG_AF),
            READ_R16(r, REG_BC), READ_R16(r, REG_DE), READ_R16(r, REG_HL),
            READ_R_FLAG(r, FLAG_C), READ_R_FLAG(r, FLAG_Z), READ_R_FLAG(r, FLAG_N), READ_R_FLAG(r, FLAG_H),
@@ -157,4 +157,27 @@ gbc_cpu_cycle(gbc_cpu_t *cpu)
     #if LOGLEVEL == LOG_LEVEL_DEBUG
     print_cpu_stat(cpu);
     #endif    
+}
+
+int*
+debug_get_all_registers(gbc_cpu_t *cpu, int values[DEBUG_CPU_REGISTERS_SIZE])
+{
+    /* ORDER: "PC", "SP", "A", "F", "B", "C", "D", "E", "H", "L", "Z", "N", "H", "C", "IME", "IE", "IF" */    
+    values[0] = READ_R16(&cpu->regs, REG_PC);
+    values[1] = READ_R16(&cpu->regs, REG_SP);
+    values[2] = READ_R8(&cpu->regs, REG_A);
+    values[3] = READ_R8(&cpu->regs, REG_F);
+    values[4] = READ_R8(&cpu->regs, REG_B);
+    values[5] = READ_R8(&cpu->regs, REG_C);
+    values[6] = READ_R8(&cpu->regs, REG_D);
+    values[7] = READ_R8(&cpu->regs, REG_E);
+    values[8] = READ_R8(&cpu->regs, REG_H);
+    values[9] = READ_R8(&cpu->regs, REG_L);
+    values[10] = READ_R_FLAG(&cpu->regs, FLAG_Z);
+    values[11] = READ_R_FLAG(&cpu->regs, FLAG_N);
+    values[12] = READ_R_FLAG(&cpu->regs, FLAG_H);
+    values[13] = READ_R_FLAG(&cpu->regs, FLAG_C);
+    values[14] = cpu->ime;
+    values[15] = cpu->ier;
+    values[16] = *cpu->ifp;    
 }

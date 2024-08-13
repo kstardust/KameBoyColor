@@ -23,11 +23,11 @@ gbc_init(gbc_t *gbc)
     #if defined (WIN32)
     FILE* cartridge = fopen("C:\\Users\\liqilong\\Desktop\\Dev\\GameBoyColor\\tetris_dx.gbc", "rb");
     #else
-    //FILE* cartridge = fopen("/Users/Kevin/Development/GBC/tetris_dx.gbc", "rb");
+    FILE* cartridge = fopen("/Users/Kevin/Development/GBC/tetris_dx.gbc", "rb");
     // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cgb_boot.bin", "rb");        
     
-    FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/01-special.gb", "rb"); // OK
-    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/02-interrupts.gb", "rb");
+    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/01-special.gb", "rb"); // OK    
+    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/02-interrupts.gb", "rb"); // OK
     // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/03-op sp,hl.gb", "rb"); // OK
     // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/04-op r,imm.gb", "rb"); // OK
     // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/05-op rp.gb", "rb"); // OK
@@ -38,6 +38,8 @@ gbc_init(gbc_t *gbc)
     // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/10-bit ops.gb", "rb"); // OK
     // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/11-op a,(hl).gb", "rb"); // OK
     // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/cpu_instrs.gb", "rb"); // OK
+    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/instr_timing/instr_timing.gb", "rb"); // OK
+    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/interrupt_time/interrupt_time.gb", "rb");
     #endif
     if (!cartridge) {
         printf("Failed to open cartridge\n");
@@ -69,6 +71,9 @@ gbc_init(gbc_t *gbc)
     }
     /* initial values https://gbdev.io/pandocs/Power_Up_Sequence.html  */
     IO_PORT_WRITE(&(gbc->mem), IO_PORT_LCDC, 0x91);
+
+    gbc->running = 1;
+    gbc->paused = 0;
     return 0;
 }
 
@@ -76,10 +81,25 @@ void
 gbc_run(gbc_t *gbc)
 {                
     uint64_t lastf = get_time(), now = 0, delta = 0;
-    uint64_t counter = 0;    
+    uint64_t cycles = 0;    
     
     for (;;) {
-        
+        if (!gbc->running)
+            break;        
+
+        cycles = gbc->cpu.cycles;
+        if (gbc->paused) {
+                if (gbc->debug_steps == 0) {
+                /* TODO: not a very good way, but we need to keep the GUI responsive */            
+                gbc->graphic.screen_update(&gbc->graphic);
+                continue;
+            }
+            /* forwards an instruction */
+            if (gbc->debug_steps > 0 && gbc->cpu.ins_cycles == 1) {
+                gbc->debug_steps--;
+            }
+        }
+
         now = get_time();
         delta = now - lastf;
         lastf = now;

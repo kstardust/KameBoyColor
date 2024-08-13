@@ -41,7 +41,7 @@ set(IMGUI_SOURCES
     gui/imgui/backends/imgui_impl_opengl3.cpp
 )    
 
-set(IMGUI_INCLUDE_DIRS gui/ gui/imgui gui/imgui/backends)
+set(IMGUI_INCLUDE_DIRS ./ gui/ gui/imgui gui/imgui/backends)
 
 if (WIN32)
     list(APPEND IMGUI_INCLUDE_DIRS         

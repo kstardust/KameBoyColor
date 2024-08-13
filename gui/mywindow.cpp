@@ -3,6 +3,7 @@
 #include <imgui.h>
 #include <vector>
 #include <ctime>
+#include <string>
 #include <random>
 
 const int width = 160;
@@ -54,10 +55,94 @@ unsigned char GuiWrite(void *udata, unsigned short addr, unsigned char data) {
     return 0;
 }
 
-void ShowMyWindow() {        
-    ImVec2 center = ImGui::GetMainViewport()->GetCenter();
-    ImGui::SetNextWindowPos(center, ImGuiCond_Always, ImVec2(0.5f, 0.5f)); // Center window
+bool IsPaused() {
+    gbc_t *gbc = (gbc_t*)gui_callback_udata;
+    return gbc->paused;
+}
 
+void ClickPause() {
+    gbc_t *gbc = (gbc_t*)gui_callback_udata;
+    if (gbc->paused) {
+        gbc->paused = 0;
+    } else {
+        gbc->paused = 1;
+    }
+}
+
+void ClickStep() {
+    gbc_t *gbc = (gbc_t*)gui_callback_udata;
+    if (gbc->paused)
+        gbc->debug_steps = 1;
+}
+
+void ShowHUDControlPanels() {
+        ImGui::BeginChild("Control", ImVec2(300, 50), true);
+        std::string pause_text = IsPaused() ? "Resume" : "Pause";
+        if (ImGui::Button(pause_text.c_str())) {
+            ClickPause();
+        }
+        if (IsPaused()) {
+            ImGui::SameLine();
+            if (ImGui::Button("Step")) {
+                ClickStep();
+            }
+        }
+/*         ImGui::SameLine();
+        if (ImGui::Button("Button 3")) {}  */
+        ImGui::EndChild();
+}
+
+void ShowHUDStatus() {
+       // Create a table on the right side
+        ImGui::BeginChild("Table", ImVec2(300, 300), true);
+        gbc_t *gbc = (gbc_t*)gui_callback_udata;
+        gbc_cpu_t *cpu = &gbc->cpu;
+        cpu_register_t regs = cpu->regs;
+        cpu_register_t *r = &regs;
+
+        std::string labels[] = {
+            "PC", "SP", "A", "F", "B", "C", "D", "E", "H", "L", "Z", "N", "H", "C", "IME", "IE", "IF"
+        };
+
+        int cpu_values[DEBUG_CPU_REGISTERS_SIZE];
+        debug_get_all_registers(cpu, cpu_values);
+
+        ImGui::Text("cycles: ");
+        ImGui::SameLine();
+        ImGui::Text("%d", gbc->cpu.cycles);
+        ImGui::Separator(); // Optional separator line           
+
+        if (ImGui::BeginTable("REG", 4))
+        {              
+            for (int i = 0; i < DEBUG_CPU_REGISTERS_SIZE; i++) {                
+                ImGui::TableNextColumn();
+                ImGui::Text("%s", labels[i].c_str());
+                ImGui::TableNextColumn();
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 1.0f, 0.0f, 1.0f)); // Red color
+                ImGui::Text("%x", cpu_values[i]);
+                ImGui::PopStyleColor(); // Revert to default color                
+                if ((i+1) % 2 == 0) {
+                    ImGui::TableNextRow();
+                }
+            }
+
+            ImGui::EndTable();
+        }
+        ImGui::EndChild();
+}
+
+void ShowHUD() {
+    ImGui::Begin("HUD");
+    
+    ShowHUDControlPanels();
+    ShowHUDStatus();
+
+    ImGui::End();
+}
+
+void ShowGame() {
+    ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+    //ImGui::SetNextWindowPos(center, ImGuiCond_Always, ImVec2(0.5f, 0.5f)); // Center window
     ImGui::SetNextWindowSize(ImVec2(width * pixel_size, height * pixel_size + 20));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));    
     ImGui::Begin("GBC");
@@ -66,4 +151,11 @@ void ShowMyWindow() {
     DrawFramebuffer(draw_list, framebuffer, ImGui::GetCursorScreenPos());
     ImGui::End();
     ImGui::PopStyleVar();
+}
+
+void ShowMyWindow() {        
+    ImGuiIO& io = ImGui::GetIO();
+    io.FontGlobalScale = 1.5f;  // Scale the font by 1.5x
+    ShowGame();
+    ShowHUD();
 }

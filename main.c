@@ -12,17 +12,26 @@
 
 #ifndef RUN_TEST
 
-int main()
+void close_callback(void *udata)
 {
-    //gui_main(0, NULL);
+    gbc_t *gbc = (gbc_t*)udata;
+    gbc->running = 0;    
+}
+
+int main()
+{    
     GuiInit();
     gbc_t gbc;
 
     if (gbc_init(&gbc) == 0) {
+        GuiSetCloseCallback(close_callback);
+        GuiSetUserData(&gbc);
         gbc.graphic.screen_write = GuiWrite;
         gbc.graphic.screen_update = GuiUpdate;
         gbc_run(&gbc);
     }
+
+    LOG_INFO("Emulator terminated\n");
 
     GuiDestroy();
     return 0;

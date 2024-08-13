@@ -14,12 +14,12 @@
 #define LOGLEVEL LOG_LEVEL_DEBUG
 
 #if LOGLEVEL == LOG_LEVEL_DEBUG
-#define LOG_INFO(fmt, ...) printf("[info]"fmt, ##__VA_ARGS__)
-#define LOG_DEBUG(fmt, ...) printf("[debug]"fmt, ##__VA_ARGS__)
+#define LOG_INFO(fmt, ...) printf("[info]" fmt, ##__VA_ARGS__)
+#define LOG_DEBUG(fmt, ...) printf("[debug]" fmt, ##__VA_ARGS__)
 #endif
 
 #if LOGLEVEL == LOG_LEVEL_INFO
-#define LOG_INFO(fmt, ...) printf("[info]"fmt, ##__VA_ARGS__)
+#define LOG_INFO(fmt, ...) printf("[info]" fmt, ##__VA_ARGS__)
 #define LOG_DEBUG(fmt, ...)
 #endif
 
@@ -28,7 +28,7 @@
 #define LOG_DEBUG(fmt, ...)
 #endif
 
-#define LOG_ERROR(fmt, ...) printf("[error]"fmt, ##__VA_ARGS__)
+#define LOG_ERROR(fmt, ...) printf("[error]" fmt, ##__VA_ARGS__)
 
 #define UINT4_MASK  0xF
 #define UINT8_MASK  0xFF

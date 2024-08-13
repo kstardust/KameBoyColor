@@ -80,7 +80,7 @@ struct gbc_cpu
     void *mem_data;
     uint8_t *ifp;           /* interrupt flag 'pointer'(it is a pointer to io port) */
 
-    uint64_t cycles;
+    uint64_t cycles;    
     uint16_t ins_cycles;   /* current instruction cost */
     uint8_t ime;           /* interrupt master enable */
     uint8_t ier;           /* interrupt enable register */
@@ -148,5 +148,9 @@ struct gbc_cpu
 void gbc_cpu_init(gbc_cpu_t *cpu);
 void gbc_cpu_connect(gbc_cpu_t *cpu, gbc_memory_t *mem);
 void gbc_cpu_cycle(gbc_cpu_t *cpu);
+
+/* ORDER: "PC", "SP", "A", "F", "B", "C", "D", "E", "H", "L", "Z", "N", "H", "C", "IME", "IE", "IF" */
+#define DEBUG_CPU_REGISTERS_SIZE 17
+int *debug_get_all_registers(gbc_cpu_t *cpu, int values[DEBUG_CPU_REGISTERS_SIZE]);
 
 #endif

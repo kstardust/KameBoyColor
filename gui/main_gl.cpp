@@ -11,6 +11,7 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include "mywindow.h"
+
 #include <stdio.h>
 #define GL_SILENCE_DEPRECATION
 #if defined(IMGUI_IMPL_OPENGL_ES2)
@@ -18,7 +19,13 @@
 #endif
 #include <GLFW/glfw3.h> // Will drag system OpenGL headers
 
+void (*gui_close_callback)(void* udata) = NULL;
+void *gui_callback_udata = NULL;
+
 #include "gui.h"
+
+#define INIT_WINDOW_WIDTH 1400
+#define INIT_WINDOW_HEIGHT 700
 
 // [Win32] Our example includes a copy of glfw3.lib pre-compiled with VS2010 to maximize ease of testing and compatibility with old VS compilers.
 // To link with VS2010-era libraries, VS2015+ requires linking with legacy_stdio_definitions.lib, which we do using this pragma.
@@ -69,7 +76,7 @@ int GuiInit()
 #endif
 
     // Create window with graphics context
-    window = glfwCreateWindow(800, 800, "ImGui GBC", nullptr, nullptr);
+    window = glfwCreateWindow(INIT_WINDOW_WIDTH, INIT_WINDOW_HEIGHT, "ImGui GBC", nullptr, nullptr);
     if (window == nullptr)
         return 1;
     glfwMakeContextCurrent(window);
@@ -114,12 +121,21 @@ int GuiInit()
     return 0;
 }
 
-void GuiUpdate(void* udata)
-{
-    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);    
+void GuiSetCloseCallback(void (*callback)(void* udata)) {
+    gui_close_callback = callback;        
+}
+
+void GuiSetUserData(void* udata) {
+    gui_callback_udata = udata;
+}
+
+
+void GuiUpdate()
+{    
     if (glfwWindowShouldClose(window))
     {        
-        /* TODO Destory */
+        if (gui_close_callback != NULL)
+            gui_close_callback(gui_callback_udata);
         return;
     }
 
@@ -129,7 +145,8 @@ void GuiUpdate(void* udata)
     // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application, or clear/overwrite your copy of the keyboard data.
     // Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
     glfwPollEvents();
-
+        
+    ImVec4 clear_color = ImVec4(0x0d / float(0xff),  0x11 / float(0xff),  0x17 / float(0xff), 1.0f);
     // Start the Dear ImGui frame
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
