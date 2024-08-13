@@ -139,7 +139,7 @@ mem_echo_read(void *udata, uint16_t addr)
 uint8_t
 io_port_read(void *udata, uint16_t addr)
 {
-    LOG_DEBUG("[MEM] Reading from IO port at address %x\n", addr);    
+    LOG_DEBUG("[MEM] Reading from IO port at address %x\n", addr);
     return IO_PORT_READ((gbc_memory_t*)udata, IO_ADDR_PORT(addr));
 }
 
@@ -147,20 +147,39 @@ uint8_t
 io_port_write(void *udata, uint16_t addr, uint8_t data)
 {
     LOG_DEBUG("[MEM] Writing to IO port at address %x [%x]\n", addr, data);
+
     uint8_t port = IO_ADDR_PORT(addr);
-    if (port == IO_PORT_DIV) {
-        /* Writing to DIV resets it */
-        data = 0;        
-    }
+
     #if LOGLEVEL == LOG_LEVEL_DEBUG
-    if (port == IO_PORT_TAC) {
+    if (port == IO_PORT_TAC) {        
         LOG_DEBUG("[Timer] Writing to TAC register [%x]\n", data);
-    } else if (port == IO_PORT_TMA) {
+    } else if (port == IO_PORT_TMA) {        
         LOG_DEBUG("[Timer] Writing to TMA register [%x]\n", data);
-    } else if (port == IO_PORT_TIMA) {
+    } else if (port == IO_PORT_TIMA) {    
         LOG_DEBUG("[Timer] Writing to TIMA register [%x]\n", data);
+    } else if (port == IO_PORT_STAT) {
+        LOG_DEBUG("[STAT] Writing to STAT register [%x]\n", data);
+    } else if (port == IO_PORT_LCDC) {
+        LOG_DEBUG("[STAT] Writing to STAT register [%x]\n", data);
     }
     #endif
+
+    if (port == IO_PORT_DIV) {
+        /* Writing to DIV resets it */
+        data = 0;
+    }
+
+    if (port == IO_PORT_P1) {
+        /* https://gbdev.io/pandocs/Joypad_Input.html#ff00--p1joyp-joypad */
+        if ((data & 0x30) == 0x30) {
+            /* all keys released */
+            data = data | 0x0f;
+        } else {
+            /* lower 4 bits are read-only */
+            uint8_t v = IO_PORT_READ((gbc_memory_t*)udata, IO_PORT_P1);
+            data = (data & 0xf0) | (v & 0x0f);
+        }
+    }
 
     IO_PORT_WRITE((gbc_memory_t*)udata, port, data);
     return data;
@@ -296,4 +315,7 @@ gbc_mem_init(gbc_memory_t *mem)
     register_memory_map(mem, &entry);
 
     IO_PORT_WRITE(mem, IO_PORT_TAC, 0xF8);
+
+    /* This one is crucial, otherwise games like Tetris_dx will stuck at the title screen forever, cost me almost two days to identify this */
+    IO_PORT_WRITE(mem, IO_PORT_P1, 0xCF);
 }
