@@ -58,6 +58,12 @@ TODO: Using cpu cycles may be better?
 #define LCDC_OBJ_ENABLE 0x02
 #define LCDC_BG_ENABLE 0x01
 
+#define STAT_LYC_LY 0x04
+#define STAT_MODE_0_INT 0x08
+#define STAT_MODE_1_INT 0x10
+#define STAT_MODE_2_INT 0x20
+#define STAT_LYC_INT 0x40
+
 #define TILE_TYPE_OBJ  1
 #define TILE_TYPE_BG   2
 #define TILE_TYPE_WIN  3

@@ -1,6 +1,9 @@
 #include "graphic.h"
+#include "memory.h"
+#include "cpu.h"
 
 static void* vram_addr(void *udata, uint16_t addr);
+static void* vram_addr_bank(void *udata, uint16_t addr, uint8_t bank);
 static void* oam_addr(void *udata, uint16_t addr);
 
 /* each tile is 8x8, top-left is 0,0 */
@@ -50,7 +53,8 @@ gbc_graphic_get_tilemap(gbc_graphic_t *graphic, uint8_t type)
         assert(0);
     }
 
-    return (gbc_tilemap_t*)vram_addr(graphic, addr);
+    /* BG tilemap is always in bank 0 */
+    return (gbc_tilemap_t*)vram_addr_bank(graphic, addr, 0);
 }
 
 inline static uint8_t
@@ -101,17 +105,17 @@ gbc_graphic_get_tilemap_attr(gbc_graphic_t *graphic, uint8_t type)
         assert(0);
     }
 
-    return (gbc_tilemap_attr_t*)vram_addr(graphic, addr);
+    return (gbc_tilemap_attr_t*)vram_addr_bank(graphic, addr, 1);
 }
 
 static void 
 gbc_graphic_draw_line(gbc_graphic_t *graphic, uint16_t scanline)
 {   
-    int16_t scanline_base = scanline * VISIBLE_HORIZONTAL_PIXELS;
+    int16_t scanline_base = scanline * VISIBLE_HORIZONTAL_PIXELS;    
     for (uint16_t i = 0; i < VISIBLE_HORIZONTAL_PIXELS; i++) {
         uint8_t color = gbc_graphic_render_pixel(graphic, scanline, i);
         graphic->screen_write(graphic->screen_udata, scanline_base + i, color);
-    }    
+    }
 }
 
 void 
@@ -129,35 +133,49 @@ gbc_graphic_cycle(gbc_graphic_t *graphic, uint64_t delta)
     if (io_lcdc & LCDC_PPU_ENABLE) {
         graphic->t_delta = 0;
         uint8_t io_stat = IO_PORT_READ(graphic->mem, IO_PORT_STAT);
-
         uint8_t scanline_cycle = graphic->scanline_cycles;
         uint8_t scanline = graphic->scanline;
 
         if (scanline <= VISIBLE_SCANLINES) {
             if (scanline_cycle > CYCLE_MODEL_0_START) {
                 /* HORIZONTAL BLANK */
-                graphic->mode = PPU_MODE_0;
+                if (graphic->mode != PPU_MODE_0) {
+                    graphic->mode = PPU_MODE_0;
+                    if (io_stat & STAT_MODE_0_INT) {
+                        REQUEST_INTERRUPT(graphic->mem, INTERRUPT_LCD_STAT);
+                    }                    
+                }                
             } else if (scanline_cycle > CYCLE_MODEL_3_START) {
                 /* DRAWING  */                
                 if (graphic->mode != PPU_MODE_3) {
-                    gbc_graphic_draw_line(graphic, scanline);
-                }
-
-                graphic->mode = PPU_MODE_3;                                
+                    graphic->mode = PPU_MODE_3;
+                    gbc_graphic_draw_line(graphic, scanline);                    
+                }                
             } else if (scanline_cycle > CYCLE_MODEL_2_START) {
                 /* OAM SCAN */
-                graphic->mode = PPU_MODE_2;
+                if (graphic->mode != PPU_MODE_2) {
+                    graphic->mode = PPU_MODE_2;
+                    if (io_stat & STAT_MODE_2_INT) {
+                        REQUEST_INTERRUPT(graphic->mem, INTERRUPT_LCD_STAT);
+                    }
+                }
             }
         } else {
             /* V-BLANK */        
-            graphic->mode = PPU_MODE_1;
+            if (graphic->mode != PPU_MODE_1) {
+                if (io_stat & STAT_MODE_1_INT) {
+                    REQUEST_INTERRUPT(graphic->mem, INTERRUPT_LCD_STAT);
+                }                
+                REQUEST_INTERRUPT(graphic->mem, INTERRUPT_VBLANK);
+                graphic->mode = PPU_MODE_1;
+            }
         }
     
         scanline_cycle++;
         
         if (scanline_cycle == CYCLES_PER_SCANLINE) {
             scanline_cycle = 0;
-            scanline++;                        
+            scanline++;
             if (scanline > TOTAL_SCANLINES) {                
                 graphic->screen_update(graphic->screen_udata);
                 scanline = 0;
@@ -167,27 +185,38 @@ gbc_graphic_cycle(gbc_graphic_t *graphic, uint64_t delta)
         graphic->scanline_cycles = scanline_cycle;
         graphic->scanline = scanline;    
 
-        uint8_t lyc = IO_PORT_READ(graphic->mem, IO_PORT_LYC);    
+        uint8_t lyc = IO_PORT_READ(graphic->mem, IO_PORT_LYC);
 
         IO_PORT_WRITE(graphic->mem, IO_PORT_LY, scanline);    
 
         io_stat &= ~PPU_MODE_MASK;
         io_stat |= graphic->mode & PPU_MODE_MASK;
 
-        io_stat &= ~0x04;
+        io_stat &= ~STAT_LYC_LY;
         if (lyc == scanline) {
-            /* TODO stat interrupt */        
-            io_stat |= 0x04;
+            io_stat |= STAT_LYC_LY;
+            if (io_stat & STAT_LYC_INT) {
+                REQUEST_INTERRUPT(graphic->mem, INTERRUPT_LCD_STAT);
+            }
         }
 
-        IO_PORT_WRITE(graphic->mem, IO_PORT_STAT, io_stat);    
+        IO_PORT_WRITE(graphic->mem, IO_PORT_STAT, io_stat);        
     } else  {        
         if (graphic->t_delta < GRAPHIC_UPDATE_TIME * CYCLES_PER_SCANLINE * TOTAL_SCANLINES) {
             return;
         }        
         graphic->screen_update(graphic->screen_udata);
         graphic->t_delta = 0;
+        LOG_DEBUG("[GRAPHIC] PPU DISABLED\n");
     }
+}
+
+inline static void*
+vram_addr_bank(void *udata, uint16_t addr, uint8_t bank)
+{
+    gbc_graphic_t *graphic = (gbc_graphic_t*)udata;
+    uint16_t real_addr = (bank * VRAM_BANK_SIZE) + addr - VRAM_BEGIN;
+    return graphic->vram + real_addr;
 }
 
 inline static void*
@@ -195,11 +224,8 @@ vram_addr(void *udata, uint16_t addr)
 {
     gbc_graphic_t *graphic = (gbc_graphic_t*)udata;
     uint8_t bank = IO_PORT_READ(graphic->mem, IO_PORT_VBK) & 0x01;
-    LOG_DEBUG("[GRAPHIC] Reading from VRAM %x, bank: %d\n", addr, bank);
-
-    uint16_t real_addr = (bank * VRAM_BANK_SIZE) + addr - VRAM_BEGIN;
-
-    return graphic->vram + real_addr;
+    // LOG_DEBUG("[GRAPHIC] Reading from VRAM %x, bank: %d\n", addr, bank);
+    return vram_addr_bank(udata, addr, bank);
 }
 
 static uint8_t
@@ -213,10 +239,8 @@ vram_write(void *udata, uint16_t addr, uint8_t data)
 {    
     gbc_graphic_t *graphic = (gbc_graphic_t*)udata;
     uint8_t bank = IO_PORT_READ(graphic->mem, IO_PORT_VBK) & 0x01;
-    LOG_DEBUG("[GRAPHIC] Writing to VRAM %x [%x], bank: %d\n", addr, data, bank);
-
-    uint16_t real_addr = (bank * VRAM_BANK_SIZE) + addr - VRAM_BEGIN;
-    graphic->vram[real_addr] = data;
+    // LOG_DEBUG("[GRAPHIC] Writing to VRAM %x [%x], bank: %d\n", addr, data, bank);
+    *(uint8_t*)vram_addr(udata, addr) = data;
 
     return data;
 }
@@ -224,7 +248,7 @@ vram_write(void *udata, uint16_t addr, uint8_t data)
 static void*
 oam_addr(void *udata, uint16_t addr)
 {
-    LOG_DEBUG("[GRAPHIC] Reading from OAM %x\n", addr);
+    // LOG_DEBUG("[GRAPHIC] Reading from OAM %x\n", addr);
     gbc_graphic_t *graphic = (gbc_graphic_t*)udata;
 
     uint16_t real_addr = addr - OAM_BEGIN;
@@ -240,7 +264,7 @@ oam_read(void *udata, uint16_t addr)
 static uint8_t
 oam_write(void *udata, uint16_t addr, uint8_t data)
 {
-    LOG_DEBUG("[GRAPHIC] Writing to OAM %x [%x]\n", addr, data);
+    // LOG_DEBUG("[GRAPHIC] Writing to OAM %x [%x]\n", addr, data);
     gbc_graphic_t *graphic = (gbc_graphic_t*)udata;
     
     uint16_t real_addr = addr - OAM_BEGIN;
