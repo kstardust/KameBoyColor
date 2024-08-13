@@ -9,6 +9,9 @@
 const int width = 160;
 const int height = 144;
 const int pixel_size = 4;
+
+static double last_frame = 0;
+static long long int last_cycles = 0;
 std::vector<ImU32> framebuffer(width * height, IM_COL32(0, 0, 0, 255)); // Initialize with black color
 
 // Fill the framebuffer with your data
@@ -106,10 +109,26 @@ void ShowHUDStatus() {
 
         int cpu_values[DEBUG_CPU_REGISTERS_SIZE];
         debug_get_all_registers(cpu, cpu_values);
+        double current_time = ImGui::GetTime();
+        long long int cycles = cpu->cycles;
+
+        double fps = 1.0 / (current_time - last_frame);
+        int hz = (double)(cycles - last_cycles) / (current_time - last_frame);
+        last_cycles = cycles;
+        last_frame = current_time;
 
         ImGui::Text("cycles: ");
         ImGui::SameLine();
         ImGui::Text("%d", gbc->cpu.cycles);
+
+        ImGui::Text("speed: ");
+        ImGui::SameLine();
+        ImGui::Text("%dHz", hz);
+
+        ImGui::Text("FPS: ");
+        ImGui::SameLine();
+        ImGui::Text("%.2f", fps);
+
         ImGui::Separator(); // Optional separator line           
 
         if (ImGui::BeginTable("REG", 4))
