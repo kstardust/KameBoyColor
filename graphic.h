@@ -6,7 +6,6 @@
 
 typedef struct gbc_graphic gbc_graphic_t;
 typedef struct gbc_tile gbc_tile_t;
-typedef struct gbc_tile_attr gbc_tile_attr_t;
 typedef struct gbc_tilemap gbc_tilemap_t;
 typedef struct gbc_tilemap_attr gbc_tilemap_attr_t;
 
@@ -68,6 +67,8 @@ TODO: Using cpu cycles may be better?
 #define TILE_TYPE_BG   2
 #define TILE_TYPE_WIN  3
 
+typedef uint16_t (*screen_write)(void *udata, uint16_t addr, uint16_t data);
+
 struct gbc_graphic
 {
     uint8_t vram[VRAM_BANK_SIZE * 2]; /* 2x8KB */
@@ -78,7 +79,7 @@ struct gbc_graphic
     
     void *screen_udata;
     void (*screen_update)(void *udata);
-    memory_write screen_write;
+    screen_write screen_write;
 
     gbc_memory_t *mem;
 
@@ -86,11 +87,6 @@ struct gbc_graphic
 };
 
 struct gbc_tile
-{
-    uint8_t data[16];
-};
-
-struct gbc_tile_attr
 {
     uint8_t data[16];
 };
@@ -110,7 +106,25 @@ struct gbc_tilemap_attr
 void gbc_graphic_connect(gbc_graphic_t *graphic, gbc_memory_t *mem);
 void gbc_graphic_init(gbc_graphic_t *graphic);
 void gbc_graphic_cycle(gbc_graphic_t *graphic, uint64_t delta);
-gbc_tile_attr_t *gbc_graphic_get_tile_attr(gbc_graphic_t *graphic, uint8_t type, uint8_t idx);
-gbc_tile_t *gbc_graphic_get_tile(gbc_graphic_t *graphic, uint8_t type, uint8_t idx);
+uint8_t* gbc_graphic_get_tile_attr(gbc_graphic_t *graphic, uint8_t type, uint8_t idx);
+gbc_tile_t* gbc_graphic_get_tile(gbc_graphic_t *graphic, uint8_t type, uint8_t idx, uint8_t bank);
+
+#define TILE_ATTR_PALETTE(x) ((x) & 0x07)
+#define TILE_ATTR_VRAM_BANK(x) ((x) & 0x08)
+#define TILE_ATTR_XFLIP(x) ((x) & 0x20)
+#define TILE_ATTR_YFLIP(x) ((x) & 0x40)
+#define TILE_ATTR_PRIORITY(x) ((x) & 0x80)
+
+/* 
+TODO: Translate color (GBC's screen is different from normal RGB screen) 
+This is RGB555 to RGB888 with scale(i.e. the 0x7fff is 0xffffff)
+*/
+#define COLOR_SCALE 
+
+#define GBC_COLOR_TO_RGB_R(x) ((x & 0x1F) * 0xff / 0x1F)
+#define GBC_COLOR_TO_RGB_G(x) (((x & 0x03E0) >> 5) * 0xff / 0x1F)
+#define GBC_COLOR_TO_RGB_B(x) (((x & 0x7C00) >> 10) * 0xff / 0x1F)
+
+#define GBC_COLOR_TO_RGB(x) (GBC_COLOR_TO_RGB_R(x) << 10 | GBC_COLOR_TO_RGB_G(x) << 5 | GBC_COLOR_TO_RGB_B(x))
 
 #endif

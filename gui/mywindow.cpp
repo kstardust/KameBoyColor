@@ -40,20 +40,8 @@ void InitMyWindow() {
     std::srand(std::time(nullptr));
 }
 
-unsigned char GuiWrite(void *udata, unsigned short addr, unsigned char data) {    
-    /* TODO: TEST , data is 2bits */
-    if (data == 0) {        
-        framebuffer[addr] = IM_COL32(255, 255, 255, 255);
-    } else if (data == 1) {
-        framebuffer[addr] = IM_COL32(169, 169, 169, 255);
-    } else if (data == 2) {
-        framebuffer[addr] = IM_COL32(84, 84, 84, 255);
-    } else if (data == 3) {
-        framebuffer[addr] = IM_COL32(0, 0, 0, 255);
-    } else {
-        /* error */
-        framebuffer[addr] = IM_COL32(0, 255, 255, 255);
-    }
+unsigned short GuiWrite(void *udata, unsigned short addr, unsigned short data) {    
+    framebuffer[addr] = IM_COL32(GBC_COLOR_TO_RGB_R(data), GBC_COLOR_TO_RGB_G(data), GBC_COLOR_TO_RGB_B(data), 255);
     // framebuffer[addr] = IM_COL32(std::rand() % 255, std::rand() % 255, std::rand() % 255, std::rand() % 255);
     return 0;
 }
@@ -110,7 +98,7 @@ void ShowHUDStatus() {
         int cpu_values[DEBUG_CPU_REGISTERS_SIZE];
         debug_get_all_registers(cpu, cpu_values);
         double current_time = ImGui::GetTime();
-        long long int cycles = cpu->cycles;
+        long long cycles = cpu->cycles;
 
         double fps = 1.0 / (current_time - last_frame);
         int hz = (double)(cycles - last_cycles) / (current_time - last_frame);
@@ -119,7 +107,7 @@ void ShowHUDStatus() {
 
         ImGui::Text("cycles: ");
         ImGui::SameLine();
-        ImGui::Text("%d", gbc->cpu.cycles);
+        ImGui::Text("%llu", gbc->cpu.cycles);
 
         ImGui::Text("speed: ");
         ImGui::SameLine();

@@ -15,7 +15,7 @@ void GuiDestroy();
 void GuiUpdate();
 void GuiSetCloseCallback(void (*callback)(void *udata));
 void GuiSetUserData(void *udata);
-unsigned char GuiWrite(void *udata, unsigned short addr, unsigned char data);
+unsigned short GuiWrite(void *udata, unsigned short addr, unsigned short data);
 
 #ifdef __cplusplus
 }

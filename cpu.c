@@ -8,8 +8,18 @@ gbc_cpu_init(gbc_cpu_t *cpu)
     memset(cpu, 0, sizeof(gbc_cpu_t));
 
     /* https://gbdev.io/pandocs/Power_Up_Sequence.html#cpu-registers */
-    WRITE_R16(cpu, REG_PC, 0x0100);
+    WRITE_R16(cpu, REG_PC, 0x0000);
     WRITE_R16(cpu, REG_SP, 0xFFFE);
+
+    /* https://gbdev.io/pandocs/CGB_Registers.html#detecting-cgb-and-gba-functions */
+    /* fun fact: reigster A == 0x11 means it is a Color GameBoy */
+    WRITE_R8(cpu, REG_A, 0x11);
+
+    WRITE_R8(cpu, REG_D, 0xff);
+    WRITE_R8(cpu, REG_E, 0x56);
+    WRITE_R8(cpu, REG_L, 0x0d);
+    SET_R_FLAG(cpu, FLAG_Z);
+
     cpu->ime = 0;
 }
 

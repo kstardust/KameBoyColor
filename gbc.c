@@ -24,7 +24,7 @@ gbc_init(gbc_t *gbc)
     FILE* cartridge = fopen("C:\\Users\\liqilong\\Desktop\\Dev\\GameBoyColor\\tetris_dx.gbc", "rb");
     #else
     FILE* cartridge = fopen("/Users/Kevin/Development/GBC/tetris_dx.gbc", "rb");
-    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cgb_boot.bin", "rb");        
+    //FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cgb_boot.bin", "rb");        
     
     // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/01-special.gb", "rb"); // OK    
     // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/02-interrupts.gb", "rb"); // OK
@@ -64,7 +64,7 @@ gbc_init(gbc_t *gbc)
     
     // FOR BOOT ROM TESTING
     // gbc->mbc.rom_banks = data;
-
+    
     if (!cart) {
         printf("Failed to load cartridge\n");
         return 1;
@@ -72,6 +72,7 @@ gbc_init(gbc_t *gbc)
     /* initial values https://gbdev.io/pandocs/Power_Up_Sequence.html  */
     IO_PORT_WRITE(&(gbc->mem), IO_PORT_LCDC, 0x91);
 
+    WRITE_R16(&gbc->cpu, REG_PC, 0x0100);
     gbc->running = 1;
     gbc->paused = 0;
     return 0;

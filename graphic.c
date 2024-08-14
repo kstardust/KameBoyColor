@@ -18,24 +18,32 @@ gbc_graphic_init(gbc_graphic_t *graphic)
     memset(graphic, 0, sizeof(gbc_graphic_t));    
 }
 
-gbc_tile_attr_t*
-gbc_graphic_get_tile_attr(gbc_graphic_t *graphic, uint8_t type, uint8_t idx) 
+gbc_tile_t*
+gbc_graphic_get_tile(gbc_graphic_t *graphic, uint8_t type, uint8_t idx, uint8_t bank)
 {
     if (type == TILE_TYPE_OBJ || 
         (IO_PORT_READ(graphic->mem, IO_PORT_LCDC) & LCDC_BG_WINDOW_TILE_DATA)) {
-        return (gbc_tile_attr_t*)(oam_addr(graphic, 0x8000) + idx * 16);
+        return (gbc_tile_t*)(vram_addr_bank(graphic, 0x8000, bank) + idx * 16);
     }    
-    return (gbc_tile_attr_t*)oam_addr(graphic, 0x9000 + (int8_t)idx * 16);
+    return (gbc_tile_t*)vram_addr_bank(graphic, 0x9000 + (int8_t)idx * 16, bank);
 }
 
-gbc_tile_t*
-gbc_graphic_get_tile(gbc_graphic_t *graphic, uint8_t type, uint8_t idx)
+gbc_tilemap_attr_t*
+gbc_graphic_get_tilemap_attr(gbc_graphic_t *graphic, uint8_t type)
 {
-    if (type == TILE_TYPE_OBJ || 
-        (IO_PORT_READ(graphic->mem, IO_PORT_LCDC) & LCDC_BG_WINDOW_TILE_DATA)) {
-        return (gbc_tile_t*)(vram_addr(graphic, 0x8000) + idx * 16);
-    }    
-    return (gbc_tile_t*)vram_addr(graphic, 0x9000 + (int8_t)idx * 16);
+    uint8_t lcdc = IO_PORT_READ(graphic->mem, IO_PORT_LCDC);
+    uint16_t addr = 0;
+    
+    if (type == TILE_TYPE_BG) {
+        addr = lcdc & LCDC_BG_TILE_MAP ? 0x9C00 : 0x9800;                
+    } else if (type == TILE_TYPE_WIN) {
+        addr = lcdc & LCDC_WINDOW_TILE_MAP ? 0x9C00 : 0x9800;        
+    } else {
+        LOG_ERROR("Invalid tile type\n");
+        assert(0);
+    }
+    /* BG attr tilemap  is always in bank 1 */
+    return (gbc_tilemap_attr_t*)vram_addr_bank(graphic, addr, 1);
 }
 
 gbc_tilemap_t*
@@ -57,7 +65,7 @@ gbc_graphic_get_tilemap(gbc_graphic_t *graphic, uint8_t type)
     return (gbc_tilemap_t*)vram_addr_bank(graphic, addr, 0);
 }
 
-inline static uint8_t
+inline static uint16_t
 gbc_graphic_render_pixel(gbc_graphic_t *graphic, uint16_t scanline, uint16_t col)
 {
     uint8_t lcdc = IO_PORT_READ(graphic->mem, IO_PORT_LCDC);
@@ -70,7 +78,7 @@ gbc_graphic_render_pixel(gbc_graphic_t *graphic, uint16_t scanline, uint16_t col
     uint16_t scroll_x = IO_PORT_READ(graphic->mem, IO_PORT_SCX);
     uint16_t scroll_y = IO_PORT_READ(graphic->mem, IO_PORT_SCY);
     gbc_tilemap_t *bg_tilemap = gbc_graphic_get_tilemap(graphic, TILE_TYPE_BG);
-    //gbc_tilemap_attr_t *bg_tilemap_attr = gbc_graphic_get_tilemap_attr(graphic, TILE_TYPE_BG);
+    gbc_tilemap_attr_t *bg_tilemap_attr = gbc_graphic_get_tilemap_attr(graphic, TILE_TYPE_BG);
 
     uint16_t x = (scroll_x + col) % 256;
     uint16_t y = (scroll_y + scanline) % 256;
@@ -81,31 +89,26 @@ gbc_graphic_render_pixel(gbc_graphic_t *graphic, uint16_t scanline, uint16_t col
     uint16_t tile_x_offset = x % 8;
     uint16_t tile_y_offset = y % 8;
 
-    gbc_tile_t *tile = gbc_graphic_get_tile(graphic, TILE_TYPE_BG, bg_tilemap->data[tile_y][tile_x]);
-    uint8_t color_id = TILE_PIXEL_COLORID(tile, tile_x_offset, tile_y_offset);
+    uint8_t attr = bg_tilemap_attr->data[tile_y][tile_x];
+    gbc_tile_t *tile = gbc_graphic_get_tile(graphic, TILE_TYPE_BG, bg_tilemap->data[tile_y][tile_x], 
+            TILE_ATTR_VRAM_BANK(attr) ? 1 : 0);
+    
+    if (TILE_ATTR_XFLIP(attr)) {
+        tile_x_offset = 7 - tile_x_offset;        
+    }
+    if (TILE_ATTR_YFLIP(attr)) {
+        tile_y_offset = 7 - tile_y_offset;
+    }
+    
+    uint8_t color_id = TILE_PIXEL_COLORID(tile, tile_x_offset, tile_y_offset);    
+    gbc_palette_t *bg_palette = BG_PALETTE_READ(graphic->mem, TILE_ATTR_PALETTE(attr));
+    
+    uint16_t bg_color = bg_palette->c[color_id];
 
-    return color_id;
+    return bg_color;
     /* window */
 
     /* objs */
-}
-
-gbc_tilemap_attr_t*
-gbc_graphic_get_tilemap_attr(gbc_graphic_t *graphic, uint8_t type)
-{
-    uint8_t lcdc = IO_PORT_READ(graphic->mem, IO_PORT_LCDC);
-    uint16_t addr = 0;
-    
-    if (type == TILE_TYPE_BG) {
-        addr = lcdc & LCDC_BG_TILE_MAP ? 0x9C00 : 0x9800;                
-    } else if (type == TILE_TYPE_WIN) {
-        addr = lcdc & LCDC_WINDOW_TILE_MAP ? 0x9C00 : 0x9800;        
-    } else {
-        LOG_ERROR("Invalid tile type\n");
-        assert(0);
-    }
-
-    return (gbc_tilemap_attr_t*)vram_addr_bank(graphic, addr, 1);
 }
 
 static void 
@@ -113,7 +116,7 @@ gbc_graphic_draw_line(gbc_graphic_t *graphic, uint16_t scanline)
 {   
     int16_t scanline_base = scanline * VISIBLE_HORIZONTAL_PIXELS;    
     for (uint16_t i = 0; i < VISIBLE_HORIZONTAL_PIXELS; i++) {
-        uint8_t color = gbc_graphic_render_pixel(graphic, scanline, i);
+        uint16_t color = gbc_graphic_render_pixel(graphic, scanline, i);
         graphic->screen_write(graphic->screen_udata, scanline_base + i, color);
     }
 }

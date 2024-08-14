@@ -131,8 +131,12 @@
 
 #define REQUEST_INTERRUPT(mem, intp) ((mem)->io_ports[IO_PORT_IF] |= (intp))
 
+#define BG_PALETTE_READ(mem, idx) ((mem)->bg_palette + ((idx)))
+#define OBJ_PALETTE_READ(mem, idx) ((mem)->obj_palette + ((idx)))
+
 typedef struct gbc_memory gbc_memory_t;
 typedef struct memory_map_entry memory_map_entry_t;
+typedef struct gbc_palette gbc_palette_t;
 
 typedef uint8_t (*memory_read)(void *udata, uint16_t addr);
 typedef uint8_t (*memory_write)(void *udata, uint16_t addr, uint8_t data);
@@ -147,6 +151,11 @@ struct memory_map_entry
     void *udata;
 };
 
+struct gbc_palette
+{
+    uint16_t c[4]; /* 4 colors x 2 bytes per color */
+};
+
 /* It is actually, bus */
 struct gbc_memory
 {
@@ -155,7 +164,12 @@ struct gbc_memory
     memory_map_entry_t map[MEMORY_MAP_ENTRIES];
     uint8_t wram[WRAM_BANK_SIZE * WRAM_BANKS];
     uint8_t hraw[HRAM_END - HRAM_BEGIN + 1];
-    uint8_t io_ports[IO_PORT_END - IO_PORT_BEGIN + 1];
+    uint8_t io_ports[IO_PORT_END - IO_PORT_BEGIN + 1]; 
+
+    /* https://gbdev.io/pandocs/Palettes.html#lcd-color-palettes-cgb-only */
+    /* palatte memory */
+    gbc_palette_t bg_palette[8];
+    gbc_palette_t obj_palette[8];    
 };
 
 void gbc_mem_init(gbc_memory_t *mem);

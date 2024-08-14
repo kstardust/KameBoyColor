@@ -140,7 +140,14 @@ uint8_t
 io_port_read(void *udata, uint16_t addr)
 {
     LOG_DEBUG("[MEM] Reading from IO port at address %x\n", addr);
-    return IO_PORT_READ((gbc_memory_t*)udata, IO_ADDR_PORT(addr));
+    uint8_t port = IO_ADDR_PORT(addr);
+    gbc_memory_t *mem = (gbc_memory_t*)udata;
+    if (port == IO_PORT_BCPD_BGPD) {
+        return *((uint8_t*)(mem->bg_palette) + (IO_PORT_READ(mem, IO_PORT_BCPS_BCPI) & 0x3f));
+    } else if (port == IO_PORT_OCPD_OBPD) {
+        return *((uint8_t*)(mem->obj_palette) + (IO_PORT_READ(mem, IO_PORT_OCPS_OCPI) & 0x3f));
+    }
+    return IO_PORT_READ(mem, port);
 }
 
 uint8_t
@@ -149,6 +156,8 @@ io_port_write(void *udata, uint16_t addr, uint8_t data)
     LOG_DEBUG("[MEM] Writing to IO port at address %x [%x]\n", addr, data);
 
     uint8_t port = IO_ADDR_PORT(addr);
+
+    gbc_memory_t *mem = (gbc_memory_t*)udata;
 
     #if LOGLEVEL == LOG_LEVEL_DEBUG
     if (port == IO_PORT_TAC) {        
@@ -167,9 +176,7 @@ io_port_write(void *udata, uint16_t addr, uint8_t data)
     if (port == IO_PORT_DIV) {
         /* Writing to DIV resets it */
         data = 0;
-    }
-
-    if (port == IO_PORT_P1) {
+    } else if (port == IO_PORT_P1) {
         /* https://gbdev.io/pandocs/Joypad_Input.html#ff00--p1joyp-joypad */
         if ((data & 0x30) == 0x30) {
             /* all keys released */
@@ -179,9 +186,25 @@ io_port_write(void *udata, uint16_t addr, uint8_t data)
             uint8_t v = IO_PORT_READ((gbc_memory_t*)udata, IO_PORT_P1);
             data = (data & 0xf0) | (v & 0x0f);
         }
+    } else if (port == IO_PORT_BCPD_BGPD) {
+        uint8_t bcps = IO_PORT_READ(mem, IO_PORT_BCPS_BCPI);        
+        ((uint8_t*)mem->bg_palette)[bcps & 0x3f] = data;
+        if (bcps & 0x80) {
+            /* auto increment */
+            bcps = (bcps + 1) & 0x3f | 0x80;
+            IO_PORT_WRITE(mem, IO_PORT_BCPS_BCPI, bcps);
+        }
+    } else if (port == IO_PORT_OCPD_OBPD) {
+        uint8_t ocps = IO_PORT_READ(mem, IO_PORT_OCPS_OCPI);        
+        ((uint8_t*)mem->obj_palette)[ocps & 0x3f] = data;
+        if (ocps & 0x80) {
+            /* auto increment */
+            ocps = (ocps + 1) & 0x3f | 0x80;
+            IO_PORT_WRITE(mem, IO_PORT_OCPS_OCPI, ocps);            
+        }
     }
 
-    IO_PORT_WRITE((gbc_memory_t*)udata, port, data);
+    IO_PORT_WRITE(mem, port, data);
     return data;
 }
 
@@ -314,7 +337,15 @@ gbc_mem_init(gbc_memory_t *mem)
 
     register_memory_map(mem, &entry);
 
+    /* https://gbdev.io/pandocs/Power_Up_Sequence.html */
     IO_PORT_WRITE(mem, IO_PORT_TAC, 0xF8);
+    IO_PORT_WRITE(mem, IO_PORT_SC, 0x7F);
+    IO_PORT_WRITE(mem, IO_PORT_IF, 0xE1);
+    IO_PORT_WRITE(mem, IO_PORT_LCDC, 0x91);
+    IO_PORT_WRITE(mem, IO_PORT_BGP, 0xFC);
+    IO_PORT_WRITE(mem, IO_PORT_VBK, 0xFE);
+    IO_PORT_WRITE(mem, IO_PORT_RP, 0x3E);
+    IO_PORT_WRITE(mem, IO_PORT_SVBK, 0xF8);
 
     /* This one is crucial, otherwise games like Tetris_dx will stuck at the title screen forever, cost me almost two days to identify this */
     IO_PORT_WRITE(mem, IO_PORT_P1, 0xCF);
