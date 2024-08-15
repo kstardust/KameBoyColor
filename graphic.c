@@ -4,7 +4,6 @@
 
 static void* vram_addr(void *udata, uint16_t addr);
 static void* vram_addr_bank(void *udata, uint16_t addr, uint8_t bank);
-static void* oam_addr(void *udata, uint16_t addr);
 
 /* each tile is 8x8, top-left is 0,0 */
 #define TILE_PIXEL_COLORID(td, x, y)  \
@@ -66,57 +65,210 @@ gbc_graphic_get_tilemap(gbc_graphic_t *graphic, uint8_t type)
 }
 
 inline static uint16_t
-gbc_graphic_render_pixel(gbc_graphic_t *graphic, uint16_t scanline, uint16_t col)
+gbc_graphic_render_pixel(gbc_graphic_t *graphic, uint16_t scanline, uint16_t col, uint8_t *objs_idx, uint8_t objs_count)
 {
-    uint8_t lcdc = IO_PORT_READ(graphic->mem, IO_PORT_LCDC);
+    uint8_t lcdc = IO_PORT_READ(graphic->mem, IO_PORT_LCDC);    
+    uint16_t bg_color, obj_color;
+    uint16_t tile_x, tile_y, x, y, tile_x_offset, tile_y_offset;
+    uint8_t attr, bg_color_id;
 
-    /* background */
-    /* TODO: 
-    "The scroll registers are re-read on each tile fetch, except for the low 3 bits of SCX" Does it matter?  
-    https://gbdev.io/pandocs/Scrolling.html#mid-frame-behavior 
-    */
-    uint16_t scroll_x = IO_PORT_READ(graphic->mem, IO_PORT_SCX);
-    uint16_t scroll_y = IO_PORT_READ(graphic->mem, IO_PORT_SCY);
-    gbc_tilemap_t *bg_tilemap = gbc_graphic_get_tilemap(graphic, TILE_TYPE_BG);
-    gbc_tilemap_attr_t *bg_tilemap_attr = gbc_graphic_get_tilemap_attr(graphic, TILE_TYPE_BG);
+    gbc_palette_t *palette;
+    gbc_tile_t *tile;
+    uint8_t bgwin_priority = 0;
+    uint8_t lcdc_bit0 = lcdc & LCDC_BG_ENABLE;
 
-    uint16_t x = (scroll_x + col) % 256;
-    uint16_t y = (scroll_y + scanline) % 256;
-
-    uint16_t tile_x = x / 8;
-    uint16_t tile_y = y / 8;
-
-    uint16_t tile_x_offset = x % 8;
-    uint16_t tile_y_offset = y % 8;
-
-    uint8_t attr = bg_tilemap_attr->data[tile_y][tile_x];
-    gbc_tile_t *tile = gbc_graphic_get_tile(graphic, TILE_TYPE_BG, bg_tilemap->data[tile_y][tile_x], 
-            TILE_ATTR_VRAM_BANK(attr) ? 1 : 0);
+    bg_color = obj_color = 0;
+    bg_color_id = 0;
     
-    if (TILE_ATTR_XFLIP(attr)) {
-        tile_x_offset = 7 - tile_x_offset;        
+    if (lcdc_bit0) {
+        /* background */
+        /* TODO: 
+        "The scroll registers are re-read on each tile fetch, except for the low 3 bits of SCX" Does it matter?  
+        https://gbdev.io/pandocs/Scrolling.html#mid-frame-behavior 
+        */
+        uint16_t scroll_x = IO_PORT_READ(graphic->mem, IO_PORT_SCX);
+        uint16_t scroll_y = IO_PORT_READ(graphic->mem, IO_PORT_SCY);
+        gbc_tilemap_t *bg_tilemap = gbc_graphic_get_tilemap(graphic, TILE_TYPE_BG);
+        gbc_tilemap_attr_t *bg_tilemap_attr = gbc_graphic_get_tilemap_attr(graphic, TILE_TYPE_BG);
+
+        x = (scroll_x + col) % TILE_MAP_SIZE;
+        y = (scroll_y + scanline) % TILE_MAP_SIZE;
+
+        tile_x = x / TILE_SIZE;
+        tile_y = y / TILE_SIZE;
+
+        tile_x_offset = x % TILE_SIZE;
+        tile_y_offset = y % TILE_SIZE;
+
+        attr = bg_tilemap_attr->data[tile_y][tile_x];
+        tile = gbc_graphic_get_tile(graphic, TILE_TYPE_BG, bg_tilemap->data[tile_y][tile_x], 
+                TILE_ATTR_VRAM_BANK(attr) ? 1 : 0);
+        
+        if (TILE_ATTR_XFLIP(attr)) {
+            tile_x_offset = TILE_SIZE - tile_x_offset - 1;
+        }
+        if (TILE_ATTR_YFLIP(attr)) {
+            tile_y_offset = TILE_SIZE - tile_y_offset - 1;
+        }
+        
+        bg_color_id = TILE_PIXEL_COLORID(tile, tile_x_offset, tile_y_offset);    
+        palette = BG_PALETTE_READ(graphic->mem, TILE_ATTR_PALETTE(attr));
+        
+        bg_color = palette->c[bg_color_id];
+
+        /* https://gbdev.io/pandocs/Tile_Maps.html#bg-to-obj-priority-in-cgb-mode */
+        if (TILE_ATTR_PRIORITY(attr))
+            bgwin_priority |= 1;
     }
-    if (TILE_ATTR_YFLIP(attr)) {
-        tile_y_offset = 7 - tile_y_offset;
+
+    /* window */
+    if (lcdc & LCDC_WINDOW_ENABLE) {
+        /* TODO: 
+        we doesn't wait until WY and WX conditions are met
+        https://gbdev.io/pandocs/Scrolling.html#window */
+
+        uint8_t window_x = IO_PORT_READ(graphic->mem, IO_PORT_WX) - 7;
+        uint8_t window_y = IO_PORT_READ(graphic->mem, IO_PORT_WY);
+
+        /* notice that window_x and window_y are always positive */
+        if (scanline >= window_y && col >= window_x) {
+            gbc_tilemap_t *win_tilemap = gbc_graphic_get_tilemap(graphic, TILE_TYPE_WIN);
+            gbc_tilemap_attr_t *win_tilemap_attr = gbc_graphic_get_tilemap_attr(graphic, TILE_TYPE_WIN);
+
+            x = col - window_x;
+            y = scanline - window_y;
+
+            tile_x = x / TILE_SIZE;
+            tile_y = y / TILE_SIZE;
+
+            tile_x_offset = x % TILE_SIZE;
+            tile_y_offset = y % TILE_SIZE;
+
+            attr = win_tilemap_attr->data[tile_y][tile_x];
+            tile = gbc_graphic_get_tile(graphic, TILE_TYPE_WIN, win_tilemap->data[tile_y][tile_x], 
+                    TILE_ATTR_VRAM_BANK(attr) ? 1 : 0);
+            
+            if (TILE_ATTR_XFLIP(attr)) {
+                tile_x_offset = TILE_SIZE - tile_x_offset - 1;
+            }
+
+            if (TILE_ATTR_YFLIP(attr)) {
+                tile_y_offset = TILE_SIZE - tile_y_offset - 1;
+            }
+
+            bg_color_id = TILE_PIXEL_COLORID(tile, tile_x_offset, tile_y_offset);
+            palette = BG_PALETTE_READ(graphic->mem, TILE_ATTR_PALETTE(attr));
+
+            /* window has higher priority than background */
+            bg_color = palette->c[bg_color_id];
+
+            if (TILE_ATTR_PRIORITY(attr))
+                bgwin_priority |= 1;
+        }
+    }
+
+    if (lcdc_bit0 && bg_color_id && bgwin_priority) {
+        return bg_color;
+    }    
+
+    uint8_t obj_found = 0;
+
+    /* objs */  
+    if (lcdc & LCDC_OBJ_ENABLE) {
+        for (int i = 0; i < objs_count; i++) {
+            gbc_obj_t *obj = OAM_ADDR(graphic->mem);
+            obj += objs_idx[i];
+
+            uint8_t obj_y = OAM_Y_TO_SCREEN(obj->y);
+            uint8_t obj_x = OAM_X_TO_SCREEN(obj->x);
+
+            if (col < obj_x || col >= obj_x + OBJ_WIDTH) {
+                continue;
+            }
+
+            uint8_t tile_idx = obj->tile;
+            uint8_t tile_x_offset = col - obj_x;
+            uint8_t tile_y_offset = scanline - obj_y;
+
+            if (lcdc & LCDC_OBJ_SIZE) {
+                /* 8x16 */
+                if (scanline >= obj_y + OBJ_HEIGHT) {
+                    /* bottom tile */
+                    tile_y_offset -= TILE_SIZE;
+                    tile_idx = OBJ_ATTR_YFLIP(obj->attr) ? (tile_idx & 0xFE) : (tile_idx | 0x01);
+                } else {
+                    /* top tile */
+                    tile_idx = OBJ_ATTR_YFLIP(obj->attr) ? (tile_idx | 0x01) : (tile_idx & 0xFE);
+                }
+            }
+
+            uint8_t attr = obj->attr;
+            gbc_tile_t *tile = gbc_graphic_get_tile(graphic, TILE_TYPE_OBJ, tile_idx,
+                OBJ_ATTR_VRAM_BANK(attr) ? 1 : 0);            
+
+            if (OBJ_ATTR_XFLIP(attr)) {
+                tile_x_offset = TILE_SIZE - tile_x_offset - 1;
+            }
+
+            if (OBJ_ATTR_YFLIP(attr)) {
+                tile_y_offset = TILE_SIZE - tile_y_offset - 1;
+            }
+
+            assert(tile_x_offset >= 0 && tile_x_offset < TILE_SIZE);
+
+            uint16_t color_id = TILE_PIXEL_COLORID(tile, tile_x_offset, tile_y_offset);
+
+            if (color_id == 0) {
+                /* color 0 means transparent */
+                continue;
+            }
+
+            gbc_palette_t *palette = OBJ_PALETTE_READ(graphic->mem, OBJ_ATTR_PALETTE(attr));
+            obj_color = palette->c[color_id];            
+            if (OBJ_ATTR_BG_PRIORITY(attr))
+                bgwin_priority |= 1;
+            /* 
+            the earlier(mem position in OAM) obj has higher priority 
+            and gameboy doest have alpha channel, we can break here
+            */
+            obj_found = 1;
+            break;
+        }
     }
     
-    uint8_t color_id = TILE_PIXEL_COLORID(tile, tile_x_offset, tile_y_offset);    
-    gbc_palette_t *bg_palette = BG_PALETTE_READ(graphic->mem, TILE_ATTR_PALETTE(attr));
-    
-    uint16_t bg_color = bg_palette->c[color_id];
+    if (obj_found && (!bgwin_priority || !bg_color_id || !lcdc_bit0)) {
+        return obj_color;
+    }
 
     return bg_color;
-    /* window */
-
-    /* objs */
 }
 
 static void 
 gbc_graphic_draw_line(gbc_graphic_t *graphic, uint16_t scanline)
 {   
-    int16_t scanline_base = scanline * VISIBLE_HORIZONTAL_PIXELS;    
+    int16_t scanline_base = scanline * VISIBLE_HORIZONTAL_PIXELS;
+
+    /* scan objs */
+    uint8_t objs = 0;    
+    uint8_t lcdc = IO_PORT_READ(graphic->mem, IO_PORT_LCDC);
+    uint8_t obj_height = lcdc & LCDC_OBJ_SIZE ? OBJ_HEIGHT_2 : OBJ_HEIGHT;
+    
+    gbc_obj_t *obj = OAM_ADDR(graphic->mem);
+    uint8_t objs_idx[MAX_OBJ_SCANLINE];
+    
+    for (int i = 0; i < MAX_OBJS; i++, obj++) {
+        uint8_t y = OAM_Y_TO_SCREEN(obj->y);
+
+        if (scanline >= y && scanline < y + obj_height) {
+            objs_idx[objs++] = i;
+            if (objs == MAX_OBJ_SCANLINE) {
+                break;
+            }
+        }
+    }
+
     for (uint16_t i = 0; i < VISIBLE_HORIZONTAL_PIXELS; i++) {
-        uint16_t color = gbc_graphic_render_pixel(graphic, scanline, i);
+        uint16_t color = gbc_graphic_render_pixel(graphic, scanline, i, objs_idx, objs);
         graphic->screen_write(graphic->screen_udata, scanline_base + i, color);
     }
 }
@@ -152,10 +304,11 @@ gbc_graphic_cycle(gbc_graphic_t *graphic, uint64_t delta)
                 /* DRAWING  */                
                 if (graphic->mode != PPU_MODE_3) {
                     graphic->mode = PPU_MODE_3;
-                    gbc_graphic_draw_line(graphic, scanline);                    
+                    gbc_graphic_draw_line(graphic, scanline);
                 }                
             } else if (scanline_cycle > CYCLE_MODEL_2_START) {
                 /* OAM SCAN */
+                /* The real gameboy scans obj here but we scan then in MODE3, see above */
                 if (graphic->mode != PPU_MODE_2) {
                     graphic->mode = PPU_MODE_2;
                     if (io_stat & STAT_MODE_2_INT) {
@@ -248,33 +401,6 @@ vram_write(void *udata, uint16_t addr, uint8_t data)
     return data;
 }
 
-static void*
-oam_addr(void *udata, uint16_t addr)
-{
-    // LOG_DEBUG("[GRAPHIC] Reading from OAM %x\n", addr);
-    gbc_graphic_t *graphic = (gbc_graphic_t*)udata;
-
-    uint16_t real_addr = addr - OAM_BEGIN;
-    return graphic->oam + real_addr;
-}
-
-static uint8_t
-oam_read(void *udata, uint16_t addr)
-{
-    return *(uint8_t*)oam_addr(udata, addr);
-}
-
-static uint8_t
-oam_write(void *udata, uint16_t addr, uint8_t data)
-{
-    // LOG_DEBUG("[GRAPHIC] Writing to OAM %x [%x]\n", addr, data);
-    gbc_graphic_t *graphic = (gbc_graphic_t*)udata;
-    
-    uint16_t real_addr = addr - OAM_BEGIN;
-    graphic->oam[real_addr] = data;
-    return data;
-}
-
 void
 gbc_graphic_connect(gbc_graphic_t *graphic, gbc_memory_t *mem)
 {
@@ -288,14 +414,5 @@ gbc_graphic_connect(gbc_graphic_t *graphic, gbc_memory_t *mem)
     entry.write = vram_write;
     entry.udata = graphic;
     
-    register_memory_map(mem, &entry);
-
-    entry.id = OAM_ID;
-    entry.addr_begin = OAM_BEGIN;
-    entry.addr_end = OAM_END;
-    entry.read = oam_read;
-    entry.write = oam_write;
-    entry.udata = graphic;
-
     register_memory_map(mem, &entry);
 }

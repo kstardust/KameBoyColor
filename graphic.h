@@ -8,9 +8,11 @@ typedef struct gbc_graphic gbc_graphic_t;
 typedef struct gbc_tile gbc_tile_t;
 typedef struct gbc_tilemap gbc_tilemap_t;
 typedef struct gbc_tilemap_attr gbc_tilemap_attr_t;
+typedef struct gbc_obj gbc_obj_t;
+
+typedef uint16_t (*screen_write)(void *udata, uint16_t addr, uint16_t data);
 
 #define VRAM_BANK_SIZE (VRAM_END-VRAM_BEGIN+1)
-#define OAM_SIZE (OAM_END-OAM_BEGIN+1)
 
 /* 
 https://gbdev.io/pandocs/Rendering.html
@@ -63,16 +65,50 @@ TODO: Using cpu cycles may be better?
 #define STAT_MODE_2_INT 0x20
 #define STAT_LYC_INT 0x40
 
+#define TILE_SIZE 8        /* each tile is 8x8 pixels */
+#define TILE_MAP_SIZE 256  /* 32x32 tiles */
+
+#define OBJ_WIDTH 8
+#define OBJ_HEIGHT 8
+#define OBJ_HEIGHT_2 16
+
 #define TILE_TYPE_OBJ  1
 #define TILE_TYPE_BG   2
 #define TILE_TYPE_WIN  3
 
-typedef uint16_t (*screen_write)(void *udata, uint16_t addr, uint16_t data);
+#define TILE_ATTR_PALETTE(x) ((x) & 0x07)
+#define TILE_ATTR_VRAM_BANK(x) ((x) & 0x08)
+#define TILE_ATTR_XFLIP(x) ((x) & 0x20)
+#define TILE_ATTR_YFLIP(x) ((x) & 0x40)
+#define TILE_ATTR_PRIORITY(x) ((x) & 0x80)
+
+/* 
+TODO: Translate color (GBC's screen is different from normal RGB screen) 
+This is RGB555 to RGB888 with scale(i.e. the 0x7fff is 0xffffff)
+*/
+#define COLOR_SCALE 
+
+#define GBC_COLOR_TO_RGB_R(x) ((x & 0x1F) * 0xff / 0x1F)
+#define GBC_COLOR_TO_RGB_G(x) (((x & 0x03E0) >> 5) * 0xff / 0x1F)
+#define GBC_COLOR_TO_RGB_B(x) (((x & 0x7C00) >> 10) * 0xff / 0x1F)
+
+#define GBC_COLOR_TO_RGB(x) (GBC_COLOR_TO_RGB_R(x) << 10 | GBC_COLOR_TO_RGB_G(x) << 5 | GBC_COLOR_TO_RGB_B(x))
+
+#define MAX_OBJ_SCANLINE 10
+#define MAX_OBJS ((OAM_END - OAM_BEGIN + 1) / 4)
+
+#define OBJ_ATTR_PALETTE(x) ((x) & 0x07)
+#define OBJ_ATTR_VRAM_BANK(x) ((x) & 0x08)
+#define OBJ_ATTR_XFLIP(x) ((x) & 0x20)
+#define OBJ_ATTR_YFLIP(x) ((x) & 0x40)
+#define OBJ_ATTR_BG_PRIORITY(x) ((x) & 0x80)
+
+#define OAM_Y_TO_SCREEN(y) ((y) - 16)
+#define OAM_X_TO_SCREEN(x) ((x) - 8)
 
 struct gbc_graphic
 {
     uint8_t vram[VRAM_BANK_SIZE * 2]; /* 2x8KB */
-    uint8_t oam[OAM_SIZE];
     uint8_t scanline;
     uint8_t scanline_cycles;
     uint8_t mode;
@@ -103,28 +139,20 @@ struct gbc_tilemap_attr
     uint8_t data[32][32];
 };
 
+struct gbc_obj
+{
+    uint8_t y;
+    uint8_t x;
+    uint8_t tile;
+    uint8_t attr;    
+};
+
+
 void gbc_graphic_connect(gbc_graphic_t *graphic, gbc_memory_t *mem);
 void gbc_graphic_init(gbc_graphic_t *graphic);
 void gbc_graphic_cycle(gbc_graphic_t *graphic, uint64_t delta);
 uint8_t* gbc_graphic_get_tile_attr(gbc_graphic_t *graphic, uint8_t type, uint8_t idx);
 gbc_tile_t* gbc_graphic_get_tile(gbc_graphic_t *graphic, uint8_t type, uint8_t idx, uint8_t bank);
 
-#define TILE_ATTR_PALETTE(x) ((x) & 0x07)
-#define TILE_ATTR_VRAM_BANK(x) ((x) & 0x08)
-#define TILE_ATTR_XFLIP(x) ((x) & 0x20)
-#define TILE_ATTR_YFLIP(x) ((x) & 0x40)
-#define TILE_ATTR_PRIORITY(x) ((x) & 0x80)
-
-/* 
-TODO: Translate color (GBC's screen is different from normal RGB screen) 
-This is RGB555 to RGB888 with scale(i.e. the 0x7fff is 0xffffff)
-*/
-#define COLOR_SCALE 
-
-#define GBC_COLOR_TO_RGB_R(x) ((x & 0x1F) * 0xff / 0x1F)
-#define GBC_COLOR_TO_RGB_G(x) (((x & 0x03E0) >> 5) * 0xff / 0x1F)
-#define GBC_COLOR_TO_RGB_B(x) (((x & 0x7C00) >> 10) * 0xff / 0x1F)
-
-#define GBC_COLOR_TO_RGB(x) (GBC_COLOR_TO_RGB_R(x) << 10 | GBC_COLOR_TO_RGB_G(x) << 5 | GBC_COLOR_TO_RGB_B(x))
 
 #endif

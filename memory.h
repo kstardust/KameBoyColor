@@ -134,6 +134,8 @@
 #define BG_PALETTE_READ(mem, idx) ((mem)->bg_palette + ((idx)))
 #define OBJ_PALETTE_READ(mem, idx) ((mem)->obj_palette + ((idx)))
 
+#define OAM_ADDR(mem) ((mem)->oam)
+
 typedef struct gbc_memory gbc_memory_t;
 typedef struct memory_map_entry memory_map_entry_t;
 typedef struct gbc_palette gbc_palette_t;
@@ -165,7 +167,7 @@ struct gbc_memory
     uint8_t wram[WRAM_BANK_SIZE * WRAM_BANKS];
     uint8_t hraw[HRAM_END - HRAM_BEGIN + 1];
     uint8_t io_ports[IO_PORT_END - IO_PORT_BEGIN + 1]; 
-
+    uint8_t oam[OAM_END - OAM_BEGIN + 1];
     /* https://gbdev.io/pandocs/Palettes.html#lcd-color-palettes-cgb-only */
     /* palatte memory */
     gbc_palette_t bg_palette[8];

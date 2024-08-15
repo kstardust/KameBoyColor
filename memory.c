@@ -16,7 +16,7 @@ select_entry(gbc_memory_t *mem, uint16_t addr)
     return NULL;
 }
 
-uint8_t
+static uint8_t
 mem_write(void *udata, uint16_t addr, uint8_t data)
 {
     LOG_DEBUG("[MEM] Writing to memory at address %x [%x]\n", addr, data);
@@ -31,7 +31,7 @@ mem_write(void *udata, uint16_t addr, uint8_t data)
     return entry->write(entry->udata, addr, data);
 }
 
-uint8_t 
+static uint8_t 
 mem_read(void *udata, uint16_t addr)
 {
     LOG_DEBUG("[MEM] Reading from memory at address %x\n", addr);
@@ -84,7 +84,7 @@ register_memory_map(gbc_memory_t *mem, memory_map_entry_t *entry)
     mem->map[entry->id-1] = *entry;    
 }
 
-uint8_t
+static uint8_t
 mem_raw_write(void *udata, uint16_t addr, uint8_t data)
 {
     gbc_memory_t *mem = (gbc_memory_t*)udata;
@@ -103,7 +103,7 @@ mem_raw_write(void *udata, uint16_t addr, uint8_t data)
     abort();
 }
 
-uint8_t
+static uint8_t
 mem_raw_read(void *udata, uint16_t addr)
 {
     gbc_memory_t *mem = (gbc_memory_t*)udata;
@@ -120,7 +120,7 @@ mem_raw_read(void *udata, uint16_t addr)
     abort();    
 }
 
-uint8_t
+static uint8_t
 mem_echo_write(void *udata, uint16_t addr, uint8_t data)
 {
     gbc_memory_t *mem = (gbc_memory_t*)udata;
@@ -128,7 +128,7 @@ mem_echo_write(void *udata, uint16_t addr, uint8_t data)
     return mem_raw_write(mem, addr, data);
 }
 
-uint8_t
+static uint8_t
 mem_echo_read(void *udata, uint16_t addr)
 {
     gbc_memory_t *mem = (gbc_memory_t*)udata;
@@ -136,7 +136,7 @@ mem_echo_read(void *udata, uint16_t addr)
     return mem_raw_read(mem, addr);
 }
 
-uint8_t
+static uint8_t
 io_port_read(void *udata, uint16_t addr)
 {
     LOG_DEBUG("[MEM] Reading from IO port at address %x\n", addr);
@@ -150,7 +150,31 @@ io_port_read(void *udata, uint16_t addr)
     return IO_PORT_READ(mem, port);
 }
 
-uint8_t
+static inline uint8_t
+oam_read(void *udata, uint16_t addr)
+{
+    return ((gbc_memory_t*)udata)->oam[addr - OAM_BEGIN];
+}
+
+static inline uint8_t
+oam_write(void *udata, uint16_t addr, uint8_t data)
+{
+    // LOG_DEBUG("[MEM] Writing to OAM %x [%x]\n", addr, data);
+    gbc_memory_t *mem = (gbc_memory_t*)udata;    
+    mem->oam[addr - OAM_BEGIN] = data;
+    return data;
+}
+
+static inline void
+io_dma_transer(gbc_memory_t *mem, uint8_t addr)
+{    
+    uint16_t src = addr << 8;    
+    for (uint16_t dst = OAM_BEGIN; dst <= OAM_END; dst++, src++) {        
+        mem->oam[dst-OAM_BEGIN] = mem->read(mem, src);
+    }
+}
+
+static uint8_t
 io_port_write(void *udata, uint16_t addr, uint8_t data)
 {
     LOG_DEBUG("[MEM] Writing to IO port at address %x [%x]\n", addr, data);
@@ -202,13 +226,15 @@ io_port_write(void *udata, uint16_t addr, uint8_t data)
             ocps = (ocps + 1) & 0x3f | 0x80;
             IO_PORT_WRITE(mem, IO_PORT_OCPS_OCPI, ocps);            
         }
+    } else if (port == IO_PORT_DMA) {
+        io_dma_transer(mem, data);
     }
 
     IO_PORT_WRITE(mem, port, data);
     return data;
 }
 
-uint8_t
+static uint8_t
 bank_n_write(void *udata, uint16_t addr, uint8_t data)
 {    
     gbc_memory_t *mem = (gbc_memory_t*)udata;
@@ -226,7 +252,7 @@ bank_n_write(void *udata, uint16_t addr, uint8_t data)
     return data;
 }
 
-uint8_t
+static uint8_t
 bank_n_read(void *udata, uint16_t addr)
 {
     gbc_memory_t *mem = (gbc_memory_t*)udata;
@@ -241,7 +267,7 @@ bank_n_read(void *udata, uint16_t addr)
     return mem->wram[addr - WRAM_BANK_N_BEGIN + bank_base];
 }
 
-uint8_t
+static uint8_t
 not_usable_write(void *udata, uint16_t addr, uint8_t data)
 {    
     LOG_ERROR("[MEM] Writing to Not-Usable memory at address %x [%x]\n", addr, data);
@@ -249,7 +275,7 @@ not_usable_write(void *udata, uint16_t addr, uint8_t data)
     return 0;
 }
 
-uint8_t
+static uint8_t
 not_usable_read(void *udata, uint16_t addr)
 {
     /* It is actually readable, this implementation emulates CGB revision E */
@@ -333,6 +359,16 @@ gbc_mem_init(gbc_memory_t *mem)
     
     entry.read = mem_echo_read;
     entry.write = mem_echo_write;
+    entry.udata = mem;
+
+    register_memory_map(mem, &entry);
+
+    /* OAM */
+    entry.id = OAM_ID;
+    entry.addr_begin = OAM_BEGIN;   
+    entry.addr_end = OAM_END;
+    entry.read = oam_read;
+    entry.write = oam_write;
     entry.udata = mem;
 
     register_memory_map(mem, &entry);
