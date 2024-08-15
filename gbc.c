@@ -34,7 +34,7 @@ gbc_init(gbc_t *gbc, const char *game_rom, const char *boot_rom)
     FILE *cartridge = fopen(game_rom, "rb");
 
     if (!cartridge) {
-        printf("Failed to open cartridge\n");
+        LOG_ERROR("Failed to open cartridge\n");
         return 1;
     }
 
@@ -44,7 +44,7 @@ gbc_init(gbc_t *gbc, const char *game_rom, const char *boot_rom)
 
     uint8_t *data = (uint8_t*)malloc_memory(size);
     if (!data) {
-        printf("Failed to allocate memory\n");
+        LOG_ERROR("Failed to allocate memory\n");
         return 1;
     }
 
@@ -56,7 +56,7 @@ gbc_init(gbc_t *gbc, const char *game_rom, const char *boot_rom)
     gbc->mbc.rom_banks = data;
 
     if (!cart) {
-        printf("Failed to load cartridge\n");
+        LOG_ERROR("Failed to load cartridge\n");
         return 1;
     }
 

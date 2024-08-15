@@ -42,52 +42,52 @@ cartridge_load(uint8_t *data)
     cartridge_t *cartridge = (cartridge_t*)data;
 
     if (!validate_logo(cartridge->nintendo_logo)) {
-        printf("Invalid logo\n");
+        LOG_ERROR("Invalid logo\n");
         return NULL;
     }
 
     if (!validate_checksum(data)) {
-        printf("Invalid checksum\n");
+        LOG_DEBUG("Invalid checksum\n");
         return NULL;
     }
     
     if (cartridge->cart_cgb_flag != 0x80 && cartridge->cart_cgb_flag != 0xC0) {
-        printf("Invalid CGB flag\n");
+        LOG_ERROR("Invalid CGB flag\n");
         return NULL;
     }
 
-    printf("Title: %s\n", cartridge->title);
-    printf("ROM Size: %dk\n", cartridge_rom_size(cartridge) / 1024);
-    printf("ROM Banks: %d\n", cartridge_rom_banks(cartridge));
+    LOG_INFO("Title: %s\n", cartridge->title);
+    LOG_INFO("ROM Size: %dk\n", cartridge_rom_size(cartridge) / 1024);
+    LOG_INFO("ROM Banks: %d\n", cartridge_rom_banks(cartridge));
     
     switch (cartridge->ram_size) {
         case 0:
-            printf("RAM Size: None\n");
+            LOG_INFO("RAM Size: None\n");
             break;
         case 1:
-            printf("RAM Size: 2k\n");
+            LOG_INFO("RAM Size: 2k\n");
             break;
         case 2:
-            printf("RAM Size: 8k\n");
+            LOG_INFO("RAM Size: 8k\n");
             break;
         case 3:
-            printf("RAM Size: 32k\n");
+            LOG_INFO("RAM Size: 32k\n");
             break;
         case 4:
-            printf("RAM Size: 128k\n");
+            LOG_INFO("RAM Size: 128k\n");
             break;
         case 5:
-            printf("RAM Size: 64k\n");
+            LOG_INFO("RAM Size: 64k\n");
             break;
         default:
-            LOG_ERROR("RAM Size: Unknown\n");
+            LOG_INFO("RAM Size: Unknown\n");
             abort();
             break;            
     }
 
-    printf("Cartridge Type: $%x\n", cartridge->cartridge_type);
+    LOG_INFO("Cartridge Type: $%x\n", cartridge->cartridge_type);
 
-    printf("Manufacturer Code: %x %x %x %x\n",
+    LOG_INFO("Manufacturer Code: %x %x %x %x\n",
         ((char*)&(cartridge->cart_manufacturer_code))[0],
         ((char*)&(cartridge->cart_manufacturer_code))[1],
         ((char*)&(cartridge->cart_manufacturer_code))[2],
