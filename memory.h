@@ -108,6 +108,7 @@
 #define IO_PORT_WX   0x4b
 #define IO_PORT_KEY1 0x4d
 #define IO_PORT_VBK  0x4f
+#define IO_PORT_DISABLE_BOOT_ROM 0x50
 #define IO_PORT_HDMA1 0x51
 #define IO_PORT_HDMA2 0x52
 #define IO_PORT_HDMA3 0x53
@@ -135,6 +136,7 @@
 #define OBJ_PALETTE_READ(mem, idx) ((mem)->obj_palette + ((idx)))
 
 #define OAM_ADDR(mem) ((mem)->oam)
+#define GBC_BOOT_ROM_SIZE 0x8ff /* it is 2KB plus the hole in the middle */
 
 typedef struct gbc_memory gbc_memory_t;
 typedef struct memory_map_entry memory_map_entry_t;
@@ -172,6 +174,9 @@ struct gbc_memory
     /* palatte memory */
     gbc_palette_t bg_palette[8];
     gbc_palette_t obj_palette[8];    
+
+    uint8_t boot_rom_enabled;
+    uint8_t boot_rom[GBC_BOOT_ROM_SIZE];        
 };
 
 void gbc_mem_init(gbc_memory_t *mem);

@@ -21,9 +21,31 @@ void close_callback(void *udata)
 int main()
 {    
     GuiInit();
+    
+   #if defined (WIN32)
+    char* cartridge = fopen("C:\\Users\\liqilong\\Desktop\\Dev\\GameBoyColor\\tetris_dx.gbc", "rb");
+    char* boot_rom = NULL;
+    #else
+    char* cartridge = "/Users/Kevin/Development/GBC/tetris_dx.gbc";
+    char* boot_rom = "/Users/Kevin/Development/GBC/gb-test-roms/cgb_boot.bin";
+    
+    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/01-special.gb", "rb"); // OK    
+    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/02-interrupts.gb", "rb"); // OK
+    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/03-op sp,hl.gb", "rb"); // OK
+    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/04-op r,imm.gb", "rb"); // OK
+    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/05-op rp.gb", "rb"); // OK
+    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/06-ld r,r.gb", "rb"); // OK
+    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/07-jr,jp,call,ret,rst.gb", "rb");
+    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/08-misc instrs.gb", "rb"); // OK
+    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/09-op r,r.gb", "rb"); // OK
+    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/10-bit ops.gb", "rb"); // OK
+    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/11-op a,(hl).gb", "rb"); // OK
+    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/cpu_instrs.gb", "rb"); // OK
+    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/instr_timing/instr_timing.gb", "rb"); // OK
+    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/interrupt_time/interrupt_time.gb", "rb");
+    #endif
     gbc_t gbc;
-
-    if (gbc_init(&gbc) == 0) {
+    if (gbc_init(&gbc, cartridge, boot_rom) == 0) {
         GuiSetCloseCallback(close_callback);
         GuiSetUserData(&gbc);
         gbc.graphic.screen_write = GuiWrite;

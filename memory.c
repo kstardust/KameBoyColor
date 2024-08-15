@@ -200,6 +200,11 @@ io_port_write(void *udata, uint16_t addr, uint8_t data)
     if (port == IO_PORT_DIV) {
         /* Writing to DIV resets it */
         data = 0;
+    } else if (port == IO_PORT_DISABLE_BOOT_ROM) {
+        /* Writing 0x11 to this register disables the boot ROM */
+        if (data == 0x11) {
+            mem->boot_rom_enabled = 0;
+        }
     } else if (port == IO_PORT_P1) {
         /* https://gbdev.io/pandocs/Joypad_Input.html#ff00--p1joyp-joypad */
         if ((data & 0x30) == 0x30) {

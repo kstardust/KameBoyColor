@@ -14,15 +14,20 @@ uint8_t mbc1_write(gbc_mbc_t *mbc, uint16_t addr, uint8_t data);
 uint8_t mbc3_read(gbc_mbc_t *mbc, uint16_t addr);
 uint8_t mbc3_write(gbc_mbc_t *mbc, uint16_t addr, uint8_t data);
 
-uint8_t mbc_read(void *udata, uint16_t addr)
+uint8_t 
+mbc_read(void *udata, uint16_t addr)
 {    
     gbc_mbc_t *mbc = (gbc_mbc_t*)udata;
+    /* https://gbdev.io/pandocs/Power_Up_Sequence.html#size */
+    if (mbc->mem->boot_rom_enabled && !IN_RANGE(addr, 0x100, 0x1ff)) {
+        return mbc->mem->boot_rom[addr];
+    }
     return mbc->read(mbc, addr);
 }
 
 uint8_t mbc_write(void *udata, uint16_t addr, uint8_t data)
 {
-    gbc_mbc_t *mbc = (gbc_mbc_t*)udata;
+    gbc_mbc_t *mbc = (gbc_mbc_t*)udata;  
     return mbc->write(mbc, addr, data);    
 }
 
@@ -44,7 +49,7 @@ gbc_mbc_init(gbc_mbc_t *mbc)
 
 void
 gbc_mbc_connect(gbc_mbc_t *mbc, gbc_memory_t *mem)
-{
+{       
     mbc->mem = mem;
 
     memory_map_entry_t entry;

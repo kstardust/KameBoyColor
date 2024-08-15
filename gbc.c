@@ -2,8 +2,19 @@
 #include "instruction_set.h"
 #include "gui/gui.h"
 
+
+void
+gbc_load_boot_rom(gbc_t *gbc, const char *rom_path)
+{
+    FILE *rom = fopen(rom_path, "rb");    
+    fread(gbc->mem.boot_rom, 1, GBC_BOOT_ROM_SIZE, rom);
+    //fread(gbc->mbc.rom_banks, 1, GBC_BOOT_ROM_SIZE, rom);
+    fclose(rom);
+    gbc->mem.boot_rom_enabled = 1;
+}
+
 int
-gbc_init(gbc_t *gbc)
+gbc_init(gbc_t *gbc, const char *game_rom, const char *boot_rom)
 {
     init_instruction_set();
 
@@ -20,27 +31,8 @@ gbc_init(gbc_t *gbc)
     gbc_io_connect(&gbc->io, &gbc->mem);
     gbc_graphic_connect(&gbc->graphic, &gbc->mem);
 
-    #if defined (WIN32)
-    FILE* cartridge = fopen("C:\\Users\\liqilong\\Desktop\\Dev\\GameBoyColor\\tetris_dx.gbc", "rb");
-    #else
-    FILE* cartridge = fopen("/Users/Kevin/Development/GBC/tetris_dx.gbc", "rb");
-    //FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cgb_boot.bin", "rb");        
-    
-    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/01-special.gb", "rb"); // OK    
-    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/02-interrupts.gb", "rb"); // OK
-    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/03-op sp,hl.gb", "rb"); // OK
-    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/04-op r,imm.gb", "rb"); // OK
-    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/05-op rp.gb", "rb"); // OK
-    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/06-ld r,r.gb", "rb"); // OK
-    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/07-jr,jp,call,ret,rst.gb", "rb");
-    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/08-misc instrs.gb", "rb"); // OK
-    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/09-op r,r.gb", "rb"); // OK
-    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/10-bit ops.gb", "rb"); // OK
-    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/11-op a,(hl).gb", "rb"); // OK
-    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/cpu_instrs.gb", "rb"); // OK
-    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/instr_timing/instr_timing.gb", "rb"); // OK
-    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/interrupt_time/interrupt_time.gb", "rb");
-    #endif
+    FILE *cartridge = fopen(game_rom, "rb");
+
     if (!cartridge) {
         printf("Failed to open cartridge\n");
         return 1;
@@ -61,18 +53,23 @@ gbc_init(gbc_t *gbc)
     
     cartridge_t *cart = cartridge_load((uint8_t*)data);
     gbc_mbc_init_with_cart(&gbc->mbc, cart);
-    
-    // FOR BOOT ROM TESTING
-    // gbc->mbc.rom_banks = data;
-    
+    gbc->mbc.rom_banks = data;
+
     if (!cart) {
         printf("Failed to load cartridge\n");
         return 1;
     }
-    /* initial values https://gbdev.io/pandocs/Power_Up_Sequence.html  */
-    IO_PORT_WRITE(&(gbc->mem), IO_PORT_LCDC, 0x91);
 
     WRITE_R16(&gbc->cpu, REG_PC, 0x0100);
+
+    /* initial values https://gbdev.io/pandocs/Power_Up_Sequence.html  */
+    IO_PORT_WRITE(&(gbc->mem), IO_PORT_LCDC, 0x91);    
+
+    if (boot_rom) {
+        gbc_load_boot_rom(gbc, boot_rom);        /* boot rom starts at 0x0000 */
+        WRITE_R16(&gbc->cpu, REG_PC, 0x0000);
+    }
+
     gbc->running = 1;
     gbc->paused = 0;
     return 0;
