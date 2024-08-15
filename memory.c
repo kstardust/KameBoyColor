@@ -275,7 +275,7 @@ bank_n_read(void *udata, uint16_t addr)
 static uint8_t
 not_usable_write(void *udata, uint16_t addr, uint8_t data)
 {    
-    LOG_ERROR("[MEM] Writing to Not-Usable memory at address %x [%x]\n", addr, data);
+    LOG_INFO("[MEM] Writing to Not-Usable(Nintendo says) memory at address %x [%x]\n", addr, data);
     /* I have not found any information on what happens when writing to this memory */
     return 0;
 }
@@ -284,7 +284,7 @@ static uint8_t
 not_usable_read(void *udata, uint16_t addr)
 {
     /* It is actually readable, this implementation emulates CGB revision E */
-    LOG_DEBUG("[MEM] Reading from Not-Usable memory at address %x\n", addr);    
+    LOG_INFO("[MEM] Reading from Not-Usable(Nintendo says) memory at address %x\n", addr);    
     
     uint8_t lcdsr = IO_PORT_READ((gbc_memory_t*)udata, IO_PORT_STAT);
 
