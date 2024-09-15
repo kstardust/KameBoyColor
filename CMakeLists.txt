@@ -68,7 +68,7 @@ elseif(APPLE)
 endif()
 
 if (WIN32)
-    SET(IMGUI_LIBS ${SDL2_LIBRARIES}) gdi32 opengl32 imm32 ucrt pthread)
+    SET(IMGUI_LIBS ${SDL2_LIBRARIES} gdi32 opengl32 imm32 ucrt pthread)
 elseif(APPLE)
     set(IMGUI_LIBS "-framework OpenGL" "-framework Cocoa" "-framework IOKit" "-framework CoreVideo" ${SDL2_LIBRARIES})
 endif()
