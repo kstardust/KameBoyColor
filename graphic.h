@@ -26,23 +26,24 @@ TODO: Using cpu cycles may be better?
 
 #define FRAME_RATE 60          /* The real GameBoy runs at 59.7fps */
 #define FRAME_TIME (1.0 / FRAME_RATE)
-#define DOTS_PER_FRAME 70224
+#define DOTS_PER_FRAME 73920
 #define DOT_TIME (1000000000 / DOTS_PER_FRAME / FRAME_RATE)
-
-#define DOTS_PER_SCANLINE 480       /* The real GameBoy has 456dots per scanline */
-#define DOTS_PER_CYCLE 80           /* graphic updates every 80dots */
-#define GRAPHIC_UPDATE_TIME (DOT_TIME * DOTS_PER_CYCLE)
-
-#define CYCLE_MODEL_2_START    0
-#define CYCLE_MODEL_3_START    1
-#define CYCLE_MODEL_0_START    4
-#define CYCLES_PER_SCANLINE         (DOTS_PER_SCANLINE / DOTS_PER_CYCLE)
 
 #define TOTAL_SCANLINES 153      /* 0 - 153 */
 #define VISIBLE_SCANLINES 143    /* 0 - 143 */
 
 #define VISIBLE_HORIZONTAL_PIXELS 160
 #define VISIBLE_VERTICAL_PIXELS 144
+
+#define DOTS_PER_SCANLINE 456
+#define PPU_MODE_2_DOTS 80
+#define PPU_MODE_0_DOTS 100 /* 87 ~ 204, i randomly picked 100 */
+#define PPU_MODE_3_DOTS (DOTS_PER_SCANLINE - PPU_MODE_0_DOTS - PPU_MODE_2_DOTS)
+#define PPU_MODE_1_DOTS DOTS_PER_SCANLINE
+
+#define DOTS_MODEL_2_START   0
+#define DOTS_MODEL_3_START    (PPU_MODE_2_DOTS)
+#define DOTS_MODEL_0_START    (PPU_MODE_2_DOTS + PPU_MODE_3_DOTS)
 
 #define PPU_MODE_0 0   /* H-BLANK */
 #define PPU_MODE_1 1   /* V-BLANK */
@@ -108,18 +109,16 @@ This is RGB555 to RGB888 with scale(i.e. the 0x7fff is 0xffffff)
 
 struct gbc_graphic
 {
+    uint32_t dots;   /* dots to next graphic update */    
     uint8_t vram[VRAM_BANK_SIZE * 2]; /* 2x8KB */
-    uint8_t scanline;
-    uint8_t scanline_cycles;
+    uint8_t scanline;    
     uint8_t mode;
     
     void *screen_udata;
     void (*screen_update)(void *udata);
     screen_write screen_write;
 
-    gbc_memory_t *mem;
-
-    uint64_t t_delta;      /* nanoseconds */
+    gbc_memory_t *mem;    
 };
 
 struct gbc_tile
@@ -150,7 +149,7 @@ struct gbc_obj
 
 void gbc_graphic_connect(gbc_graphic_t *graphic, gbc_memory_t *mem);
 void gbc_graphic_init(gbc_graphic_t *graphic);
-void gbc_graphic_cycle(gbc_graphic_t *graphic, uint64_t delta);
+void gbc_graphic_cycle(gbc_graphic_t *graphic);
 uint8_t* gbc_graphic_get_tile_attr(gbc_graphic_t *graphic, uint8_t type, uint8_t idx);
 gbc_tile_t* gbc_graphic_get_tile(gbc_graphic_t *graphic, uint8_t type, uint8_t idx, uint8_t bank);
 

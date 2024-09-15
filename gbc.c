@@ -82,33 +82,40 @@ gbc_run(gbc_t *gbc)
     uint64_t cycles = 0;    
     
     for (;;) {
+
+        now = get_time();
+
+        if (now - lastf < FRAME_INTERVAL)
+            continue;
+
+        lastf = now;
+
         if (!gbc->running)
             break;        
 
-        cycles = gbc->cpu.cycles;
-        if (gbc->paused) {
+        int frame_cycles = CYCLES_PER_FRAME;
+        while (frame_cycles--) {
+            cycles = gbc->cpu.cycles;
+            if (gbc->paused) {
                 if (gbc->debug_steps == 0) {
-                /* TODO: not a very good way, but we need to keep the GUI responsive */            
-                gbc->graphic.screen_update(&gbc->graphic);
-                continue;
+                    continue;
+                }
+                /* forwards an instruction */
+                if (gbc->debug_steps > 0 && gbc->cpu.ins_cycles == 1) {
+                    gbc->debug_steps--;
+                }
             }
-            /* forwards an instruction */
-            if (gbc->debug_steps > 0 && gbc->cpu.ins_cycles == 1) {
-                gbc->debug_steps--;
+
+            gbc_cpu_cycle(&gbc->cpu);
+            gbc_timer_cycle(&gbc->timer);
+            if (gbc->cpu.dspeed) {
+                /* double speed mode */
+                gbc_cpu_cycle(&gbc->cpu);
+                gbc_timer_cycle(&gbc->timer);
             }
+            gbc_graphic_cycle(&gbc->graphic);
+            gbc_io_cycle(&gbc->io);
         }
-
-        now = get_time();
-        delta = now - lastf;
-        lastf = now;
-
-        gbc_cpu_cycle(&gbc->cpu);
-        gbc_timer_cycle(&gbc->timer);
-        gbc_graphic_cycle(&gbc->graphic, delta);
-        gbc_io_cycle(&gbc->io);  
-
-        /* TODO compensate for the cost longer than CLOCK_CYCLE */
-        //while (get_time() - t < CLOCK_CYCLE)
-        //    ;
+        gbc->graphic.screen_update(&gbc->graphic);
     }    
 }

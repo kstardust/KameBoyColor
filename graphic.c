@@ -274,50 +274,44 @@ gbc_graphic_draw_line(gbc_graphic_t *graphic, uint16_t scanline)
 }
 
 void 
-gbc_graphic_cycle(gbc_graphic_t *graphic, uint64_t delta)
+gbc_graphic_cycle(gbc_graphic_t *graphic)
 {
-    /* TODO: it's still too slow */
-    graphic->t_delta += delta;
-
-    if (graphic->t_delta < GRAPHIC_UPDATE_TIME) {        
+    if (graphic->dots--) {        
         return;
     }
 
     uint8_t io_lcdc = IO_PORT_READ(graphic->mem, IO_PORT_LCDC);
     
-    if (io_lcdc & LCDC_PPU_ENABLE) {
-        graphic->t_delta = 0;
-        uint8_t io_stat = IO_PORT_READ(graphic->mem, IO_PORT_STAT);
-        uint8_t scanline_cycle = graphic->scanline_cycles;
+    if (io_lcdc & LCDC_PPU_ENABLE) {        
+        uint8_t io_stat = IO_PORT_READ(graphic->mem, IO_PORT_STAT);        
         uint8_t scanline = graphic->scanline;
 
         if (scanline <= VISIBLE_SCANLINES) {
-            if (scanline_cycle > CYCLE_MODEL_0_START) {
+            if (graphic->mode == PPU_MODE_3) {
                 /* HORIZONTAL BLANK */
-                if (graphic->mode != PPU_MODE_0) {
-                    graphic->mode = PPU_MODE_0;
-                    if (io_stat & STAT_MODE_0_INT) {
-                        REQUEST_INTERRUPT(graphic->mem, INTERRUPT_LCD_STAT);
-                    }                    
-                }                
-            } else if (scanline_cycle > CYCLE_MODEL_3_START) {
-                /* DRAWING  */                
-                if (graphic->mode != PPU_MODE_3) {
-                    graphic->mode = PPU_MODE_3;
-                    gbc_graphic_draw_line(graphic, scanline);
-                }                
-            } else if (scanline_cycle > CYCLE_MODEL_2_START) {
+                graphic->dots = PPU_MODE_0_DOTS;
+                graphic->mode = PPU_MODE_0;
+                if (io_stat & STAT_MODE_0_INT) {
+                    REQUEST_INTERRUPT(graphic->mem, INTERRUPT_LCD_STAT);
+                }                                        
+
+            } else if (graphic->mode == PPU_MODE_2) {
+                /* DRAWING */
+                graphic->dots = PPU_MODE_3_DOTS;
+                graphic->mode = PPU_MODE_3;
+                gbc_graphic_draw_line(graphic, scanline);
+            } else if (graphic->mode == PPU_MODE_0 || graphic->mode == PPU_MODE_1) {
                 /* OAM SCAN */
-                /* The real gameboy scans obj here but we scan then in MODE3, see above */
-                if (graphic->mode != PPU_MODE_2) {
-                    graphic->mode = PPU_MODE_2;
-                    if (io_stat & STAT_MODE_2_INT) {
-                        REQUEST_INTERRUPT(graphic->mem, INTERRUPT_LCD_STAT);
-                    }
+                /* The real gameboy scans obj here but we scan then in MODE3, see above */                    
+                graphic->dots = PPU_MODE_2_DOTS;
+                graphic->mode = PPU_MODE_2;
+                if (io_stat & STAT_MODE_2_INT) {
+                    REQUEST_INTERRUPT(graphic->mem, INTERRUPT_LCD_STAT);
                 }
+                scanline++;
             }
         } else {
-            /* V-BLANK */        
+            /* V-BLANK */                    
             if (graphic->mode != PPU_MODE_1) {
                 if (io_stat & STAT_MODE_1_INT) {
                     REQUEST_INTERRUPT(graphic->mem, INTERRUPT_LCD_STAT);
@@ -325,44 +319,33 @@ gbc_graphic_cycle(gbc_graphic_t *graphic, uint64_t delta)
                 REQUEST_INTERRUPT(graphic->mem, INTERRUPT_VBLANK);
                 graphic->mode = PPU_MODE_1;
             }
-        }
-    
-        scanline_cycle++;
-        
-        if (scanline_cycle == CYCLES_PER_SCANLINE) {
-            scanline_cycle = 0;
+             
+            graphic->dots = PPU_MODE_1_DOTS;
             scanline++;
-            if (scanline > TOTAL_SCANLINES) {                
-                graphic->screen_update(graphic->screen_udata);
-                scanline = 0;
-            }
-        }
-        
-        graphic->scanline_cycles = scanline_cycle;
-        graphic->scanline = scanline;    
+        }                                    
 
-        uint8_t lyc = IO_PORT_READ(graphic->mem, IO_PORT_LYC);
-
-        IO_PORT_WRITE(graphic->mem, IO_PORT_LY, scanline);    
+        if (scanline > TOTAL_SCANLINES)
+            scanline = 0;        
 
         io_stat &= ~PPU_MODE_MASK;
         io_stat |= graphic->mode & PPU_MODE_MASK;
 
-        io_stat &= ~STAT_LYC_LY;
-        if (lyc == scanline) {
-            io_stat |= STAT_LYC_LY;
-            if (io_stat & STAT_LYC_INT) {
-                REQUEST_INTERRUPT(graphic->mem, INTERRUPT_LCD_STAT);
+        if (graphic->scanline != scanline) {            
+            graphic->scanline = scanline;                    
+            IO_PORT_WRITE(graphic->mem, IO_PORT_LY, scanline);        
+            uint8_t lyc = IO_PORT_READ(graphic->mem, IO_PORT_LYC);
+            io_stat &= ~STAT_LYC_LY;
+            if (lyc == scanline) {
+                io_stat |= STAT_LYC_LY;
+                if (io_stat & STAT_LYC_INT) {
+                    REQUEST_INTERRUPT(graphic->mem, INTERRUPT_LCD_STAT);
+                }
             }
         }
 
         IO_PORT_WRITE(graphic->mem, IO_PORT_STAT, io_stat);        
-    } else  {        
-        if (graphic->t_delta < GRAPHIC_UPDATE_TIME * CYCLES_PER_SCANLINE * TOTAL_SCANLINES) {
-            return;
-        }        
-        graphic->screen_update(graphic->screen_udata);
-        graphic->t_delta = 0;
+    } else {                
+        graphic->dots = DOTS_PER_SCANLINE * TOTAL_SCANLINES;
         LOG_DEBUG("[GRAPHIC] PPU DISABLED\n");
     }
 }

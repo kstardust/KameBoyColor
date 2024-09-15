@@ -7,8 +7,12 @@
 typedef struct cpu_register cpu_register_t;
 typedef struct gbc_cpu gbc_cpu_t;
 
-#define CLOCK_RATE 8388608                          /* 8.38 MHz */
+#define CLOCK_RATE 4194304                        /* 4.194304 MHz */
 #define CLOCK_CYCLE (1000000000 / CLOCK_RATE)     /* nanoseconds */
+#define FRAME_PER_SECOND 60
+#define FRAME_INTERVAL (1000000000 / FRAME_PER_SECOND)
+#define CYCLES_PER_FRAME (CLOCK_RATE / FRAME_PER_SECOND)
+
 
 #define OFFSET_OF(type, field) \
     ((size_t) &((type *)0)->field)
@@ -85,7 +89,8 @@ struct gbc_cpu
     uint8_t ime;           /* interrupt master enable */
     uint8_t ier;           /* interrupt enable register */
     uint8_t ime_insts:4;   /* instruction count to set ime */
-    uint8_t halt:4;        /* halt state */
+    uint8_t halt:2;        /* halt state */
+    uint8_t dspeed:1;      /* doublespeed state */
 };
 
 #define swap_i16(value) (uint16_t)((value >> 8) | (value << 8));

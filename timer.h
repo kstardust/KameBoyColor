@@ -25,7 +25,7 @@ typedef struct gbc_timer gbc_timer_t;
 struct gbc_timer
 {    
     gbc_memory_t *mem;
-    uint8_t div_cycles;
+    uint16_t div_cycles;
     uint8_t timer_cycles;
     uint8_t *divp;
     uint8_t *timap;
