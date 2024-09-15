@@ -26,7 +26,7 @@ static uint8_t key_pressed = 0;
 
 #include "gui.h"
 
-#define INIT_WINDOW_WIDTH 1400
+#define INIT_WINDOW_WIDTH 1200
 #define INIT_WINDOW_HEIGHT 700
 
 // [Win32] Our example includes a copy of glfw3.lib pre-compiled with VS2010 to maximize ease of testing and compatibility with old VS compilers.
@@ -64,15 +64,15 @@ static std::unordered_map<int, int> key_map = {
 void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     ImGuiIO& io = ImGui::GetIO();
-    auto kiter = key_map.find(key);
+    key_pressed = 0;            
+    auto kiter = key_map.find(key);    
     if (kiter == key_map.end()) {
         return;
     }    
 /*     if (action == GLFW_PRESS)
         io.AddKeyEvent(kiter->second, true);
     if (action == GLFW_RELEASE)
-        io.AddKeyEvent(kiter->second, false); */
-    key_pressed = 0;
+        io.AddKeyEvent(kiter->second, false); */    
     if (action == GLFW_PRESS)
         key_pressed = kiter->second;
 }

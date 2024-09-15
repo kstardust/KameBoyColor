@@ -105,7 +105,7 @@ gbc_run(gbc_t *gbc)
         gbc_cpu_cycle(&gbc->cpu);
         gbc_timer_cycle(&gbc->timer);
         gbc_graphic_cycle(&gbc->graphic, delta);
-        gbc_io_cycle(&gbc->io);        
+        gbc_io_cycle(&gbc->io);  
 
         /* TODO compensate for the cost longer than CLOCK_CYCLE */
         //while (get_time() - t < CLOCK_CYCLE)

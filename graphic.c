@@ -278,7 +278,7 @@ gbc_graphic_cycle(gbc_graphic_t *graphic, uint64_t delta)
 {
     /* TODO: it's still too slow */
     graphic->t_delta += delta;
-    
+
     if (graphic->t_delta < GRAPHIC_UPDATE_TIME) {        
         return;
     }

@@ -14,8 +14,12 @@ elseif(WIN32)
     set(MSYS2_PATH "F:\\msys2")
 endif()
 
+# Set up SDL2
+find_package(SDL2 REQUIRED)
+include_directories(${SDL2_INCLUDE_DIRS})
+
 # Set up the source files
-set(SOURCES
+set(SOURCES    
     gbc.c
     cpu.c
     mbc.c
@@ -26,18 +30,19 @@ set(SOURCES
     timer.c
     utils.c
     instruction_set.c
-    main.c)
+    main.c
+)
 
 # imgui
 set(IMGUI_SOURCES
-    gui/main_gl.cpp
+    gui/main_sdl2.cpp
     gui/mywindow.cpp
     gui/imgui/imgui.cpp
     gui/imgui/imgui_draw.cpp
     gui/imgui/imgui_widgets.cpp    
     gui/imgui/imgui_tables.cpp
     gui/imgui/imgui_demo.cpp
-    gui/imgui/backends/imgui_impl_glfw.cpp
+    gui/imgui/backends/imgui_impl_sdl2.cpp
     gui/imgui/backends/imgui_impl_opengl3.cpp
 )    
 
@@ -63,9 +68,9 @@ elseif(APPLE)
 endif()
 
 if (WIN32)
-    SET(IMGUI_LIBS libglfw3.a gdi32 opengl32 imm32 ucrt pthread)
+    SET(IMGUI_LIBS ${SDL2_LIBRARIES}) gdi32 opengl32 imm32 ucrt pthread)
 elseif(APPLE)
-    set(IMGUI_LIBS glfw "-framework OpenGL" "-framework Cocoa" "-framework IOKit" "-framework CoreVideo")
+    set(IMGUI_LIBS "-framework OpenGL" "-framework Cocoa" "-framework IOKit" "-framework CoreVideo" ${SDL2_LIBRARIES})
 endif()
 
 add_compile_options(-g)
