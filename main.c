@@ -49,7 +49,8 @@ int main()
         GuiSetCloseCallback(close_callback);
         GuiSetUserData(&gbc);
         gbc.graphic.screen_write = GuiWrite;
-        gbc.graphic.screen_update = GuiUpdate;
+        gbc.io.poll_keypad = GuiPollKeypad;
+        gbc.graphic.screen_update = GuiUpdate;        
         gbc_run(&gbc);
     }
 

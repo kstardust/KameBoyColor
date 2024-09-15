@@ -13,6 +13,7 @@
 #include "mywindow.h"
 
 #include <stdio.h>
+#include <unordered_map>
 #define GL_SILENCE_DEPRECATION
 #if defined(IMGUI_IMPL_OPENGL_ES2)
 #include <GLES2/gl2.h>
@@ -21,6 +22,7 @@
 
 void (*gui_close_callback)(void* udata) = NULL;
 void *gui_callback_udata = NULL;
+static uint8_t key_pressed = 0;
 
 #include "gui.h"
 
@@ -46,9 +48,42 @@ static void glfw_error_callback(int error, const char* description)
 
 GLFWwindow* window;
 
+static std::unordered_map<int, int> key_map = {
+    {GLFW_KEY_A, GBC_KEY_A},
+    {GLFW_KEY_B, GBC_KEY_B},
+    {GLFW_KEY_ENTER, GBC_KEY_START},
+    {GLFW_KEY_S, GBC_KEY_SELECT},
+
+    {GLFW_KEY_UP, GBC_KEY_UP},
+    {GLFW_KEY_DOWN, GBC_KEY_DOWN},
+    {GLFW_KEY_LEFT, GBC_KEY_LEFT},
+    {GLFW_KEY_RIGHT, GBC_KEY_RIGHT},
+};
+
+
+void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    ImGuiIO& io = ImGui::GetIO();
+    auto kiter = key_map.find(key);
+    if (kiter == key_map.end()) {
+        return;
+    }    
+/*     if (action == GLFW_PRESS)
+        io.AddKeyEvent(kiter->second, true);
+    if (action == GLFW_RELEASE)
+        io.AddKeyEvent(kiter->second, false); */
+    key_pressed = 0;
+    if (action == GLFW_PRESS)
+        key_pressed = kiter->second;
+}
+
+void SetupKeyInputing() {
+    glfwSetKeyCallback(window, glfw_key_callback);
+}
+
 int GuiInit()
 {
-    glfwSetErrorCallback(glfw_error_callback);
+    glfwSetErrorCallback(glfw_error_callback);    
     if (!glfwInit())
         return 1;
 
@@ -118,6 +153,7 @@ int GuiInit()
     //IM_ASSERT(font != nullptr);    
 
     InitMyWindow();
+    SetupKeyInputing();
     return 0;
 }
 
@@ -129,6 +165,10 @@ void GuiSetUserData(void* udata) {
     gui_callback_udata = udata;
 }
 
+uint8_t GuiPollKeypad()
+{
+    return key_pressed;
+}
 
 void GuiUpdate()
 {    
@@ -145,7 +185,7 @@ void GuiUpdate()
     // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application, or clear/overwrite your copy of the keyboard data.
     // Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
     glfwPollEvents();
-        
+
     ImVec4 clear_color = ImVec4(0x0d / float(0xff),  0x11 / float(0xff),  0x17 / float(0xff), 1.0f);
     // Start the Dear ImGui frame
     ImGui_ImplOpenGL3_NewFrame();

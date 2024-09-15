@@ -15,6 +15,7 @@ void GuiDestroy();
 void GuiUpdate();
 void GuiSetCloseCallback(void (*callback)(void *udata));
 void GuiSetUserData(void *udata);
+uint8_t GuiPollKeypad();
 unsigned short GuiWrite(void *udata, unsigned short addr, unsigned short data);
 
 #ifdef __cplusplus
