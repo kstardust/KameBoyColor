@@ -22,8 +22,8 @@ int main()
 {    
     GuiInit();
     
-   #if defined (WIN32)
-    char* cartridge = fopen("C:\\Users\\liqilong\\Desktop\\Dev\\GameBoyColor\\tetris_dx.gbc", "rb");
+    #if defined (WIN32)    
+    char* cartridge = "C:\\Users\\lql97\\Dev\\GameBoyColor\\tetris_dx.gbc";
     char* boot_rom = NULL;
     #else
     char* cartridge = "/Users/Kevin/Development/GBC/tetris_dx.gbc";

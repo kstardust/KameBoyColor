@@ -7,16 +7,16 @@ project(gbc)
 if(APPLE)
     set(CMAKE_OSX_SYSROOT /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk)
     set(HOMEBREW_PATH /opt/homebrew)
+    # Set up SDL2
+    find_package(SDL2 REQUIRED)
+    include_directories(${SDL2_INCLUDE_DIRS})    
 elseif(WIN32)
     # https://stackoverflow.com/questions/60020392/why-is-timespec-get-not-supported-by-mingw-gcc-8-2-0-std-c11
     set(CMAKE_C_FLAGS "-D_UCRT")
     set(CMAKE_CXX_FLAGS "-D_UCRT")
-    set(MSYS2_PATH "F:\\msys2")
+    set(MSYS2_PATH "C:\\MyPrograms\\msys2")    
+ 
 endif()
-
-# Set up SDL2
-find_package(SDL2 REQUIRED)
-include_directories(${SDL2_INCLUDE_DIRS})
 
 # Set up the source files
 set(SOURCES    
@@ -51,11 +51,12 @@ set(IMGUI_INCLUDE_DIRS ./ gui/ gui/imgui gui/imgui/backends)
 if (WIN32)
     list(APPEND IMGUI_INCLUDE_DIRS         
         ${MSYS2_PATH}/clang64/include
+        ${MSYS2_PATH}/mingw64/include/SDL2
     )
 
     link_directories(                
         ${MSYS2_PATH}/clang64/lib
-        ${MSYS2_PATH}/mingw64/lib      
+        ${MSYS2_PATH}/mingw64/lib                
     )
 elseif(APPLE)
     list(APPEND IMGUI_INCLUDE_DIRS
@@ -68,7 +69,7 @@ elseif(APPLE)
 endif()
 
 if (WIN32)
-    SET(IMGUI_LIBS ${SDL2_LIBRARIES} gdi32 opengl32 imm32 ucrt pthread)
+    SET(IMGUI_LIBS sdl2 gdi32 opengl32 imm32 ucrt pthread)
 elseif(APPLE)
     set(IMGUI_LIBS "-framework OpenGL" "-framework Cocoa" "-framework IOKit" "-framework CoreVideo" ${SDL2_LIBRARIES})
 endif()
