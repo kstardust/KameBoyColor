@@ -24,12 +24,14 @@ gbc_init(gbc_t *gbc, const char *game_rom, const char *boot_rom)
     gbc_timer_init(&gbc->timer);
     gbc_io_init(&gbc->io);
     gbc_graphic_init(&gbc->graphic);
+    gbc_audio_init(&gbc->audio);
 
     gbc_cpu_connect(&gbc->cpu, &gbc->mem);
     gbc_mbc_connect(&gbc->mbc, &gbc->mem);
     gbc_timer_connect(&gbc->timer, &gbc->mem);
     gbc_io_connect(&gbc->io, &gbc->mem);
     gbc_graphic_connect(&gbc->graphic, &gbc->mem);
+    gbc_audio_connect(&gbc->audio, &gbc->mem);
 
     FILE *cartridge = fopen(game_rom, "rb");
 
@@ -115,6 +117,7 @@ gbc_run(gbc_t *gbc)
             }
             gbc_graphic_cycle(&gbc->graphic);
             gbc_io_cycle(&gbc->io);
+            gbc_audio_cycle(&gbc->audio);
         }
         gbc->graphic.screen_update(&gbc->graphic);
     }    

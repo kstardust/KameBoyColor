@@ -50,7 +50,8 @@ int main()
         GuiSetUserData(&gbc);
         gbc.graphic.screen_write = GuiWrite;
         gbc.io.poll_keypad = GuiPollKeypad;
-        gbc.graphic.screen_update = GuiUpdate;        
+        gbc.graphic.screen_update = GuiUpdate;
+        gbc.audio.set_audio = GuiAudio;
         gbc_run(&gbc);
     }
 

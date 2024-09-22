@@ -25,6 +25,7 @@ set(SOURCES
     mbc.c
     cartridge.c
     memory.c
+    audio.c
     graphic.c
     io.c
     timer.c

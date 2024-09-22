@@ -7,6 +7,7 @@
 #include "mbc.h"
 #include "graphic.h"
 #include "timer.h"
+#include "audio.h"
 
 typedef struct gbc gbc_t;
 
@@ -17,6 +18,7 @@ struct gbc {
     gbc_io_t io;
     gbc_graphic_t graphic;
     gbc_timer_t timer;    
+    gbc_audio_t audio;
 
     uint32_t debug_steps;
     volatile uint8_t running:1;

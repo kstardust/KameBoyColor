@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <unordered_map>
 #include <SDL.h>
+#include <thread>
 #if defined(IMGUI_IMPL_OPENGL_ES2)
 #include <SDL_opengles2.h>
 #else
@@ -24,8 +25,14 @@
 void (*gui_close_callback)(void* udata) = NULL;
 void *gui_callback_udata = NULL;
 static uint8_t key_pressed = 0;
+static uint8_t audio_sample = 0;
 static SDL_Window* window;
 static SDL_GLContext gl_context;
+
+#define SAMPLE_RATE 44100  // Standard sample rate for audio
+#define AMPLITUDE 28000    // Maximum amplitude of the waveform
+#define FREQUENCY1 440     // Frequency of the first tone (A4 note = 440 Hz)
+#define FREQUENCY2 660     // Frequency of the second tone (around E5 note)
 
 // This example can also compile and run with Emscripten! See 'Makefile.emscripten' for details.
 #ifdef __EMSCRIPTEN__
@@ -59,11 +66,101 @@ void HandleKeyPress(SDL_Keycode key, int action)
         key_pressed = kiter->second;
 }
 
+void AudioCallback(void* userdata, Uint8* stream, int len) {
+    printf("AudioCallback %d\n", len);
+    for (int i = 0; i < len; i++) {        
+        stream[i] = 0;
+    }
+}
+
+void AudioThread()
+{    
+    SDL_AudioSpec desired_spec, obtained_spec;
+    desired_spec.freq = SAMPLE_RATE;
+    desired_spec.format = AUDIO_S8;
+    desired_spec.channels = 1;  // Mono
+    desired_spec.samples = 4096;
+    desired_spec.callback = AudioCallback;
+
+    if (SDL_OpenAudio(&desired_spec, &obtained_spec) < 0) {
+        fprintf(stderr, "Failed to open audio: %s\n", SDL_GetError());
+        return;
+    }
+
+    SDL_PauseAudio(0);  // Start playing audio
+    while (true) {
+        SDL_Delay(100);            
+    }
+    
+    SDL_CloseAudio();    
+    return;
+}
+
+void test_audio_callback(void* userdata, Uint8* stream, int len) {
+    static double phase1 = 0.0;
+    static double phase2 = 0.0;
+    double phase_increment1 = 2.0 * M_PI * FREQUENCY1 / SAMPLE_RATE;
+    double phase_increment2 = 2.0 * M_PI * FREQUENCY2 / SAMPLE_RATE;
+    Sint16* buffer = (Sint16*)stream;
+    int length = len / 2;  // Since we use Sint16 (2 bytes per sample)
+
+    for (int i = 0; i < length; i++) {
+        // Generate sine waves for both frequencies
+        Sint16 sample1 = (Sint16)(AMPLITUDE * sin(phase1));
+        Sint16 sample2 = (Sint16)(AMPLITUDE * sin(phase2));
+
+        // Mix the two sine waves by adding their values
+        buffer[i] = sample1 + sample2;
+
+        // Update the phase for both sine waves
+        phase1 += phase_increment1;
+        if (phase1 >= 2.0 * M_PI) {
+            phase1 -= 2.0 * M_PI;
+        }
+
+        phase2 += phase_increment2;
+        if (phase2 >= 2.0 * M_PI) {
+            phase2 -= 2.0 * M_PI;
+        }
+    }
+}
+
+void TestAudio() {
+    
+    SDL_AudioSpec desired_spec, obtained_spec;
+    desired_spec.freq = SAMPLE_RATE;
+    desired_spec.format = AUDIO_S16SYS;
+    desired_spec.channels = 1;  // Mono
+    desired_spec.samples = 4096;
+    desired_spec.callback = test_audio_callback;
+
+    if (SDL_OpenAudio(&desired_spec, &obtained_spec) < 0) {
+        fprintf(stderr, "Failed to open audio: %s\n", SDL_GetError());
+        return;
+    }
+
+    SDL_PauseAudio(0);  // Start playing audio    
+    SDL_Delay(2000);    // Play for 2 seconds
+    SDL_CloseAudio();    
+    return;
+}
+
+void GuiAudio(uint8_t sample)
+{
+    audio_sample = sample;
+}
+
+void InitAudio()
+{
+    std::thread audio_thread(AudioThread);
+    audio_thread.detach();
+}
+
 // Main code
 int GuiInit()
 {
     // Setup SDL
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0)
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER | SDL_INIT_AUDIO) != 0)
     {
         printf("Error: %s\n", SDL_GetError());
         return -1;
@@ -145,7 +242,7 @@ int GuiInit()
     //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
     //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, nullptr, io.Fonts->GetGlyphRangesJapanese());
     //IM_ASSERT(font != nullptr);
-
+    InitAudio();
     return 0;
 }
 
