@@ -8,10 +8,10 @@ void
 gbc_audio_init(gbc_audio_t *audio, uint32_t sample_rate)
 {
     memset(audio, 0, sizeof(gbc_audio_t));
-    audio->output_sample_rate = sample_rate;    
+    audio->output_sample_rate = sample_rate;
 }
 
-void 
+void
 gbc_audio_connect(gbc_audio_t *audio, gbc_memory_t *mem)
 {
     audio->NR50 = connect_io_port(mem, IO_PORT_NR50);
@@ -41,7 +41,7 @@ gbc_audio_connect(gbc_audio_t *audio, gbc_memory_t *mem)
     audio->c4.NRx4 = connect_io_port(mem, IO_PORT_NR44);
 }
 
-static uint8_t 
+static uint8_t
 ch1_audio(gbc_audio_t *audio)
 {
     gbc_audio_channel_t *ch = &(audio->c1);
@@ -64,7 +64,7 @@ ch1_audio(gbc_audio_t *audio)
 
     if (!ch->on) {
         return 0;
-    }                
+    }
 
     if (triggered || (audio->frame_sequencer % FRAME_FREQ_SWEEP == 0)) {
         /* frequency sweep */
@@ -72,7 +72,7 @@ ch1_audio(gbc_audio_t *audio)
             ch->sweep_pace = CHANNEL_SWEEP_PACE(ch);
             uint8_t steps = CHANNEL_SWEEP_STEPS(ch);
             uint16_t period = CHANNEL_PERIOD(ch);
-            if (CHANNEL_SWEEP_DIRECTION(ch)) {                                
+            if (CHANNEL_SWEEP_DIRECTION(ch)) {
                 /* decrease */
                 period -= period >> steps;
             } else {
@@ -83,12 +83,12 @@ ch1_audio(gbc_audio_t *audio)
             if (period >= 0x7ff) {
                 /* overflowed */
                 ch->on = 0;
-            }                                                            
+            }
         } else {
             ch->sweep_pace--;
         }
     }
-    
+
     if ((audio->frame_sequencer % FRAME_SOUND_LENGTH == 0)) {
         /* sound length */
         if (*(ch->NRx1) & CHANNEL_LENGTH_ENABLE_MASK) {
@@ -96,7 +96,7 @@ ch1_audio(gbc_audio_t *audio)
             if (length == 0) {
                 ch->on = 0;
             } else {
-                length++;                
+                length++;
                 /* again, games cannot read this field, i think we can change it */
                 *(ch->NRx1) &= ~0x3f;
                 *(ch->NRx1) |= length;
@@ -115,11 +115,11 @@ ch1_audio(gbc_audio_t *audio)
             ch->volume += pace;
         } else {
             ch->volume -= pace;
-        }                
+        }
     }
-    
+
     uint16_t sample_rate = CHANNEL_SAMPLE_RATE(ch);
-    if (ch->sample_cycles == 0) {                        
+    if (ch->sample_cycles == 0) {
         if (ch->sample_idx == WAVEFORM_SAMPLES)
             ch->sample_idx = 1;
         else
@@ -127,12 +127,12 @@ ch1_audio(gbc_audio_t *audio)
         ch->sample_cycles = AUDIO_CLOCK_RATE / sample_rate;
     }
 
-    uint8_t on = WAVEFORM_SAMPLE(_duty_waveform[CHANNEL_DUTY(ch)], ch->sample_idx-1);        
- 
+    uint8_t on = WAVEFORM_SAMPLE(_duty_waveform[CHANNEL_DUTY(ch)], ch->sample_idx-1);
+
     return on * ch->volume;
 }
 
-static uint8_t 
+static uint8_t
 ch2_audio(gbc_audio_t *audio)
 {
     gbc_audio_channel_t *ch = &(audio->c2);
@@ -155,8 +155,8 @@ ch2_audio(gbc_audio_t *audio)
 
     if (!ch->on) {
         return 0;
-    }                
-    
+    }
+
     if ((audio->frame_sequencer % FRAME_SOUND_LENGTH == 0)) {
         /* sound length */
         if (*(ch->NRx1) & CHANNEL_LENGTH_ENABLE_MASK) {
@@ -164,7 +164,7 @@ ch2_audio(gbc_audio_t *audio)
             if (length == 0) {
                 ch->on = 0;
             } else {
-                length++;                
+                length++;
                 /* again, games cannot read this field, i think we can change it */
                 *(ch->NRx1) &= ~0x3f;
                 *(ch->NRx1) |= length;
@@ -183,11 +183,11 @@ ch2_audio(gbc_audio_t *audio)
             ch->volume += pace;
         } else {
             ch->volume -= pace;
-        }                
+        }
     }
-    
+
     uint16_t sample_rate = CHANNEL_SAMPLE_RATE(ch);
-    if (ch->sample_cycles == 0) {                        
+    if (ch->sample_cycles == 0) {
         if (ch->sample_idx == WAVEFORM_SAMPLES)
             ch->sample_idx = 1;
         else
@@ -195,7 +195,7 @@ ch2_audio(gbc_audio_t *audio)
         ch->sample_cycles = AUDIO_CLOCK_RATE / sample_rate;
     }
 
-    uint8_t on = WAVEFORM_SAMPLE(_duty_waveform[CHANNEL_DUTY(ch)], ch->sample_idx-1);        
+    uint8_t on = WAVEFORM_SAMPLE(_duty_waveform[CHANNEL_DUTY(ch)], ch->sample_idx-1);
 
     return on * ch->volume;
 }
@@ -215,18 +215,18 @@ gbc_audio_cycle(gbc_audio_t *audio)
         return;
 
     audio->m_cycles++;
-    if (audio->m_cycles != AUDIO_CLOCK_CYCLES) {        
+    if (audio->m_cycles != AUDIO_CLOCK_CYCLES) {
         return;
     }
 
     audio->m_cycles = 0;
     audio->cycles++;
 
-    /* 
+    /*
     Actually frame sequencer is not a seperate timer in real GameBoy, it is tied to DIV register.
     I simplied it.
     https://gbdev.io/pandocs/Audio_details.html#div-apu */
-    audio->frame_sequencer_cycles++;        
+    audio->frame_sequencer_cycles++;
     if (audio->frame_sequencer_cycles == FRAME_SEQUENCER_CYCLES) {
         audio->frame_sequencer_cycles = 0;
         audio->frame_sequencer++;
@@ -244,7 +244,7 @@ gbc_audio_cycle(gbc_audio_t *audio)
 
     if (audio->output_sample_cycles == 0) {
         audio->audio_write(sample);
-        audio->output_sample_cycles = AUDIO_CLOCK_RATE / audio->output_sample_rate;                                            
+        audio->output_sample_cycles = AUDIO_CLOCK_RATE / audio->output_sample_rate;
     }
     audio->output_sample_cycles--;
     /* TODO: volume panning */
