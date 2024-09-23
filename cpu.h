@@ -156,6 +156,6 @@ void gbc_cpu_cycle(gbc_cpu_t *cpu);
 
 /* ORDER: "PC", "SP", "A", "F", "B", "C", "D", "E", "H", "L", "Z", "N", "H", "C", "IME", "IE", "IF" */
 #define DEBUG_CPU_REGISTERS_SIZE 17
-int *debug_get_all_registers(gbc_cpu_t *cpu, int values[DEBUG_CPU_REGISTERS_SIZE]);
+void debug_get_all_registers(gbc_cpu_t *cpu, int values[DEBUG_CPU_REGISTERS_SIZE]);
 
 #endif

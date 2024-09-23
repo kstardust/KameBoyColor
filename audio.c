@@ -5,9 +5,10 @@ static uint8_t _duty_waveform[] = {
 };
 
 void
-gbc_audio_init(gbc_audio_t *audio)
+gbc_audio_init(gbc_audio_t *audio, uint32_t sample_rate)
 {
-    memset(audio, sizeof(gbc_audio_t), 0);
+    memset(audio, 0, sizeof(gbc_audio_t));
+    audio->output_sample_rate = sample_rate;    
 }
 
 void 
@@ -213,8 +214,8 @@ gbc_audio_cycle(gbc_audio_t *audio)
     if (!(*audio->NR52 & NR52_AUDIO_ON))
         return;
 
-    audio->cycles++;
-    if (audio->m_cycles != AUDIO_CLOCK_CYCLES) {
+    audio->m_cycles++;
+    if (audio->m_cycles != AUDIO_CLOCK_CYCLES) {        
         return;
     }
 
@@ -232,7 +233,7 @@ gbc_audio_cycle(gbc_audio_t *audio)
     }
 
     uint8_t c1 = ch1_audio(audio);
-    uint8_t c2 = ch2_audio(audio);
+    uint8_t c2 = 0;//ch2_audio(audio);
     uint8_t c3 = ch3_audio(audio);
     uint8_t c4 = ch4_audio(audio);
 
@@ -241,6 +242,10 @@ gbc_audio_cycle(gbc_audio_t *audio)
     if (audio->frame_sequencer == FRAME_ENVELOPE_SWEEP)
         audio->frame_sequencer = 1;
 
-    audio->set_audio(sample);
+    if (audio->output_sample_cycles == 0) {
+        audio->audio_write(sample);
+        audio->output_sample_cycles = AUDIO_CLOCK_RATE / audio->output_sample_rate;                                            
+    }
+    audio->output_sample_cycles--;
     /* TODO: volume panning */
 }

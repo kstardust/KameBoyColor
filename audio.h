@@ -15,6 +15,8 @@
 #define NR10_DIRECTION  0x8
 #define NR10_IND_STEPS  0x7
 
+#define GBC_OUTPUT_SAMPLE_RATE 44100
+
 /* https://gbdev.io/pandocs/Audio_Registers.html#ff13--nr13-channel-1-period-low-write-only */
 #define AUDIO_CLOCK_RATE        1048576
 #define AUDIO_CLOCK_CYCLES      (CLOCK_RATE / AUDIO_CLOCK_RATE)
@@ -74,7 +76,7 @@ struct gbc_audio {
     gbc_audio_channel_t c1;
     gbc_audio_channel_t c2;
     gbc_audio_channel_t c3;
-    gbc_audio_channel_t c4;
+    gbc_audio_channel_t c4;    
 
     /* https://gbdev.gg8.se/wiki/articles/Gameboy_sound_hardware#Registers */
     
@@ -83,17 +85,20 @@ struct gbc_audio {
     uint8_t *NR51;
     uint8_t *NR50;
         
-    void (*set_audio)(uint8_t);
+    void (*audio_write)(uint8_t);
+    void (*audio_update)(void *udata);
 
+    uint32_t output_sample_rate;
+    uint32_t output_sample_cycles;
     /* https://gbdev.gg8.se/wiki/articles/Gameboy_sound_hardware#Frame_Sequencer */    
-    uint16_t frame_sequencer_cycles;
+    uint16_t frame_sequencer_cycles;    
     uint8_t m_cycles;
 
     uint8_t frame_sequencer;    
 };
 
 void gbc_audio_connect(gbc_audio_t *audio, gbc_memory_t *mem);
-void gbc_audio_init(gbc_audio_t *audio);
+void gbc_audio_init(gbc_audio_t *audio, uint32_t sample_rate);
 void gbc_audio_cycle(gbc_audio_t *audio);
 
 #endif

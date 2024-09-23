@@ -17,7 +17,7 @@ struct gbc {
     gbc_mbc_t mbc;
     gbc_io_t io;
     gbc_graphic_t graphic;
-    gbc_timer_t timer;    
+    gbc_timer_t timer;
     gbc_audio_t audio;
 
     uint32_t debug_steps;

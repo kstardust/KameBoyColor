@@ -169,7 +169,7 @@ gbc_cpu_cycle(gbc_cpu_t *cpu)
     #endif    
 }
 
-int*
+void
 debug_get_all_registers(gbc_cpu_t *cpu, int values[DEBUG_CPU_REGISTERS_SIZE])
 {
     /* ORDER: "PC", "SP", "A", "F", "B", "C", "D", "E", "H", "L", "Z", "N", "H", "C", "IME", "IE", "IF" */    

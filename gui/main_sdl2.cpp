@@ -12,6 +12,7 @@
 #include "imgui_impl_opengl3.h"
 #include <stdio.h>
 #include <unordered_map>
+#include <vector>
 #include <SDL.h>
 #include <thread>
 #if defined(IMGUI_IMPL_OPENGL_ES2)
@@ -22,17 +23,22 @@
 #include "mywindow.h"
 #include "gui.h"
 
-void (*gui_close_callback)(void* udata) = NULL;
-void *gui_callback_udata = NULL;
-static uint8_t key_pressed = 0;
-static uint8_t audio_sample = 0;
-static SDL_Window* window;
-static SDL_GLContext gl_context;
+using std::vector;
 
-#define SAMPLE_RATE 44100  // Standard sample rate for audio
+#define SAMPLE_RATE GBC_OUTPUT_SAMPLE_RATE  // Standard sample rate for audio
+#define SAMPLES_FRAME (SAMPLE_RATE / FRAME_PER_SECOND)  // Number of samples per frame
 #define AMPLITUDE 28000    // Maximum amplitude of the waveform
 #define FREQUENCY1 440     // Frequency of the first tone (A4 note = 440 Hz)
 #define FREQUENCY2 660     // Frequency of the second tone (around E5 note)
+
+void (*gui_close_callback)(void* udata) = NULL;
+void *gui_callback_udata = NULL;
+
+static uint8_t key_pressed = 0;
+static SDL_Window* window;
+static SDL_GLContext gl_context;
+static vector<uint8_t> audio_buffer(SAMPLES_FRAME);  // Buffer for audio samples
+SDL_AudioDeviceID audio_device;
 
 // This example can also compile and run with Emscripten! See 'Makefile.emscripten' for details.
 #ifdef __EMSCRIPTEN__
@@ -66,33 +72,26 @@ void HandleKeyPress(SDL_Keycode key, int action)
         key_pressed = kiter->second;
 }
 
-void AudioCallback(void* userdata, Uint8* stream, int len) {
-    printf("AudioCallback %d\n", len);
-    for (int i = 0; i < len; i++) {        
-        stream[i] = 0;
-    }
-}
-
 void AudioThread()
 {    
     SDL_AudioSpec desired_spec, obtained_spec;
     desired_spec.freq = SAMPLE_RATE;
     desired_spec.format = AUDIO_S8;
     desired_spec.channels = 1;  // Mono
-    desired_spec.samples = 4096;
-    desired_spec.callback = AudioCallback;
+    desired_spec.samples = SAMPLES_FRAME;
+    desired_spec.callback = NULL;
 
-    if (SDL_OpenAudio(&desired_spec, &obtained_spec) < 0) {
+    if ((audio_device = SDL_OpenAudioDevice(NULL, 0, &desired_spec, &obtained_spec, 0)) < 0) {
         fprintf(stderr, "Failed to open audio: %s\n", SDL_GetError());
         return;
     }
 
-    SDL_PauseAudio(0);  // Start playing audio
+    SDL_PauseAudioDevice(audio_device, 0);  // Start playing audio
     while (true) {
-        SDL_Delay(100);            
+        SDL_Delay(500);                            
     }
     
-    SDL_CloseAudio();    
+    SDL_CloseAudioDevice(audio_device);
     return;
 }
 
@@ -145,9 +144,29 @@ void TestAudio() {
     return;
 }
 
-void GuiAudio(uint8_t sample)
+static int counter = 0;
+
+void GuiAudioWrite(uint8_t sample)
 {
-    audio_sample = sample;
+    if (counter >= audio_buffer.size()) {        
+        return;
+    }
+    audio_buffer[counter++] = sample;
+}
+
+void GuiAudioUpdate(void *udata)
+{
+    if (counter == 0) {
+        // no audio data
+        return;
+    }
+
+    counter = 0;
+    SDL_ClearQueuedAudio(audio_device);
+    if (SDL_QueueAudio(audio_device, audio_buffer.data(), audio_buffer.size()) < 0) {
+        fprintf(stderr, "Failed to queue audio: %s\n", SDL_GetError());
+        return;
+    }                        
 }
 
 void InitAudio()

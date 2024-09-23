@@ -48,10 +48,11 @@ int main()
     if (gbc_init(&gbc, cartridge, boot_rom) == 0) {
         GuiSetCloseCallback(close_callback);
         GuiSetUserData(&gbc);
-        gbc.graphic.screen_write = GuiWrite;
         gbc.io.poll_keypad = GuiPollKeypad;
+        gbc.graphic.screen_write = GuiWrite;        
         gbc.graphic.screen_update = GuiUpdate;
-        gbc.audio.set_audio = GuiAudio;
+        gbc.audio.audio_write = GuiAudioWrite;
+        gbc.audio.audio_update = GuiAudioUpdate;
         gbc_run(&gbc);
     }
 

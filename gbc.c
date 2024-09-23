@@ -24,7 +24,7 @@ gbc_init(gbc_t *gbc, const char *game_rom, const char *boot_rom)
     gbc_timer_init(&gbc->timer);
     gbc_io_init(&gbc->io);
     gbc_graphic_init(&gbc->graphic);
-    gbc_audio_init(&gbc->audio);
+    gbc_audio_init(&gbc->audio, GBC_OUTPUT_SAMPLE_RATE);
 
     gbc_cpu_connect(&gbc->cpu, &gbc->mem);
     gbc_mbc_connect(&gbc->mbc, &gbc->mem);
@@ -96,6 +96,7 @@ gbc_run(gbc_t *gbc)
             break;        
 
         int frame_cycles = CYCLES_PER_FRAME;
+        
         while (frame_cycles--) {
             cycles = gbc->cpu.cycles;
             if (gbc->paused) {
@@ -120,5 +121,6 @@ gbc_run(gbc_t *gbc)
             gbc_audio_cycle(&gbc->audio);
         }
         gbc->graphic.screen_update(&gbc->graphic);
+        gbc->audio.audio_update(&gbc->audio);
     }    
 }
