@@ -5,10 +5,9 @@ static uint8_t _duty_waveform[] = {
 };
 
 void
-gbc_audio_init(gbc_audio_t *audio, uint32_t sample_rate)
+gbc_audio_init(gbc_audio_t *audio)
 {
     memset(audio, 0, sizeof(gbc_audio_t));
-    audio->output_sample_rate = sample_rate;
 }
 
 void
@@ -51,9 +50,9 @@ ch1_audio(gbc_audio_t *audio)
         return 0;
 
     uint8_t triggered =  0;
-    if (*(ch->NRx2) & CHANNEL_TRIGGER_MASK) {
+    if (*(ch->NRx4) & CHANNEL_TRIGGER_MASK) {
         /* since the game cannot read this field, i think we can change it */
-        *(ch->NRx2) &= ~CHANNEL_TRIGGER_MASK;
+        *(ch->NRx4) &= ~CHANNEL_TRIGGER_MASK;
         ch->on = 1;
         triggered = 1;
         /* TODO: seems that we have to somehow retrigger this channel which i dont know what it means exactly */
@@ -79,6 +78,7 @@ ch1_audio(gbc_audio_t *audio)
                 /* increase */
                 period += period >> steps;
             }
+            period &= 0x7ff;
             CHANNEL_PERIOD_UPDATE(ch, period);
             if (period >= 0x7ff) {
                 /* overflowed */
@@ -91,13 +91,14 @@ ch1_audio(gbc_audio_t *audio)
 
     if ((audio->frame_sequencer % FRAME_SOUND_LENGTH == 0)) {
         /* sound length */
-        if (*(ch->NRx1) & CHANNEL_LENGTH_ENABLE_MASK) {
+        if (*(ch->NRx4) & CHANNEL_LENGTH_ENABLE_MASK) {
             uint8_t length = *(ch->NRx1) & 0x3f;
             if (length == 0) {
                 ch->on = 0;
             } else {
                 length++;
                 /* again, games cannot read this field, i think we can change it */
+                length &= 0x3f;
                 *(ch->NRx1) &= ~0x3f;
                 *(ch->NRx1) |= length;
             }
@@ -111,11 +112,11 @@ ch1_audio(gbc_audio_t *audio)
     if (audio->frame_sequencer % FRAME_ENVELOPE_SWEEP == 0) {
         /* envelope sweep */
         uint8_t pace = CHANNEL_EVENVLOPE_PACE(ch);
-        if (CHANNEL_EVENVLOPE_DIRECTION(ch)) {
+        if (CHANNEL_EVENVLOPE_DIRECTION(ch))
             ch->volume += pace;
-        } else {
+        else
             ch->volume -= pace;
-        }
+        ch->volume &= 0xf;
     }
 
     uint16_t sample_rate = CHANNEL_SAMPLE_RATE(ch);
@@ -142,9 +143,9 @@ ch2_audio(gbc_audio_t *audio)
         return 0;
 
     uint8_t triggered =  0;
-    if (*(ch->NRx2) & CHANNEL_TRIGGER_MASK) {
+    if (*(ch->NRx4) & CHANNEL_TRIGGER_MASK) {
         /* since the game cannot read this field, i think we can change it */
-        *(ch->NRx2) &= ~CHANNEL_TRIGGER_MASK;
+        *(ch->NRx4) &= ~CHANNEL_TRIGGER_MASK;
         ch->on = 1;
         triggered = 1;
         /* TODO: seems that we have to somehow retrigger this channel which i dont know what it means exactly */
@@ -196,17 +197,20 @@ ch2_audio(gbc_audio_t *audio)
     }
 
     uint8_t on = WAVEFORM_SAMPLE(_duty_waveform[CHANNEL_DUTY(ch)], ch->sample_idx-1);
-
     return on * ch->volume;
 }
 
 static uint8_t
 ch3_audio(gbc_audio_t *audio)
-{}
+{
+    return 0;
+}
 
 static uint8_t
 ch4_audio(gbc_audio_t *audio)
-{}
+{
+    return 0;
+}
 
 void
 gbc_audio_cycle(gbc_audio_t *audio)
@@ -233,18 +237,26 @@ gbc_audio_cycle(gbc_audio_t *audio)
     }
 
     uint8_t c1 = ch1_audio(audio);
+    /* TODO update NR52 */
     uint8_t c2 = 0;//ch2_audio(audio);
     uint8_t c3 = ch3_audio(audio);
     uint8_t c4 = ch4_audio(audio);
 
-    uint8_t sample = c1 + c2 + c3 + c4;
+    int8_t sample = (c1 << 4) - (0xff >> 1);
+
     /* rewind */
     if (audio->frame_sequencer == FRAME_ENVELOPE_SWEEP)
         audio->frame_sequencer = 1;
 
     if (audio->output_sample_cycles == 0) {
-        audio->audio_write(sample);
-        audio->output_sample_cycles = AUDIO_CLOCK_RATE / audio->output_sample_rate;
+        audio->audio_write(sample, sample);
+        audio->output_sample_cycles = SAMPLE_TO_AUDIO_CYCLES;
+        audio->output_sample_cycles_remainder += SAMPLE_TO_AUDIO_CYCLES_REMAINDER;
+
+        if (audio->output_sample_cycles_remainder >= REMAINDER_SCALING_FACTOR) {
+            audio->output_sample_cycles++;
+            audio->output_sample_cycles_remainder -= REMAINDER_SCALING_FACTOR;
+        }
     }
     audio->output_sample_cycles--;
     /* TODO: volume panning */

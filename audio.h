@@ -15,7 +15,8 @@
 #define NR10_DIRECTION  0x8
 #define NR10_IND_STEPS  0x7
 
-#define GBC_OUTPUT_SAMPLE_RATE 44100
+#define GBC_AUDIO_SAMPLE_RATE 44100
+#define GBC_AUDIO_SAMPLE_SIZE (GBC_AUDIO_SAMPLE_RATE / FRAME_PER_SECOND)
 
 /* https://gbdev.io/pandocs/Audio_Registers.html#ff13--nr13-channel-1-period-low-write-only */
 #define AUDIO_CLOCK_RATE        1048576
@@ -48,6 +49,11 @@
 
 #define WAVEFORM_SAMPLE(wav, idx) ((wav) & (1 << (idx)))
 
+#define SAMPLE_TO_AUDIO_CYCLES (AUDIO_CLOCK_RATE / GBC_AUDIO_SAMPLE_RATE)
+#define REMAINDER_SCALING_FACTOR (10000000)
+/* Because of integer division precision problem, the real sample rate is not exactly GBC_AUDIO_SAMPLE_RATE, I use a separate remainder to adjust it */
+#define SAMPLE_TO_AUDIO_CYCLES_REMAINDER (((double)AUDIO_CLOCK_RATE / GBC_AUDIO_SAMPLE_RATE - AUDIO_CLOCK_RATE / GBC_AUDIO_SAMPLE_RATE) * REMAINDER_SCALING_FACTOR)
+
 #define DAC_ON_MASK 0xf8
 #define CHANNEL_TRIGGER_MASK        0x80
 #define CHANNEL_LENGTH_ENABLE_MASK  0x40
@@ -66,7 +72,7 @@ struct gbc_audio_channel {
     uint8_t sample_idx;
     uint8_t sweep_pace;
     uint8_t timer;
-    uint8_t volume;            
+    uint8_t volume;
 
     uint8_t on;
 };
@@ -76,29 +82,29 @@ struct gbc_audio {
     gbc_audio_channel_t c1;
     gbc_audio_channel_t c2;
     gbc_audio_channel_t c3;
-    gbc_audio_channel_t c4;    
+    gbc_audio_channel_t c4;
 
     /* https://gbdev.gg8.se/wiki/articles/Gameboy_sound_hardware#Registers */
-    
+
     /* Control/Status */
     uint8_t *NR52;
     uint8_t *NR51;
     uint8_t *NR50;
-        
-    void (*audio_write)(uint8_t);
+
+    void (*audio_write)(int8_t, int8_t);
     void (*audio_update)(void *udata);
 
-    uint32_t output_sample_rate;
-    uint32_t output_sample_cycles;
-    /* https://gbdev.gg8.se/wiki/articles/Gameboy_sound_hardware#Frame_Sequencer */    
-    uint16_t frame_sequencer_cycles;    
-    uint8_t m_cycles;
+    uint32_t output_sample_cycles_remainder;
+    uint16_t output_sample_cycles;
+    /* https://gbdev.gg8.se/wiki/articles/Gameboy_sound_hardware#Frame_Sequencer */
+    uint16_t frame_sequencer_cycles;
 
-    uint8_t frame_sequencer;    
+    uint8_t m_cycles;
+    uint8_t frame_sequencer;
 };
 
 void gbc_audio_connect(gbc_audio_t *audio, gbc_memory_t *mem);
-void gbc_audio_init(gbc_audio_t *audio, uint32_t sample_rate);
+void gbc_audio_init(gbc_audio_t *audio);
 void gbc_audio_cycle(gbc_audio_t *audio);
 
 #endif

@@ -3,12 +3,12 @@
 
 memory_map_entry_t*
 select_entry(gbc_memory_t *mem, uint16_t addr)
-{ 
+{
     for (int i = 0; i < MEMORY_MAP_ENTRIES; i++) {
-        memory_map_entry_t *entry = &(mem->map[i]);        
-        if (addr >= entry->addr_begin && addr <= entry->addr_end) {       
+        memory_map_entry_t *entry = &(mem->map[i]);
+        if (addr >= entry->addr_begin && addr <= entry->addr_end) {
             if (entry->id == 0) {
-                return NULL;                
+                return NULL;
             }
             return entry;
         }
@@ -31,7 +31,7 @@ mem_write(void *udata, uint16_t addr, uint8_t data)
     return entry->write(entry->udata, addr, data);
 }
 
-static uint8_t 
+static uint8_t
 mem_read(void *udata, uint16_t addr)
 {
     LOG_DEBUG("[MEM] Reading from memory at address %x\n", addr);
@@ -47,7 +47,7 @@ mem_read(void *udata, uint16_t addr)
     return entry->read(entry->udata, addr);
 }
 
-void* 
+void*
 connect_io_port(gbc_memory_t *mem, uint16_t port)
 {
     return (mem->io_ports + port);
@@ -55,7 +55,7 @@ connect_io_port(gbc_memory_t *mem, uint16_t port)
 
 void
 register_memory_map(gbc_memory_t *mem, memory_map_entry_t *entry)
-{    
+{
     LOG_DEBUG("[MEM] Registering memory map entry with id %d [0x%x] - [0x%x]\n", entry->id, entry->addr_begin, entry->addr_end);
 
     if (entry->id > MEMORY_MAP_ENTRIES) {
@@ -74,14 +74,14 @@ register_memory_map(gbc_memory_t *mem, memory_map_entry_t *entry)
     }
 
     for (int i = 0; i < MEMORY_MAP_ENTRIES; i++) {
-        memory_map_entry_t *e = &mem->map[i];        
+        memory_map_entry_t *e = &mem->map[i];
         if (e->id && e->addr_begin <= entry->addr_end && e->addr_end >= entry->addr_begin) {
             LOG_ERROR("[MEM] Memory map entry id %d overlaps with existing entry id %d\n", entry->id, e->id);
             abort();
         }
     }
 
-    mem->map[entry->id-1] = *entry;    
+    mem->map[entry->id-1] = *entry;
 }
 
 static uint8_t
@@ -98,7 +98,7 @@ mem_raw_write(void *udata, uint16_t addr, uint8_t data)
         return data;
 
     }
-    
+
     LOG_ERROR("[MEM] Invalid write, %x is not a valid WRAM addr \n", addr);
     abort();
 }
@@ -117,7 +117,7 @@ mem_raw_read(void *udata, uint16_t addr)
     }
 
     LOG_ERROR("[MEM] Invalid read, %x is not a valid WRAM addr \n", addr);
-    abort();    
+    abort();
 }
 
 static uint8_t
@@ -160,16 +160,16 @@ static inline uint8_t
 oam_write(void *udata, uint16_t addr, uint8_t data)
 {
     // LOG_DEBUG("[MEM] Writing to OAM %x [%x]\n", addr, data);
-    gbc_memory_t *mem = (gbc_memory_t*)udata;    
+    gbc_memory_t *mem = (gbc_memory_t*)udata;
     mem->oam[addr - OAM_BEGIN] = data;
     return data;
 }
 
 static inline void
 io_dma_transer(gbc_memory_t *mem, uint8_t addr)
-{    
-    uint16_t src = addr << 8;    
-    for (uint16_t dst = OAM_BEGIN; dst <= OAM_END; dst++, src++) {        
+{
+    uint16_t src = addr << 8;
+    for (uint16_t dst = OAM_BEGIN; dst <= OAM_END; dst++, src++) {
         mem->oam[dst-OAM_BEGIN] = mem->read(mem, src);
     }
 }
@@ -184,11 +184,11 @@ io_port_write(void *udata, uint16_t addr, uint8_t data)
     gbc_memory_t *mem = (gbc_memory_t*)udata;
 
     #if LOGLEVEL == LOG_LEVEL_DEBUG
-    if (port == IO_PORT_TAC) {        
+    if (port == IO_PORT_TAC) {
         LOG_DEBUG("[Timer] Writing to TAC register [%x]\n", data);
-    } else if (port == IO_PORT_TMA) {        
+    } else if (port == IO_PORT_TMA) {
         LOG_DEBUG("[Timer] Writing to TMA register [%x]\n", data);
-    } else if (port == IO_PORT_TIMA) {    
+    } else if (port == IO_PORT_TIMA) {
         LOG_DEBUG("[Timer] Writing to TIMA register [%x]\n", data);
     } else if (port == IO_PORT_STAT) {
         LOG_DEBUG("[STAT] Writing to STAT register [%x]\n", data);
@@ -216,7 +216,7 @@ io_port_write(void *udata, uint16_t addr, uint8_t data)
             data = (data & 0xf0) | (v & 0x0f);
         }
     } else if (port == IO_PORT_BCPD_BGPD) {
-        uint8_t bcps = IO_PORT_READ(mem, IO_PORT_BCPS_BCPI);        
+        uint8_t bcps = IO_PORT_READ(mem, IO_PORT_BCPS_BCPI);
         ((uint8_t*)mem->bg_palette)[bcps & 0x3f] = data;
         if (bcps & 0x80) {
             /* auto increment */
@@ -224,12 +224,12 @@ io_port_write(void *udata, uint16_t addr, uint8_t data)
             IO_PORT_WRITE(mem, IO_PORT_BCPS_BCPI, bcps);
         }
     } else if (port == IO_PORT_OCPD_OBPD) {
-        uint8_t ocps = IO_PORT_READ(mem, IO_PORT_OCPS_OCPI);        
+        uint8_t ocps = IO_PORT_READ(mem, IO_PORT_OCPS_OCPI);
         ((uint8_t*)mem->obj_palette)[ocps & 0x3f] = data;
         if (ocps & 0x80) {
             /* auto increment */
             ocps = (ocps + 1) & 0x3f | 0x80;
-            IO_PORT_WRITE(mem, IO_PORT_OCPS_OCPI, ocps);            
+            IO_PORT_WRITE(mem, IO_PORT_OCPS_OCPI, ocps);
         }
     } else if (port == IO_PORT_DMA) {
         io_dma_transer(mem, data);
@@ -241,15 +241,15 @@ io_port_write(void *udata, uint16_t addr, uint8_t data)
 
 static uint8_t
 bank_n_write(void *udata, uint16_t addr, uint8_t data)
-{    
+{
     gbc_memory_t *mem = (gbc_memory_t*)udata;
-    uint8_t bank = IO_PORT_READ(mem, IO_PORT_SVBK) & 0x7;    
+    uint8_t bank = IO_PORT_READ(mem, IO_PORT_SVBK) & 0x7;
     if (bank == 0) {
         /* a value of 00h will select Bank 1 either. */
         bank = 1;
     }
 
-    LOG_DEBUG("[MEM] Writing to switchable RAM bank [%x] at address %x [%x]\n", bank, addr, data);    
+    LOG_DEBUG("[MEM] Writing to switchable RAM bank [%x] at address %x [%x]\n", bank, addr, data);
 
     uint16_t bank_base = (bank * WRAM_BANK_SIZE);
     mem->wram[addr - WRAM_BANK_N_BEGIN + bank_base] = data;
@@ -267,14 +267,14 @@ bank_n_read(void *udata, uint16_t addr)
         bank = 1;
     }
     LOG_DEBUG("[MEM] Reading from switchable RAM bank [%x] at address %x\n", bank, addr);
-        
+
     uint16_t bank_base = (bank * WRAM_BANK_SIZE);
     return mem->wram[addr - WRAM_BANK_N_BEGIN + bank_base];
 }
 
 static uint8_t
 not_usable_write(void *udata, uint16_t addr, uint8_t data)
-{    
+{
     LOG_INFO("[MEM] Writing to Not-Usable(Nintendo says) memory at address %x [%x]\n", addr, data);
     /* I have not found any information on what happens when writing to this memory */
     return 0;
@@ -284,8 +284,8 @@ static uint8_t
 not_usable_read(void *udata, uint16_t addr)
 {
     /* It is actually readable, this implementation emulates CGB revision E */
-    LOG_INFO("[MEM] Reading from Not-Usable(Nintendo says) memory at address %x\n", addr);    
-    
+    LOG_INFO("[MEM] Reading from Not-Usable(Nintendo says) memory at address %x\n", addr);
+
     uint8_t lcdsr = IO_PORT_READ((gbc_memory_t*)udata, IO_PORT_STAT);
 
     uint8_t mode = lcdsr & PPU_MODE_MASK;
@@ -335,7 +335,7 @@ gbc_mem_init(gbc_memory_t *mem)
     entry.write = mem_raw_write;
     entry.udata = mem;
 
-    register_memory_map(mem, &entry);    
+    register_memory_map(mem, &entry);
 
     /* IO Port */
     entry.id = IO_PORT_ID;
@@ -361,7 +361,7 @@ gbc_mem_init(gbc_memory_t *mem)
     entry.id = WRAM_ECHO_ID;
     entry.addr_begin = WRAM_ECHO_BEGIN;
     entry.addr_end = WRAM_ECHO_END;
-    
+
     entry.read = mem_echo_read;
     entry.write = mem_echo_write;
     entry.udata = mem;
@@ -370,7 +370,7 @@ gbc_mem_init(gbc_memory_t *mem)
 
     /* OAM */
     entry.id = OAM_ID;
-    entry.addr_begin = OAM_BEGIN;   
+    entry.addr_begin = OAM_BEGIN;
     entry.addr_end = OAM_END;
     entry.read = oam_read;
     entry.write = oam_write;

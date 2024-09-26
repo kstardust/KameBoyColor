@@ -27,7 +27,7 @@ void FillFramebuffer(std::vector<ImU32>& buffer) {
 
 // Draw the framebuffer
 void DrawFramebuffer(ImDrawList* draw_list, const std::vector<ImU32>& buffer, ImVec2 position) {
-    
+
     for (int y = 0; y < height; ++y) {
         for (int x = 0; x < width; ++x) {
             ImVec2 p = ImVec2(x * pixel_size + position.x, y * pixel_size + position.y);
@@ -40,7 +40,7 @@ void InitMyWindow() {
     std::srand(std::time(nullptr));
 }
 
-unsigned short GuiWrite(void *udata, unsigned short addr, unsigned short data) {    
+unsigned short GuiWrite(void *udata, unsigned short addr, unsigned short data) {
     framebuffer[addr] = IM_COL32(GBC_COLOR_TO_RGB_R(data), GBC_COLOR_TO_RGB_G(data), GBC_COLOR_TO_RGB_B(data), 255);
     // framebuffer[addr] = IM_COL32(std::rand() % 255, std::rand() % 255, std::rand() % 255, std::rand() % 255);
     return 0;
@@ -117,17 +117,17 @@ void ShowHUDStatus() {
         ImGui::SameLine();
         ImGui::Text("%.2f", fps);
 
-        ImGui::Separator(); // Optional separator line           
+        ImGui::Separator(); // Optional separator line
 
         if (ImGui::BeginTable("REG", 4))
-        {              
-            for (int i = 0; i < DEBUG_CPU_REGISTERS_SIZE; i++) {                
+        {
+            for (int i = 0; i < DEBUG_CPU_REGISTERS_SIZE; i++) {
                 ImGui::TableNextColumn();
                 ImGui::Text("%s", labels[i].c_str());
                 ImGui::TableNextColumn();
                 ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 1.0f, 0.0f, 1.0f)); // Red color
                 ImGui::Text("%x", cpu_values[i]);
-                ImGui::PopStyleColor(); // Revert to default color                
+                ImGui::PopStyleColor(); // Revert to default color
                 if ((i+1) % 2 == 0) {
                     ImGui::TableNextRow();
                 }
@@ -140,7 +140,7 @@ void ShowHUDStatus() {
 
 void ShowHUD() {
     ImGui::Begin("HUD");
-    
+
     ShowHUDControlPanels();
     ShowHUDStatus();
 
@@ -151,7 +151,7 @@ void ShowGame() {
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     //ImGui::SetNextWindowPos(center, ImGuiCond_Always, ImVec2(0.5f, 0.5f)); // Center window
     ImGui::SetNextWindowSize(ImVec2(width * pixel_size, height * pixel_size + 20));
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));    
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
     ImGui::Begin("GBC");
     ImDrawList* draw_list = ImGui::GetWindowDrawList();
     // FillFramebuffer(framebuffer);
@@ -160,7 +160,7 @@ void ShowGame() {
     ImGui::PopStyleVar();
 }
 
-void ShowMyWindow() {        
+void ShowMyWindow() {
     ImGuiIO& io = ImGui::GetIO();
     io.FontGlobalScale = 1.5f;  // Scale the font by 1.5x
     ShowGame();

@@ -25,8 +25,8 @@
 
 using std::vector;
 
-#define SAMPLE_RATE GBC_OUTPUT_SAMPLE_RATE  // Standard sample rate for audio
-#define SAMPLES_FRAME (SAMPLE_RATE / FRAME_PER_SECOND)  // Number of samples per frame
+#define SAMPLE_RATE GBC_AUDIO_SAMPLE_RATE  // Standard sample rate for audio
+#define SAMPLES_FRAME (2 * GBC_AUDIO_SAMPLE_SIZE)
 #define AMPLITUDE 28000    // Maximum amplitude of the waveform
 #define FREQUENCY1 440     // Frequency of the first tone (A4 note = 440 Hz)
 #define FREQUENCY2 660     // Frequency of the second tone (around E5 note)
@@ -37,8 +37,9 @@ void *gui_callback_udata = NULL;
 static uint8_t key_pressed = 0;
 static SDL_Window* window;
 static SDL_GLContext gl_context;
-static vector<uint8_t> audio_buffer(SAMPLES_FRAME);  // Buffer for audio samples
+static vector<int8_t> audio_buffer(SAMPLES_FRAME);  // Buffer for audio samples
 SDL_AudioDeviceID audio_device;
+static int sample_counter = 0;
 
 // This example can also compile and run with Emscripten! See 'Makefile.emscripten' for details.
 #ifdef __EMSCRIPTEN__
@@ -61,19 +62,19 @@ static std::unordered_map<int, SDL_Keycode> key_map = {
 };
 
 void HandleKeyPress(SDL_Keycode key, int action)
-{ 
-    key_pressed = 0;            
+{
+    key_pressed = 0;
     auto kiter = key_map.find(key);
     if (kiter == key_map.end()) {
         return;
-    }     
+    }
 
     if (action == SDL_KEYDOWN)
         key_pressed = kiter->second;
 }
 
 void AudioThread()
-{    
+{
     SDL_AudioSpec desired_spec, obtained_spec;
     desired_spec.freq = SAMPLE_RATE;
     desired_spec.format = AUDIO_S8;
@@ -88,9 +89,9 @@ void AudioThread()
 
     SDL_PauseAudioDevice(audio_device, 0);  // Start playing audio
     while (true) {
-        SDL_Delay(500);                            
+        SDL_Delay(1000);
     }
-    
+
     SDL_CloseAudioDevice(audio_device);
     return;
 }
@@ -125,7 +126,7 @@ void test_audio_callback(void* userdata, Uint8* stream, int len) {
 }
 
 void TestAudio() {
-    
+
     SDL_AudioSpec desired_spec, obtained_spec;
     desired_spec.freq = SAMPLE_RATE;
     desired_spec.format = AUDIO_S16SYS;
@@ -138,35 +139,35 @@ void TestAudio() {
         return;
     }
 
-    SDL_PauseAudio(0);  // Start playing audio    
+    SDL_PauseAudio(0);  // Start playing audio
     SDL_Delay(2000);    // Play for 2 seconds
-    SDL_CloseAudio();    
+    SDL_CloseAudio();
     return;
 }
 
-static int counter = 0;
-
-void GuiAudioWrite(uint8_t sample)
+void GuiAudioWrite(int8_t l_sample, int8_t r_sample)
 {
-    if (counter >= audio_buffer.size()) {        
+    if (sample_counter >= audio_buffer.size()) {
         return;
     }
-    audio_buffer[counter++] = sample;
+
+    audio_buffer[sample_counter++] = l_sample;
 }
 
 void GuiAudioUpdate(void *udata)
 {
-    if (counter == 0) {
-        // no audio data
+    if (SDL_GetQueuedAudioSize(audio_device) > (2 * SAMPLES_FRAME)) {
+        fprintf(stderr, "Clear audio queue\n");
+        SDL_ClearQueuedAudio(audio_device);
         return;
     }
 
-    counter = 0;
-    SDL_ClearQueuedAudio(audio_device);
-    if (SDL_QueueAudio(audio_device, audio_buffer.data(), audio_buffer.size()) < 0) {
+    if (SDL_QueueAudio(audio_device, audio_buffer.data(), sample_counter) < 0) {
         fprintf(stderr, "Failed to queue audio: %s\n", SDL_GetError());
         return;
-    }                        
+    }
+
+    sample_counter = 0;
 }
 
 void InitAudio()
@@ -224,7 +225,7 @@ int GuiInit()
     {
         printf("Error: SDL_CreateWindow(): %s\n", SDL_GetError());
         return -1;
-    }    
+    }
 
     gl_context = SDL_GL_CreateContext(window);
     SDL_GL_MakeCurrent(window, gl_context);
@@ -266,7 +267,7 @@ int GuiInit()
 }
 
 void GuiUpdate()
-{            
+{
         ImGuiIO& io = ImGui::GetIO();
         SDL_Event event;
         bool done = false;
@@ -312,7 +313,7 @@ uint8_t GuiPollKeypad()
 }
 
 void GuiSetCloseCallback(void (*callback)(void* udata)) {
-    gui_close_callback = callback;        
+    gui_close_callback = callback;
 }
 
 void GuiSetUserData(void* udata) {
