@@ -35,19 +35,19 @@
     *((c)->NRx4) |= (p >> 8) & 0x7;       \
 }
 
-#define CHANNEL_PERIOD(c) (uint16_t) ((( (*((c)->NRx4)) & 0x7) << 8) | (*((c)->NRx3)) )
-#define CHANNEL_SAMPLE_RATE(c)  (AUDIO_CLOCK_RATE / (2048 - CHANNEL_PERIOD(c)))
-#define CHANNEL_HZ(c)  (CHANNEL_SAMPLE_RATE((c)) / WAVEFORM_SAMPLES)
+#define CHANNEL_PERIOD(c) (uint16_t)((( (*((c)->NRx4)) & 0x7) << 8) | (*((c)->NRx3)) )
+#define CHANNEL_SAMPLE_PERIOD(c) (2048 - CHANNEL_PERIOD((c)))
+#define CHANNEL_HZ(c)  (AUDIO_CLOCK_RATE / CHANNEL_SAMPLE_PERIOD(c) / 8)
 #define CHANNEL_DUTY(c) (( (*((c)->NRx1)) >> 6) & 0x3)
 #define CHANNEL_SWEEP_PACE(c) (( (*((c)->NRx0)) >> 4) & 0x7)
 #define CHANNEL_SWEEP_DIRECTION(c) ( (*((c)->NRx0)) & 0x8)
 #define CHANNEL_SWEEP_STEPS(c) ( (*((c)->NRx0)) & 0x7)
 
-#define CHANNEL_EVENVLOPE_PACE(c) ( (*((c)->NRx2)) | 0x7)
+#define CHANNEL_EVENVLOPE_PACE(c) ( (*((c)->NRx2)) & 0x7)
 #define CHANNEL_EVENVLOPE_VOLUME(c) ( (*((c)->NRx2)) >> 4)
 #define CHANNEL_EVENVLOPE_DIRECTION(c) ( (*((c)->NRx2)) & 0x8)
 
-#define WAVEFORM_SAMPLE(wav, idx) ((wav) & (1 << (idx)))
+#define WAVEFORM_SAMPLE(wav, idx) ((wav) & (1 << (idx)) ? 1 : 0)
 
 #define SAMPLE_TO_AUDIO_CYCLES (AUDIO_CLOCK_RATE / GBC_AUDIO_SAMPLE_RATE)
 #define REMAINDER_SCALING_FACTOR (10000000)
@@ -73,6 +73,10 @@ struct gbc_audio_channel {
     uint8_t sweep_pace;
     uint8_t timer;
     uint8_t volume;
+
+    uint8_t volume_pace:3;
+    uint8_t volume_pace_counter:3;
+    uint8_t volume_dir:1;
 
     uint8_t on;
 };

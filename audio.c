@@ -40,7 +40,7 @@ gbc_audio_connect(gbc_audio_t *audio, gbc_memory_t *mem)
     audio->c4.NRx4 = connect_io_port(mem, IO_PORT_NR44);
 }
 
-static uint8_t
+static int8_t
 ch1_audio(gbc_audio_t *audio)
 {
     gbc_audio_channel_t *ch = &(audio->c1);
@@ -55,7 +55,6 @@ ch1_audio(gbc_audio_t *audio)
         *(ch->NRx4) &= ~CHANNEL_TRIGGER_MASK;
         ch->on = 1;
         triggered = 1;
-        /* TODO: seems that we have to somehow retrigger this channel which i dont know what it means exactly */
         ch->sample_cycles = 0;
         ch->sample_idx = 0;
         ch->sweep_pace = 0;
@@ -63,30 +62,6 @@ ch1_audio(gbc_audio_t *audio)
 
     if (!ch->on) {
         return 0;
-    }
-
-    if (triggered || (audio->frame_sequencer % FRAME_FREQ_SWEEP == 0)) {
-        /* frequency sweep */
-        if (ch->sweep_pace == 0) {
-            ch->sweep_pace = CHANNEL_SWEEP_PACE(ch);
-            uint8_t steps = CHANNEL_SWEEP_STEPS(ch);
-            uint16_t period = CHANNEL_PERIOD(ch);
-            if (CHANNEL_SWEEP_DIRECTION(ch)) {
-                /* decrease */
-                period -= period >> steps;
-            } else {
-                /* increase */
-                period += period >> steps;
-            }
-            period &= 0x7ff;
-            CHANNEL_PERIOD_UPDATE(ch, period);
-            if (period >= 0x7ff) {
-                /* overflowed */
-                ch->on = 0;
-            }
-        } else {
-            ch->sweep_pace--;
-        }
     }
 
     if ((audio->frame_sequencer % FRAME_SOUND_LENGTH == 0)) {
@@ -106,26 +81,37 @@ ch1_audio(gbc_audio_t *audio)
     }
 
     if (triggered) {
+        /* TODO: we need to somehow retrigger this channel which I'm not exactly sure what it means */
         ch->volume = CHANNEL_EVENVLOPE_VOLUME(ch);
+        ch->volume_pace = CHANNEL_EVENVLOPE_PACE(ch);
+        ch->volume_pace_counter = ch->volume_pace;
+        ch->volume_dir = CHANNEL_EVENVLOPE_DIRECTION(ch);
     }
 
-    if (audio->frame_sequencer % FRAME_ENVELOPE_SWEEP == 0) {
+    if (ch->volume_pace != 0 &&
+        (audio->frame_sequencer % FRAME_ENVELOPE_SWEEP == 0)) {
         /* envelope sweep */
-        uint8_t pace = CHANNEL_EVENVLOPE_PACE(ch);
-        if (CHANNEL_EVENVLOPE_DIRECTION(ch))
-            ch->volume += pace;
-        else
-            ch->volume -= pace;
-        ch->volume &= 0xf;
+        ch->volume_pace_counter--;
+        if (ch->volume_pace_counter == 0) {
+            ch->volume_pace_counter = ch->volume_pace;
+            if (ch->volume_dir) {
+                ch->volume++;
+            } else {
+                if (ch->volume != 0)
+                    ch->volume--;
+            }
+            ch->volume &= 0xf;
+        }
     }
 
-    uint16_t sample_rate = CHANNEL_SAMPLE_RATE(ch);
-    if (ch->sample_cycles == 0) {
+    uint16_t sample_period = CHANNEL_PERIOD(ch);
+    ch->sample_cycles++;
+    if (ch->sample_cycles == 0x7ff) {
         if (ch->sample_idx == WAVEFORM_SAMPLES)
             ch->sample_idx = 1;
         else
             ch->sample_idx += 1;
-        ch->sample_cycles = AUDIO_CLOCK_RATE / sample_rate;
+        ch->sample_cycles = sample_period;
     }
 
     uint8_t on = WAVEFORM_SAMPLE(_duty_waveform[CHANNEL_DUTY(ch)], ch->sample_idx-1);
@@ -133,7 +119,7 @@ ch1_audio(gbc_audio_t *audio)
     return on * ch->volume;
 }
 
-static uint8_t
+static int8_t
 ch2_audio(gbc_audio_t *audio)
 {
     gbc_audio_channel_t *ch = &(audio->c2);
@@ -148,7 +134,6 @@ ch2_audio(gbc_audio_t *audio)
         *(ch->NRx4) &= ~CHANNEL_TRIGGER_MASK;
         ch->on = 1;
         triggered = 1;
-        /* TODO: seems that we have to somehow retrigger this channel which i dont know what it means exactly */
         ch->sample_cycles = 0;
         ch->sample_idx = 0;
         ch->sweep_pace = 0;
@@ -160,13 +145,14 @@ ch2_audio(gbc_audio_t *audio)
 
     if ((audio->frame_sequencer % FRAME_SOUND_LENGTH == 0)) {
         /* sound length */
-        if (*(ch->NRx1) & CHANNEL_LENGTH_ENABLE_MASK) {
+        if (*(ch->NRx4) & CHANNEL_LENGTH_ENABLE_MASK) {
             uint8_t length = *(ch->NRx1) & 0x3f;
             if (length == 0) {
                 ch->on = 0;
             } else {
                 length++;
                 /* again, games cannot read this field, i think we can change it */
+                length &= 0x3f;
                 *(ch->NRx1) &= ~0x3f;
                 *(ch->NRx1) |= length;
             }
@@ -174,39 +160,51 @@ ch2_audio(gbc_audio_t *audio)
     }
 
     if (triggered) {
+        /* TODO: seems that we need to somehow retrigger this channel which I'm not exactly sure what it means */
         ch->volume = CHANNEL_EVENVLOPE_VOLUME(ch);
+        ch->volume_pace = CHANNEL_EVENVLOPE_PACE(ch);
+        ch->volume_pace_counter = ch->volume_pace;
+        ch->volume_dir = CHANNEL_EVENVLOPE_DIRECTION(ch);
     }
 
-    if (audio->frame_sequencer % FRAME_ENVELOPE_SWEEP == 0) {
+    if (ch->volume_pace != 0 &&
+        (audio->frame_sequencer % FRAME_ENVELOPE_SWEEP == 0)) {
         /* envelope sweep */
-        uint8_t pace = CHANNEL_EVENVLOPE_PACE(ch);
-        if (CHANNEL_EVENVLOPE_DIRECTION(ch)) {
-            ch->volume += pace;
-        } else {
-            ch->volume -= pace;
+        ch->volume_pace_counter--;
+        if (ch->volume_pace_counter == 0) {
+            ch->volume_pace_counter = ch->volume_pace;
+            if (ch->volume_dir) {
+                ch->volume++;
+            } else {
+                if (ch->volume != 0)
+                    ch->volume--;
+            }
+            ch->volume &= 0xf;
         }
     }
 
-    uint16_t sample_rate = CHANNEL_SAMPLE_RATE(ch);
-    if (ch->sample_cycles == 0) {
+    uint16_t sample_period = CHANNEL_PERIOD(ch);
+    ch->sample_cycles++;
+    if (ch->sample_cycles == 0x7ff) {
         if (ch->sample_idx == WAVEFORM_SAMPLES)
             ch->sample_idx = 1;
         else
             ch->sample_idx += 1;
-        ch->sample_cycles = AUDIO_CLOCK_RATE / sample_rate;
+        ch->sample_cycles = sample_period;
     }
 
     uint8_t on = WAVEFORM_SAMPLE(_duty_waveform[CHANNEL_DUTY(ch)], ch->sample_idx-1);
+
     return on * ch->volume;
 }
 
-static uint8_t
+static int8_t
 ch3_audio(gbc_audio_t *audio)
 {
     return 0;
 }
 
-static uint8_t
+static int8_t
 ch4_audio(gbc_audio_t *audio)
 {
     return 0;
@@ -236,13 +234,16 @@ gbc_audio_cycle(gbc_audio_t *audio)
         audio->frame_sequencer++;
     }
 
-    uint8_t c1 = ch1_audio(audio);
-    /* TODO update NR52 */
-    uint8_t c2 = 0;//ch2_audio(audio);
-    uint8_t c3 = ch3_audio(audio);
-    uint8_t c4 = ch4_audio(audio);
+    /* TODO update NR52 (channel on/off)*/
+    int8_t c1 = ch1_audio(audio);
+    int8_t c2 = ch2_audio(audio);
+    int8_t c3 = ch3_audio(audio);
+    int8_t c4 = ch4_audio(audio);
 
-    int8_t sample = (c1 << 4) - (0xff >> 1);
+    /* todo read NR50 */
+    uint8_t volume = 0x7;
+
+    int8_t sample = (c2 + c1 + c3 + c4) * volume / 4;
 
     /* rewind */
     if (audio->frame_sequencer == FRAME_ENVELOPE_SWEEP)
