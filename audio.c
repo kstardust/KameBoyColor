@@ -1,5 +1,14 @@
 #include "audio.h"
 
+/* there are many obscure details about the audio system in the gameboy
+ * that I didnt implement, partially because the doc is kind of confusing
+ * which I am not excatly sure what they mean, and another obvious reason:
+ * I'm lazy.
+ *
+ * https://gbdev.gg8.se/wiki/articles/Gameboy_sound_hardware
+ * https://gbdev.io/pandocs/Audio_Registers.html
+ */
+
 static uint8_t _duty_waveform[] = {
     0b00000001, 0b10000001, 0b10000111, 0b01111110
 };
@@ -64,6 +73,40 @@ ch1_audio(gbc_audio_t *audio)
 
     if (!ch->on) {
         return 0;
+    }
+
+    if (triggered || (audio->frame_sequencer % FRAME_FREQ_SWEEP == 0)) {
+        /* frequency sweep */
+
+        if (CHANNEL_SWEEP_PACE(ch) == 0) {
+            /* write 0 to sweep pace immediately disable the sweep */
+            ch->sweep_pace = 0;
+        } else {
+            if (ch->sweep_pace == 0) {
+                ch->sweep_pace = CHANNEL_SWEEP_PACE(ch);
+                uint8_t steps = CHANNEL_SWEEP_STEPS(ch);
+                uint16_t period = CHANNEL_PERIOD(ch);
+                /* step shift needs be non-zero */
+                if (steps != 0) {
+                    if (CHANNEL_SWEEP_DIRECTION(ch)) {
+                        /* decrease */
+                        period -= period >> steps;
+                    } else {
+                        /* increase */
+                        period += period >> steps;
+                    }
+                    period &= 0x7ff;
+                    CHANNEL_PERIOD_UPDATE(ch, period);
+                    if (period >= 0x7ff) {
+                        /* overflowed */
+                        ch->on = 0;
+                    }
+                    printf("period update: %x\n", period);
+                }
+            } else {
+                ch->sweep_pace--;
+            }
+        }
     }
 
     if ((audio->frame_sequencer % FRAME_SOUND_LENGTH == 0)) {
