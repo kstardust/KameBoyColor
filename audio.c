@@ -67,7 +67,7 @@ ch1_audio(gbc_audio_t *audio)
         ch->on = 1;
         triggered = 1;
         ch->sample_cycles = 0;
-        ch->sample_idx = 0;
+        ch->waveform_idx = 0;
         ch->sweep_pace = 0;
     }
 
@@ -152,14 +152,14 @@ ch1_audio(gbc_audio_t *audio)
     uint16_t sample_period = CHANNEL_PERIOD(ch);
     ch->sample_cycles++;
     if (ch->sample_cycles == 0x7ff) {
-        if (ch->sample_idx == WAVEFORM_SAMPLES)
-            ch->sample_idx = 1;
+        if (ch->waveform_idx == WAVEFORM_SAMPLES)
+            ch->waveform_idx = 1;
         else
-            ch->sample_idx += 1;
+            ch->waveform_idx += 1;
         ch->sample_cycles = sample_period;
     }
 
-    uint8_t on = WAVEFORM_SAMPLE(_duty_waveform[CHANNEL_DUTY(ch)], ch->sample_idx-1);
+    uint8_t on = WAVEFORM_SAMPLE(_duty_waveform[CHANNEL_DUTY(ch)], ch->waveform_idx-1);
 
     return on * ch->volume;
 }
@@ -180,7 +180,7 @@ ch2_audio(gbc_audio_t *audio)
         ch->on = 1;
         triggered = 1;
         ch->sample_cycles = 0;
-        ch->sample_idx = 0;
+        ch->waveform_idx = 0;
         ch->sweep_pace = 0;
     }
 
@@ -231,14 +231,14 @@ ch2_audio(gbc_audio_t *audio)
     uint16_t sample_period = CHANNEL_PERIOD(ch);
     ch->sample_cycles++;
     if (ch->sample_cycles == 0x7ff) {
-        if (ch->sample_idx == WAVEFORM_SAMPLES)
-            ch->sample_idx = 1;
+        if (ch->waveform_idx == WAVEFORM_SAMPLES)
+            ch->waveform_idx = 1;
         else
-            ch->sample_idx += 1;
+            ch->waveform_idx += 1;
         ch->sample_cycles = sample_period;
     }
 
-    uint8_t on = WAVEFORM_SAMPLE(_duty_waveform[CHANNEL_DUTY(ch)], ch->sample_idx-1);
+    uint8_t on = WAVEFORM_SAMPLE(_duty_waveform[CHANNEL_DUTY(ch)], ch->waveform_idx-1);
 
     return on * ch->volume;
 }
@@ -258,7 +258,7 @@ ch3_audio(gbc_audio_t *audio)
         ch->on = 1;
         triggered = 1;
         ch->sample_cycles = 0;
-        ch->sample_idx = 0;
+        ch->waveform_idx = 0;
         ch->sweep_pace = 0;
     }
 
@@ -282,10 +282,10 @@ ch3_audio(gbc_audio_t *audio)
     uint16_t sample_period = CHANNEL_PERIOD(ch);
     ch->sample_cycles += 1;
     if (ch->sample_cycles == 0x7ff) {
-        if (ch->sample_idx == CH3_WAVEFORM_SAMPLES)
-            ch->sample_idx = 1;
+        if (ch->waveform_idx == CH3_WAVEFORM_SAMPLES)
+            ch->waveform_idx = 1;
         else
-            ch->sample_idx += 1;
+            ch->waveform_idx += 1;
         ch->sample_cycles = sample_period;
     }
 
@@ -293,10 +293,10 @@ ch3_audio(gbc_audio_t *audio)
     if (volume == 0)
         return 0;
 
-    uint8_t sample_offset = (ch->sample_idx-1) / 2;
+    uint8_t sample_offset = (ch->waveform_idx-1) / 2;
     /* According to Pandoc, when CH3 is started, the first sample read is the one at index 1, I didn't implement this */
     uint8_t wave_form = IO_PORT_READ(audio->mem, IO_PORT_WAVE_RAM + sample_offset);
-    if (ch->sample_idx % 2 == 0)
+    if (ch->waveform_idx % 2 == 0)
         wave_form &= 0xf;
     else
         wave_form >>= 4;

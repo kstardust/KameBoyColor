@@ -72,7 +72,7 @@ struct gbc_audio_channel {
     uint8_t *NRx4;
 
     uint16_t sample_cycles;
-    uint8_t sample_idx;
+    uint8_t waveform_idx;
     uint8_t sweep_pace;
     uint8_t sweep_pace_counter;
     uint8_t timer;
