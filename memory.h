@@ -114,7 +114,7 @@
 #define IO_PORT_HDMA3 0x53
 #define IO_PORT_HDMA4 0x54
 #define IO_PORT_HDMA5 0x55
-#define IO_PORT_RP   0x56    
+#define IO_PORT_RP   0x56
 #define IO_PORT_BCPS_BCPI 0x68
 #define IO_PORT_BCPD_BGPD 0x69
 #define IO_PORT_OCPS_OCPI 0x6a
@@ -146,7 +146,7 @@ typedef uint8_t (*memory_read)(void *udata, uint16_t addr);
 typedef uint8_t (*memory_write)(void *udata, uint16_t addr, uint8_t data);
 
 struct memory_map_entry
-{        
+{
     uint16_t id;
     uint16_t addr_begin;
     uint16_t addr_end;
@@ -168,19 +168,19 @@ struct gbc_memory
     memory_map_entry_t map[MEMORY_MAP_ENTRIES];
     uint8_t wram[WRAM_BANK_SIZE * WRAM_BANKS];
     uint8_t hraw[HRAM_END - HRAM_BEGIN + 1];
-    uint8_t io_ports[IO_PORT_END - IO_PORT_BEGIN + 1]; 
+    uint8_t io_ports[IO_PORT_END - IO_PORT_BEGIN + 1];
     uint8_t oam[OAM_END - OAM_BEGIN + 1];
     /* https://gbdev.io/pandocs/Palettes.html#lcd-color-palettes-cgb-only */
     /* palatte memory */
     gbc_palette_t bg_palette[8];
-    gbc_palette_t obj_palette[8];    
+    gbc_palette_t obj_palette[8];
 
     uint8_t boot_rom_enabled;
-    uint8_t boot_rom[GBC_BOOT_ROM_SIZE];        
+    uint8_t boot_rom[GBC_BOOT_ROM_SIZE];
 };
 
 void gbc_mem_init(gbc_memory_t *mem);
 void register_memory_map(gbc_memory_t *mem, memory_map_entry_t *entry);
 void* connect_io_port(gbc_memory_t *mem, uint16_t addr);
 
-#endif 
+#endif

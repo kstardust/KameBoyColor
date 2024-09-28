@@ -38,6 +38,8 @@ gbc_audio_connect(gbc_audio_t *audio, gbc_memory_t *mem)
     audio->c4.NRx2 = connect_io_port(mem, IO_PORT_NR42);
     audio->c4.NRx3 = connect_io_port(mem, IO_PORT_NR43);
     audio->c4.NRx4 = connect_io_port(mem, IO_PORT_NR44);
+
+    audio->mem = mem;
 }
 
 static int8_t
@@ -201,7 +203,62 @@ ch2_audio(gbc_audio_t *audio)
 static int8_t
 ch3_audio(gbc_audio_t *audio)
 {
-    return 0;
+    gbc_audio_channel_t *ch = &(audio->c3);
+
+    if (!(*(ch->NRx0) & CH3_DAC_ON_MASK))
+        return 0;
+
+    uint8_t triggered =  0;
+    if (*(ch->NRx4) & CHANNEL_TRIGGER_MASK) {
+        /* since the game cannot read this field, i think we can change it */
+        *(ch->NRx4) &= ~CHANNEL_TRIGGER_MASK;
+        ch->on = 1;
+        triggered = 1;
+        ch->sample_cycles = 0;
+        ch->sample_idx = 0;
+        ch->sweep_pace = 0;
+    }
+
+    if (!ch->on) {
+        return 0;
+    }
+
+    if ((audio->frame_sequencer % FRAME_SOUND_LENGTH == 0)) {
+        /* sound length */
+        if (*(ch->NRx4) & CHANNEL_LENGTH_ENABLE_MASK) {
+            uint8_t length = *(ch->NRx1);
+            if (length == 0) {
+                ch->on = 0;
+            } else {
+                length++;
+                *(ch->NRx1) = length;
+            }
+        }
+    }
+
+    uint16_t sample_period = CHANNEL_PERIOD(ch);
+    ch->sample_cycles += 1;
+    if (ch->sample_cycles == 0x7ff) {
+        if (ch->sample_idx == CH3_WAVEFORM_SAMPLES)
+            ch->sample_idx = 1;
+        else
+            ch->sample_idx += 1;
+        ch->sample_cycles = sample_period;
+    }
+
+    uint8_t volume = CHANNEL3_OUTPUT_LEVEL(ch);
+    if (volume == 0)
+        return 0;
+
+    uint8_t sample_offset = (ch->sample_idx-1) / 2;
+    /* According to Pandoc, when CH3 is started, the first sample read is the one at index 1, I didn't implement this */
+    uint8_t wave_form = IO_PORT_READ(audio->mem, IO_PORT_WAVE_RAM + sample_offset);
+    if (ch->sample_idx % 2 == 0)
+        wave_form &= 0xf;
+    else
+        wave_form >>= 4;
+
+    return wave_form >> volume;
 }
 
 static int8_t
@@ -237,19 +294,25 @@ gbc_audio_cycle(gbc_audio_t *audio)
     /* TODO update NR52 (channel on/off)*/
     int8_t c1 = ch1_audio(audio);
     int8_t c2 = ch2_audio(audio);
-    int8_t c3 = ch3_audio(audio);
+    /* ch3 runs at 2097152 Hz, but our audio module updates at 1048576 Hz,
+        I'm doing linear interpolation here
+    */
+    int8_t c3 = (ch3_audio(audio) + ch3_audio(audio)) / 2;
     int8_t c4 = ch4_audio(audio);
 
     /* todo read NR50 */
     uint8_t volume = 0x7;
 
-    int8_t sample = (c2 + c1 + c3 + c4) * volume / 4;
+    audio->sample += (c2 + c1 + c3 + c4) * volume / 4;
 
     /* rewind */
     if (audio->frame_sequencer == FRAME_ENVELOPE_SWEEP)
         audio->frame_sequencer = 1;
 
     if (audio->output_sample_cycles == 0) {
+        /* linear interpolation */
+        int8_t sample = audio->sample / audio->sample_divider;
+
         audio->audio_write(sample, sample);
         audio->output_sample_cycles = SAMPLE_TO_AUDIO_CYCLES;
         audio->output_sample_cycles_remainder += SAMPLE_TO_AUDIO_CYCLES_REMAINDER;
@@ -258,6 +321,8 @@ gbc_audio_cycle(gbc_audio_t *audio)
             audio->output_sample_cycles++;
             audio->output_sample_cycles_remainder -= REMAINDER_SCALING_FACTOR;
         }
+        audio->sample = 0;
+        audio->sample_divider = audio->output_sample_cycles;
     }
     audio->output_sample_cycles--;
     /* TODO: volume panning */

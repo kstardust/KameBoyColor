@@ -22,6 +22,7 @@
 #define AUDIO_CLOCK_RATE        1048576
 #define AUDIO_CLOCK_CYCLES      (CLOCK_RATE / AUDIO_CLOCK_RATE)
 #define WAVEFORM_SAMPLES        8
+#define CH3_WAVEFORM_SAMPLES    32
 
 #define FRAME_SEQUENCER_CYCLES (AUDIO_CLOCK_RATE / 512) /* runs at 512Hz */
 #define FRAME_ENVELOPE_SWEEP   8
@@ -46,6 +47,7 @@
 #define CHANNEL_EVENVLOPE_PACE(c) ( (*((c)->NRx2)) & 0x7)
 #define CHANNEL_EVENVLOPE_VOLUME(c) ( (*((c)->NRx2)) >> 4)
 #define CHANNEL_EVENVLOPE_DIRECTION(c) ( (*((c)->NRx2)) & 0x8)
+#define CHANNEL3_OUTPUT_LEVEL(ch) ( ((*(ch->NRx2)) >> 5) & 0x3)
 
 #define WAVEFORM_SAMPLE(wav, idx) ((wav) & (1 << (idx)) ? 1 : 0)
 
@@ -54,9 +56,10 @@
 /* Because of integer division precision problem, the real sample rate is not exactly GBC_AUDIO_SAMPLE_RATE, I use a separate remainder to adjust it */
 #define SAMPLE_TO_AUDIO_CYCLES_REMAINDER (((double)AUDIO_CLOCK_RATE / GBC_AUDIO_SAMPLE_RATE - AUDIO_CLOCK_RATE / GBC_AUDIO_SAMPLE_RATE) * REMAINDER_SCALING_FACTOR)
 
-#define DAC_ON_MASK 0xf8
+#define DAC_ON_MASK                 0xf8
 #define CHANNEL_TRIGGER_MASK        0x80
 #define CHANNEL_LENGTH_ENABLE_MASK  0x40
+#define CH3_DAC_ON_MASK             0x80
 
 typedef struct gbc_audio gbc_audio_t;
 typedef struct gbc_audio_channel gbc_audio_channel_t;
@@ -94,12 +97,15 @@ struct gbc_audio {
     uint8_t *NR52;
     uint8_t *NR51;
     uint8_t *NR50;
+    gbc_memory_t *mem;
 
     void (*audio_write)(int8_t, int8_t);
     void (*audio_update)(void *udata);
 
     uint32_t output_sample_cycles_remainder;
     uint16_t output_sample_cycles;
+    int16_t sample;
+    int16_t sample_divider;
     /* https://gbdev.gg8.se/wiki/articles/Gameboy_sound_hardware#Frame_Sequencer */
     uint16_t frame_sequencer_cycles;
 
