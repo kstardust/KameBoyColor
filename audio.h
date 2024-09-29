@@ -15,6 +15,8 @@
 #define NR10_DIRECTION  0x8
 #define NR10_IND_STEPS  0x7
 
+#define AUDIO_PORT_BEGIN IO_PORT_NR10
+
 #define GBC_AUDIO_SAMPLE_RATE 44100
 #define GBC_AUDIO_SAMPLE_SIZE (GBC_AUDIO_SAMPLE_RATE / FRAME_PER_SECOND)
 
@@ -23,11 +25,13 @@
 #define AUDIO_CLOCK_CYCLES      (CLOCK_RATE / AUDIO_CLOCK_RATE)
 #define WAVEFORM_SAMPLES        8
 #define CH3_WAVEFORM_SAMPLES    32
+#define NOISE_CLOCK_RATE        524288
 
 #define FRAME_SEQUENCER_CYCLES (AUDIO_CLOCK_RATE / 512) /* runs at 512Hz */
 #define FRAME_ENVELOPE_SWEEP   8
 #define FRAME_SOUND_LENGTH     2
 #define FRAME_FREQ_SWEEP       4
+#define FRAME_NOISE_TICK       (AUDIO_CLOCK_RATE / NOISE_CLOCK_RATE)
 
 
 #define CHANNEL_PERIOD_UPDATE(c, p) {    \
@@ -48,6 +52,10 @@
 #define CHANNEL_EVENVLOPE_VOLUME(c) ( (*((c)->NRx2)) >> 4)
 #define CHANNEL_EVENVLOPE_DIRECTION(c) ( (*((c)->NRx2)) & 0x8)
 #define CHANNEL3_OUTPUT_LEVEL(ch) ( ((*(ch->NRx2)) >> 5) & 0x3)
+
+#define CHANNEL4_CLOCK_SHIFT(c) ( (*((c)->NRx3) >> 4) & 0xf)
+#define CHANNEL4_LFSR_SHORT_MODE(c) ( (*((c)->NRx3)) & 0x8)
+#define CHANNEL4_CLOCK_DIVIDER(c) ( (*((c)->NRx3)) & 0x7)
 
 #define WAVEFORM_SAMPLE(wav, idx) ((wav) & (1 << (idx)) ? 1 : 0)
 
@@ -71,18 +79,23 @@ struct gbc_audio_channel {
     uint8_t *NRx3;
     uint8_t *NRx4;
 
-    uint16_t sample_cycles;
-    uint8_t waveform_idx;
-    uint8_t sweep_pace;
-    uint8_t sweep_pace_counter;
-    uint8_t timer;
-    uint8_t volume;
+    uint32_t sample_cycles;
+    union {
+        uint16_t lfsr;              /* channel 4 */
+        struct {
+            uint8_t sweep_pace;         /* channel 1 */
+            uint8_t sweep_pace_counter; /* channel 1 */
+        };
+    };
 
+    uint8_t waveform_idx;
+
+    uint8_t volume;
     uint8_t volume_pace:3;
     uint8_t volume_pace_counter:3;
     uint8_t volume_dir:1;
 
-    uint8_t on;
+    uint8_t on:1;
 };
 
 struct gbc_audio {
@@ -112,6 +125,8 @@ struct gbc_audio {
 
     uint8_t m_cycles;
     uint8_t frame_sequencer;
+
+    uint8_t audio_mem[AUDIO_END-AUDIO_BEGIN+1];
 };
 
 void gbc_audio_connect(gbc_audio_t *audio, gbc_memory_t *mem);

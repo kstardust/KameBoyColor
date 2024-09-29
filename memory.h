@@ -44,17 +44,25 @@
 
 #define IO_PORT_ID 10
 #define IO_PORT_BEGIN 0xff00
-#define IO_PORT_END 0xff7f
+#define IO_PORT_END 0xff0f
 
-#define HRAM_ID 11
+#define AUDIO_ID 11
+#define AUDIO_BEGIN 0xff10
+#define AUDIO_END 0xff3f
+
+#define IO_PORT_ID_2 12
+#define IO_PORT_BEGIN_2 0xff40
+#define IO_PORT_END_2   0xff7f
+
+#define HRAM_ID 13
 #define HRAM_BEGIN 0xff80
 #define HRAM_END 0xfffe
 
-#define IE_REGISTER_ID 12
+#define IE_REGISTER_ID 14
 #define IE_REGISTER_BEGIN 0xffff
 #define IE_REGISTER_END 0xffff
 
-#define MEMORY_MAP_ENTRIES 12
+#define MEMORY_MAP_ENTRIES 14
 
 #define RAM_ADDR_MASK 0x1fff   /* 13-bits 8KB */
 #define RAM_ADDR_MASK_SHIFT 13
@@ -168,7 +176,9 @@ struct gbc_memory
     memory_map_entry_t map[MEMORY_MAP_ENTRIES];
     uint8_t wram[WRAM_BANK_SIZE * WRAM_BANKS];
     uint8_t hraw[HRAM_END - HRAM_BEGIN + 1];
-    uint8_t io_ports[IO_PORT_END - IO_PORT_BEGIN + 1];
+    /* I moved audio registers to the audio module
+      now there is a hole(audio registers) in the middle of io ports */
+    uint8_t io_ports[IO_PORT_END_2 - IO_PORT_BEGIN + 1];
     uint8_t oam[OAM_END - OAM_BEGIN + 1];
     /* https://gbdev.io/pandocs/Palettes.html#lcd-color-palettes-cgb-only */
     /* palatte memory */

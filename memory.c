@@ -347,6 +347,16 @@ gbc_mem_init(gbc_memory_t *mem)
 
     register_memory_map(mem, &entry);
 
+    /* IO Port 2 */
+    entry.id = IO_PORT_ID_2;
+    entry.addr_begin = IO_PORT_BEGIN_2;
+    entry.addr_end = IO_PORT_END_2;
+    entry.read = io_port_read;
+    entry.write = io_port_write;
+    entry.udata = mem;
+
+    register_memory_map(mem, &entry);
+
     /* 0xFEA0 - 0xFEFF, CGB revision E */
     entry.id = IO_NOT_USABLE_ID;
     entry.addr_begin = IO_NOT_USABLE_BEGIN;
