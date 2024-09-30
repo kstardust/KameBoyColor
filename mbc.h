@@ -70,8 +70,7 @@ struct gbc_mbc
     /*
     * We should dynmically allocate these space, but considering the future plan
     * of running the emulator on a bare-metal RPi(with no OS, thus no malloc), I
-    * chose to use static arrays. With the sacrifice of only one mbc instance can
-    * be created at a time.
+    * chose to use static arrays.
     */
     uint8_t ram_banks[MAX_RAM_BANKS * RAM_BANK_SIZE];
 };
