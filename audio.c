@@ -319,10 +319,8 @@ write_nr52(gbc_audio_t *audio, uint16_t addr, uint8_t data)
     /* https://gbdev.gg8.se/wiki/articles/Gameboy_sound_hardware#Power_Control */
     /* lower 4 bits are read only */
     data &= 0xf0;
-    printf("NR52: %x\n", data);
     if (!(data & NR52_AUDIO_ON)) {
         /* power off */
-        printf("power off\n");
         zero_channel(&(audio->c1));
         zero_channel(&(audio->c2));
         zero_channel(&(audio->c3));
