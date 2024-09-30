@@ -120,6 +120,7 @@ gbc_run(gbc_t *gbc)
             gbc_io_cycle(&gbc->io);
             gbc_audio_cycle(&gbc->audio);
         }
+
         gbc->graphic.screen_update(&gbc->graphic);
         gbc->audio.audio_update(&gbc->audio);
     }

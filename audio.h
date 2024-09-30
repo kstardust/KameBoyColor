@@ -88,6 +88,7 @@ struct gbc_audio_channel {
         };
     };
 
+    uint16_t length_counter;
     uint8_t waveform_idx;
 
     uint8_t volume;
@@ -95,6 +96,8 @@ struct gbc_audio_channel {
     uint8_t volume_pace_counter:3;
     uint8_t volume_dir:1;
 
+    uint8_t length_enabled:1;
+    uint8_t frame_sequencer_flag:1;
     uint8_t on:1;
 };
 
@@ -126,6 +129,7 @@ struct gbc_audio {
     uint8_t div_apu;
 
     uint8_t waveforms[CH3_WAVEFORM_SAMPLES/2];
+    int test;
 };
 
 void gbc_audio_connect(gbc_audio_t *audio, gbc_memory_t *mem);

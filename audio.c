@@ -1,16 +1,8 @@
 #include "audio.h"
 
-/* there are many obscure details about the audio system in the gameboy
- * that I didnt implement, partially because the doc is kind of confusing
- * which I am not excatly sure what they mean, and another obvious reason:
- * I'm lazy.
- *
- * https://gbdev.gg8.se/wiki/articles/Gameboy_sound_hardware
- * https://gbdev.io/pandocs/Audio_Registers.html
- */
+/* audio is annoyingly obscure, a nightmare to implement */
 
-/* audio is annoying obscure */
-/* very register has its own mask for reading
+/* every register has its own mask for reading
 https://gbdev.gg8.se/wiki/articles/Gameboy_sound_hardware#Register_Reading
 
      NRx0 NRx1 NRx2 NRx3 NRx4
@@ -45,7 +37,6 @@ zero_channel(gbc_audio_channel_t *c)
     c->volume_dir = 0;
 }
 
-
 static uint8_t
 read_nr10(gbc_audio_t *audio, uint16_t addr)
 {
@@ -68,7 +59,9 @@ read_nr11(gbc_audio_t *audio, uint16_t addr)
 static uint8_t
 write_nr11(gbc_audio_t *audio, uint16_t addr, uint8_t data)
 {
-    audio->c1.NRx1 = data;
+    gbc_audio_channel_t *ch = &(audio->c1);
+    ch->NRx1 = data;
+    ch->length_counter = 0x40 - (data & 0x3f);
     return data;
 }
 
@@ -104,11 +97,46 @@ read_nr14(gbc_audio_t *audio, uint16_t addr)
     return audio->c1.NRx4 | 0xbf;
 }
 
+/* is the same for all channel except channel 3 */
+static uint8_t
+_write_nrx4(gbc_audio_t *audio, uint16_t addr, uint8_t data, gbc_audio_channel_t *ch)
+{
+    uint8_t length_enable = (data & CHANNEL_LENGTH_ENABLE_MASK) ? 1 : 0;
+    ch->NRx4 = data;
+    uint16_t max = 0x40;
+
+    if (ch == &(audio->c3)) {
+        /* channel 3 */
+        max = 0x100;
+    }
+
+    /* https://gbdev.gg8.se/wiki/articles/Gameboy_sound_hardware#Obscure_Behavior */
+    uint8_t next_step_doesnt_update = ((audio->frame_sequencer & 1) == 0);
+    if (next_step_doesnt_update) {
+        if (length_enable && !ch->length_enabled) {
+            ch->length_counter--;
+            if (ch->length_counter == 0) {
+                ch->on = 0;
+            }
+        }
+    }
+
+    if ((data & CHANNEL_TRIGGER_MASK) && length_enable && ch->length_counter == max) {
+        ch->length_counter -= 1;
+    }
+
+    /* I didnt find it in the docs(pandoc & gbdev), but is in Blargg's sound test 2 */
+    if (data & CHANNEL_TRIGGER_MASK && ch->length_counter == 0)
+        ch->length_counter = max;
+
+    ch->length_enabled = length_enable;
+    return data;
+}
+
 static uint8_t
 write_nr14(gbc_audio_t *audio, uint16_t addr, uint8_t data)
 {
-    audio->c1.NRx4 = data;
-    return data;
+    return _write_nrx4(audio, addr, data, &(audio->c1));
 }
 
 static uint8_t
@@ -120,7 +148,9 @@ read_nr21(gbc_audio_t *audio, uint16_t addr)
 static uint8_t
 write_nr21(gbc_audio_t *audio, uint16_t addr, uint8_t data)
 {
-    audio->c2.NRx1 = data;
+    gbc_audio_channel_t *ch = &(audio->c2);
+    ch->length_counter = 0x40 - (data & 0x3f);
+    ch->NRx1 = data;
     return data;
 }
 
@@ -160,8 +190,7 @@ read_nr24(gbc_audio_t *audio, uint16_t addr)
 static uint8_t
 write_nr24(gbc_audio_t *audio, uint16_t addr, uint8_t data)
 {
-    audio->c2.NRx4 = data;
-    return data;
+    return _write_nrx4(audio, addr, data, &(audio->c2));
 }
 
 static uint8_t
@@ -173,7 +202,9 @@ read_nr30(gbc_audio_t *audio, uint16_t addr)
 static uint8_t
 write_nr30(gbc_audio_t *audio, uint16_t addr, uint8_t data)
 {
-    audio->c3.NRx0 = data;
+    gbc_audio_channel_t *ch = &(audio->c3);
+    ch->on = (data & CH3_DAC_ON_MASK);
+    ch->NRx0 = data;
     return data;
 }
 
@@ -186,7 +217,9 @@ read_nr31(gbc_audio_t *audio, uint16_t addr)
 static uint8_t
 write_nr31(gbc_audio_t *audio, uint16_t addr, uint8_t data)
 {
-    audio->c3.NRx1 = data;
+    gbc_audio_channel_t *ch = &(audio->c3);
+    ch->length_counter = 0x100 - data;
+    ch->NRx1 = data;
     return data;
 }
 
@@ -225,8 +258,7 @@ read_nr34(gbc_audio_t *audio, uint16_t addr)
 static uint8_t
 write_nr34(gbc_audio_t *audio, uint16_t addr, uint8_t data)
 {
-    audio->c3.NRx4 = data;
-    return data;
+    return _write_nrx4(audio, addr, data, &(audio->c3));
 }
 
 static uint8_t
@@ -238,7 +270,9 @@ read_nr41(gbc_audio_t *audio, uint16_t addr)
 static uint8_t
 write_nr41(gbc_audio_t *audio, uint16_t addr, uint8_t data)
 {
-    audio->c4.NRx1 = data;
+    gbc_audio_channel_t *ch = &(audio->c4);
+    ch->length_counter = 0x40 - (data & 0x3f);
+    ch->NRx1 = data;
     return data;
 }
 
@@ -277,8 +311,7 @@ read_nr44(gbc_audio_t *audio, uint16_t addr)
 static uint8_t
 write_nr44(gbc_audio_t *audio, uint16_t addr, uint8_t data)
 {
-    audio->c4.NRx4 = data;
-    return data;
+    return _write_nrx4(audio, addr, data, &(audio->c4));
 }
 
 static uint8_t
@@ -447,9 +480,14 @@ ch1_audio(gbc_audio_t *audio)
 {
     gbc_audio_channel_t *ch = &(audio->c1);
 
+    uint8_t div_frame = ch->frame_sequencer_flag;
+    ch->frame_sequencer_flag = 0;
+
     /* https://gbdev.io/pandocs/Audio_details.html#dacs */
-    if (!((ch->NRx2) & DAC_ON_MASK))
+    if (!((ch->NRx2) & DAC_ON_MASK)) {
+        ch->on = 0;
         return 0;
+    }
 
     uint8_t triggered =  0;
     if (ch->NRx4 & CHANNEL_TRIGGER_MASK) {
@@ -468,11 +506,21 @@ ch1_audio(gbc_audio_t *audio)
         ch->volume_dir = CHANNEL_EVENVLOPE_DIRECTION(ch);
     }
 
+    /* disabled channel should still counting the length */
+    if (div_frame && (audio->frame_sequencer % FRAME_SOUND_LENGTH == 0)) {
+        /* sound length */
+        if (ch->length_enabled && ch->length_counter > 0) {
+            ch->length_counter--;
+            if (ch->length_counter == 0)
+                ch->on = 0;
+        }
+    }
+
     if (!ch->on) {
         return 0;
     }
 
-    if (triggered || (audio->frame_sequencer % FRAME_FREQ_SWEEP == 0)) {
+    if (triggered || (div_frame && audio->frame_sequencer % FRAME_FREQ_SWEEP == 0)) {
         /* frequency sweep */
 
         if (CHANNEL_SWEEP_PACE(ch) == 0) {
@@ -500,6 +548,7 @@ ch1_audio(gbc_audio_t *audio)
                     if (period >= 0x7ff) {
                         /* overflowed */
                         ch->on = 0;
+                        return 0;
                     }
                 }
             } else {
@@ -508,23 +557,7 @@ ch1_audio(gbc_audio_t *audio)
         }
     }
 
-    if ((audio->frame_sequencer % FRAME_SOUND_LENGTH == 0)) {
-        /* sound length */
-        if (ch->NRx4 & CHANNEL_LENGTH_ENABLE_MASK) {
-            uint8_t length = ch->NRx1 & 0x3f;
-            if (length == 0) {
-                ch->on = 0;
-            } else {
-                length++;
-                /* again, games cannot read this field, i think we can change it */
-                length &= 0x3f;
-                ch->NRx1 &= ~0x3f;
-                ch->NRx1 |= length;
-            }
-        }
-    }
-
-    if (ch->volume_pace != 0 &&
+    if (ch->volume_pace != 0 && div_frame &&
         (audio->frame_sequencer % FRAME_ENVELOPE_SWEEP == 0)) {
         /* envelope sweep */
         ch->volume_pace_counter--;
@@ -559,10 +592,14 @@ static int8_t
 ch2_audio(gbc_audio_t *audio)
 {
     gbc_audio_channel_t *ch = &(audio->c2);
+    uint8_t div_frame = ch->frame_sequencer_flag;
+    ch->frame_sequencer_flag = 0;
 
     /* https://gbdev.io/pandocs/Audio_details.html#dacs */
-    if (!(ch->NRx2 & DAC_ON_MASK))
+    if (!(ch->NRx2 & DAC_ON_MASK)) {
+        ch->on = 0;
         return 0;
+    }
 
     uint8_t triggered =  0;
     if (ch->NRx4 & CHANNEL_TRIGGER_MASK) {
@@ -579,27 +616,20 @@ ch2_audio(gbc_audio_t *audio)
         ch->volume_dir = CHANNEL_EVENVLOPE_DIRECTION(ch);
     }
 
+    if (div_frame && (audio->frame_sequencer % FRAME_SOUND_LENGTH == 0)) {
+        /* sound length */
+        if (ch->length_enabled && ch->length_counter > 0) {
+            ch->length_counter--;
+            if (ch->length_counter == 0)
+                ch->on = 0;
+        }
+    }
+
     if (!ch->on) {
         return 0;
     }
 
-    if ((audio->frame_sequencer % FRAME_SOUND_LENGTH == 0)) {
-        /* sound length */
-        if (ch->NRx4 & CHANNEL_LENGTH_ENABLE_MASK) {
-            uint8_t length = ch->NRx1 & 0x3f;
-            if (length == 0) {
-                ch->on = 0;
-            } else {
-                length++;
-                /* again, games cannot read this field, i think we can change it */
-                length &= 0x3f;
-                ch->NRx1 &= ~0x3f;
-                ch->NRx1 |= length;
-            }
-        }
-    }
-
-    if (ch->volume_pace != 0 &&
+    if (ch->volume_pace != 0 && div_frame &&
         (audio->frame_sequencer % FRAME_ENVELOPE_SWEEP == 0)) {
         /* envelope sweep */
         ch->volume_pace_counter--;
@@ -634,6 +664,14 @@ static int8_t
 ch3_audio(gbc_audio_t *audio)
 {
     gbc_audio_channel_t *ch = &(audio->c3);
+    uint8_t div_frame = ch->frame_sequencer_flag;
+    ch->frame_sequencer_flag = 0;
+
+    /* https://gbdev.io/pandocs/Audio_details.html#dacs */
+    if (!(ch->NRx0 & CH3_DAC_ON_MASK)) {
+        ch->on = 0;
+        return 0;
+    }
 
     uint8_t triggered =  0;
     if (ch->NRx4 & CHANNEL_TRIGGER_MASK) {
@@ -646,23 +684,18 @@ ch3_audio(gbc_audio_t *audio)
         ch->sweep_pace = 0;
     }
 
-    ch->on &= (ch->NRx0 & CH3_DAC_ON_MASK);
+    /* disabled channel should still counting the length */
+    if (div_frame && (audio->frame_sequencer % FRAME_SOUND_LENGTH == 0)) {
+        /* sound length */
+        if (ch->length_enabled && ch->length_counter > 0) {
+            ch->length_counter--;
+            if (ch->length_counter == 0)
+                ch->on = 0;
+        }
+    }
 
     if (!ch->on) {
         return 0;
-    }
-
-    if ((audio->frame_sequencer % FRAME_SOUND_LENGTH == 0)) {
-        /* sound length */
-        if (ch->NRx4 & CHANNEL_LENGTH_ENABLE_MASK) {
-            uint8_t length = ch->NRx1;
-            if (length == 0) {
-                ch->on = 0;
-            } else {
-                length++;
-                ch->NRx1 = length;
-            }
-        }
     }
 
     uint16_t sample_period = CHANNEL_PERIOD(ch);
@@ -694,9 +727,13 @@ static int8_t
 ch4_audio(gbc_audio_t *audio)
 {
     gbc_audio_channel_t *ch = &(audio->c4);
+    uint8_t div_frame = ch->frame_sequencer_flag;
+    ch->frame_sequencer_flag = 0;
 
-    if (!(ch->NRx2 & DAC_ON_MASK))
+    if (!(ch->NRx2 & DAC_ON_MASK)) {
+        ch->on = 0;
         return 0;
+    }
 
     uint8_t triggered =  0;
     if (ch->NRx4 & CHANNEL_TRIGGER_MASK) {
@@ -715,28 +752,21 @@ ch4_audio(gbc_audio_t *audio)
 
     }
 
+    /* disabled channel should still counting the length */
+    if (div_frame && (audio->frame_sequencer % FRAME_SOUND_LENGTH == 0)) {
+        /* sound length */
+        if (ch->length_enabled && ch->length_counter > 0) {
+            ch->length_counter--;
+            if (ch->length_counter == 0)
+                ch->on = 0;
+        }
+    }
+
     if (!ch->on) {
         return 0;
     }
 
-    if ((audio->frame_sequencer % FRAME_SOUND_LENGTH == 0)) {
-        /* sound length */
-        if (ch->NRx4 & CHANNEL_LENGTH_ENABLE_MASK) {
-
-            uint8_t length = ch->NRx1 & 0x3f;
-
-            if (length == 0) {
-                ch->on = 0;
-            } else {
-                length++;
-                length &= 0x3f;
-                ch->NRx1 &= ~0x3f;
-                ch->NRx1 |= length;
-            }
-        }
-    }
-
-    if (ch->volume_pace != 0 &&
+    if (ch->volume_pace != 0 && div_frame &&
         (audio->frame_sequencer % FRAME_ENVELOPE_SWEEP == 0)) {
         /* envelope sweep */
         ch->volume_pace_counter--;
@@ -789,9 +819,6 @@ ch4_audio(gbc_audio_t *audio)
 void
 gbc_audio_cycle(gbc_audio_t *audio)
 {
-    if (!(audio->NR52 & NR52_AUDIO_ON))
-        return;
-
     uint8_t div = IO_PORT_READ(audio->mem, IO_PORT_DIV);
     uint8_t mask = 0x10;
 
@@ -802,6 +829,15 @@ gbc_audio_cycle(gbc_audio_t *audio)
 
     if ((audio->div_apu & mask) && !(div & mask)) {
         audio->frame_sequencer++;
+        /* rewind */
+        if (audio->frame_sequencer == FRAME_ENVELOPE_SWEEP)
+            audio->frame_sequencer = 0;
+
+        audio->c1.frame_sequencer_flag = 1;
+        audio->c2.frame_sequencer_flag = 1;
+        audio->c3.frame_sequencer_flag = 1;
+        audio->c4.frame_sequencer_flag = 1;
+
     }
 
     audio->div_apu = div;
@@ -814,6 +850,8 @@ gbc_audio_cycle(gbc_audio_t *audio)
     audio->m_cycles = 0;
     audio->cycles++;
 
+    if (!(audio->NR52 & NR52_AUDIO_ON))
+        return;
     /*
     Actually frame sequencer is not a seperate timer in real GameBoy, it is tied to DIV register.
     I simplied it.
@@ -825,7 +863,7 @@ gbc_audio_cycle(gbc_audio_t *audio)
         I'm doing linear interpolation here
     */
     int8_t c3 = (ch3_audio(audio) + ch3_audio(audio)) / 2;
-    int8_t c4 = ch4_audio(audio) * 4;
+    int8_t c4 = ch4_audio(audio);
 
     audio->NR52 &= ~0xf;
     audio->NR52 |= (audio->c1.on)
@@ -837,10 +875,6 @@ gbc_audio_cycle(gbc_audio_t *audio)
     uint8_t volume = 0x7;
 
     audio->sample += (c1 + c2 + c3 + c4) * volume / 4;
-
-    /* rewind */
-    if (audio->frame_sequencer == FRAME_ENVELOPE_SWEEP)
-        audio->frame_sequencer = 1;
 
     if (audio->output_sample_cycles == 0) {
         /* linear interpolation */
@@ -857,6 +891,8 @@ gbc_audio_cycle(gbc_audio_t *audio)
         audio->sample = 0;
         audio->sample_divider = audio->output_sample_cycles;
     }
+
     audio->output_sample_cycles--;
+
     /* TODO: volume panning */
 }
