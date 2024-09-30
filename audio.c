@@ -61,7 +61,7 @@ write_nr11(gbc_audio_t *audio, uint16_t addr, uint8_t data)
 {
     gbc_audio_channel_t *ch = &(audio->c1);
     ch->NRx1 = data;
-    ch->length_counter = 0x40 - (data & 0x3f);
+    ch->length_counter = CHANNEL_MAX_LENGTH - (data & CHANNEL_LENGTH_MASK);
     return data;
 }
 
@@ -103,12 +103,8 @@ _write_nrx4(gbc_audio_t *audio, uint16_t addr, uint8_t data, gbc_audio_channel_t
 {
     uint8_t length_enable = (data & CHANNEL_LENGTH_ENABLE_MASK) ? 1 : 0;
     ch->NRx4 = data;
-    uint16_t max = 0x40;
 
-    if (ch == &(audio->c3)) {
-        /* channel 3 */
-        max = 0x100;
-    }
+    uint16_t max = (ch == &(audio->c3)) ? CHANNEL3_MAX_LENGTH : CHANNEL_MAX_LENGTH;
 
     /* https://gbdev.gg8.se/wiki/articles/Gameboy_sound_hardware#Obscure_Behavior */
     uint8_t next_step_doesnt_update = ((audio->frame_sequencer & 1) == 0);
@@ -149,7 +145,7 @@ static uint8_t
 write_nr21(gbc_audio_t *audio, uint16_t addr, uint8_t data)
 {
     gbc_audio_channel_t *ch = &(audio->c2);
-    ch->length_counter = 0x40 - (data & 0x3f);
+    ch->length_counter = CHANNEL_MAX_LENGTH - (data & CHANNEL_LENGTH_MASK);
     ch->NRx1 = data;
     return data;
 }
@@ -218,7 +214,7 @@ static uint8_t
 write_nr31(gbc_audio_t *audio, uint16_t addr, uint8_t data)
 {
     gbc_audio_channel_t *ch = &(audio->c3);
-    ch->length_counter = 0x100 - data;
+    ch->length_counter = CHANNEL3_MAX_LENGTH - data;
     ch->NRx1 = data;
     return data;
 }
@@ -271,7 +267,7 @@ static uint8_t
 write_nr41(gbc_audio_t *audio, uint16_t addr, uint8_t data)
 {
     gbc_audio_channel_t *ch = &(audio->c4);
-    ch->length_counter = 0x40 - (data & 0x3f);
+    ch->length_counter = CHANNEL_MAX_LENGTH - (data & CHANNEL_LENGTH_MASK);
     ch->NRx1 = data;
     return data;
 }

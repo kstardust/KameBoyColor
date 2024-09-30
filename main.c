@@ -27,8 +27,8 @@ int main()
     char* boot_rom = NULL;
     #else
 
-    char* cartridge = "/Users/Kevin/Development/GBC/gb-test-roms/cgb_sound/rom_singles/01-registers.gb"; // ok
-    //char* cartridge = "/Users/Kevin/Development/GBC/gb-test-roms/cgb_sound/rom_singles/02-len ctr.gb";
+    //char* cartridge = "/Users/Kevin/Development/GBC/gb-test-roms/cgb_sound/rom_singles/01-registers.gb"; // ok
+    char* cartridge = "/Users/Kevin/Development/GBC/gb-test-roms/cgb_sound/rom_singles/02-len ctr.gb";
     //char* cartridge = "/Users/Kevin/Development/GBC/tetris_dx.gbc";
     char* boot_rom = NULL;//"/Users/Kevin/Development/GBC/gb-test-roms/cgb_boot.bin";
 

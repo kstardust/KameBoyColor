@@ -33,6 +33,11 @@
 #define FRAME_FREQ_SWEEP       4
 #define FRAME_NOISE_TICK       (AUDIO_CLOCK_RATE / NOISE_CLOCK_RATE)
 
+#define CHANNEL_MAX_LENGTH        0x40
+#define CHANNEL_LENGTH_MASK       0x3f
+#define CHANNEL3_MAX_LENGTH      0x100
+#define CHANNEL3_VOLUME_MASK     0xff
+
 
 #define CHANNEL_PERIOD_UPDATE(c, p) {    \
     (c)->NRx3 = (p & 0xff);            \
