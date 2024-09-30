@@ -1,12 +1,5 @@
 #include "mbc.h"
 
-/*
- * We should dynmically allocate these space, but considering the future plan
- * of running the emulator on a bare-metal RPi(with no OS, thus no malloc), I
- * chose to use static arrays. With the sacrifice of only one mbc instance can
- * be created at a time.
- */
-static uint8_t _ram_banks[MAX_RAM_BANKS * RAM_BANK_SIZE];
 
 uint8_t mbc1_read(gbc_mbc_t *mbc, uint16_t addr);
 uint8_t mbc1_write(gbc_mbc_t *mbc, uint16_t addr, uint8_t data);
@@ -35,7 +28,6 @@ void
 gbc_mbc_init(gbc_mbc_t *mbc)
 {
     mbc->rom_banks = NULL;
-    mbc->ram_banks = _ram_banks;
     mbc->rom_bank = 0;
     mbc->ram_bank = 0;
     mbc->ram_enabled = 0;

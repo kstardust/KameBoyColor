@@ -49,7 +49,7 @@ typedef struct gbc_mbc gbc_mbc_t;
 typedef uint8_t (*mbc_read_func)(gbc_mbc_t *mbc, uint16_t addr);
 typedef uint8_t (*mbc_write_func)(gbc_mbc_t *mbc, uint16_t addr, uint8_t data);
 
-struct gbc_mbc 
+struct gbc_mbc
 {
     uint8_t rom_bank;
     uint8_t ram_bank;
@@ -66,7 +66,14 @@ struct gbc_mbc
     cartridge_t *cart;
 
     uint8_t *rom_banks;
-    uint8_t *ram_banks;
+
+    /*
+    * We should dynmically allocate these space, but considering the future plan
+    * of running the emulator on a bare-metal RPi(with no OS, thus no malloc), I
+    * chose to use static arrays. With the sacrifice of only one mbc instance can
+    * be created at a time.
+    */
+    uint8_t ram_banks[MAX_RAM_BANKS * RAM_BANK_SIZE];
 };
 
 void gbc_mbc_init(gbc_mbc_t *mbc);
