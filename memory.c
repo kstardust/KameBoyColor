@@ -34,8 +34,6 @@ mem_write(void *udata, uint16_t addr, uint8_t data)
 static uint8_t
 mem_read(void *udata, uint16_t addr)
 {
-    LOG_DEBUG("[MEM] Reading from memory at address %x\n", addr);
-
     gbc_memory_t *mem = (gbc_memory_t*)udata;
     memory_map_entry_t *entry = select_entry(mem, addr);
 
@@ -44,7 +42,10 @@ mem_read(void *udata, uint16_t addr)
         abort();
     }
 
-    return entry->read(entry->udata, addr);
+    uint8_t data = entry->read(entry->udata, addr);
+    LOG_DEBUG("[MEM] Reading from memory at address %x [%x]\n", addr, data);
+
+    return data;
 }
 
 void*

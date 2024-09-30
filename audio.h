@@ -35,27 +35,27 @@
 
 
 #define CHANNEL_PERIOD_UPDATE(c, p) {    \
-    *((c)->NRx3) = (p & 0xff);            \
-    *((c)->NRx4) &= 0xf8;                 \
-    *((c)->NRx4) |= (p >> 8) & 0x7;       \
+    (c)->NRx3 = (p & 0xff);            \
+    (c)->NRx4 &= 0xf8;                 \
+    (c)->NRx4 |= (p >> 8) & 0x7;       \
 }
 
-#define CHANNEL_PERIOD(c) (uint16_t)((( (*((c)->NRx4)) & 0x7) << 8) | (*((c)->NRx3)) )
+#define CHANNEL_PERIOD(c) (uint16_t)((( ((c)->NRx4) & 0x7) << 8) | ((c)->NRx3) )
 #define CHANNEL_SAMPLE_PERIOD(c) (2048 - CHANNEL_PERIOD((c)))
 #define CHANNEL_HZ(c)  (AUDIO_CLOCK_RATE / CHANNEL_SAMPLE_PERIOD(c) / 8)
-#define CHANNEL_DUTY(c) (( (*((c)->NRx1)) >> 6) & 0x3)
-#define CHANNEL_SWEEP_PACE(c) (( (*((c)->NRx0)) >> 4) & 0x7)
-#define CHANNEL_SWEEP_DIRECTION(c) ( (*((c)->NRx0)) & 0x8)
-#define CHANNEL_SWEEP_STEPS(c) ( (*((c)->NRx0)) & 0x7)
+#define CHANNEL_DUTY(c) (( ((c)->NRx1) >> 6) & 0x3)
+#define CHANNEL_SWEEP_PACE(c) (( ((c)->NRx0) >> 4) & 0x7)
+#define CHANNEL_SWEEP_DIRECTION(c) ( ((c)->NRx0) & 0x8)
+#define CHANNEL_SWEEP_STEPS(c) ( ((c)->NRx0) & 0x7)
 
-#define CHANNEL_EVENVLOPE_PACE(c) ( (*((c)->NRx2)) & 0x7)
-#define CHANNEL_EVENVLOPE_VOLUME(c) ( (*((c)->NRx2)) >> 4)
-#define CHANNEL_EVENVLOPE_DIRECTION(c) ( (*((c)->NRx2)) & 0x8)
-#define CHANNEL3_OUTPUT_LEVEL(ch) ( ((*(ch->NRx2)) >> 5) & 0x3)
+#define CHANNEL_EVENVLOPE_PACE(c) ( ((c)->NRx2) & 0x7)
+#define CHANNEL_EVENVLOPE_VOLUME(c) ( ((c)->NRx2) >> 4)
+#define CHANNEL_EVENVLOPE_DIRECTION(c) ( ((c)->NRx2) & 0x8)
+#define CHANNEL3_OUTPUT_LEVEL(ch) ( ((ch->NRx2) >> 5) & 0x3)
 
-#define CHANNEL4_CLOCK_SHIFT(c) ( (*((c)->NRx3) >> 4) & 0xf)
-#define CHANNEL4_LFSR_SHORT_MODE(c) ( (*((c)->NRx3)) & 0x8)
-#define CHANNEL4_CLOCK_DIVIDER(c) ( (*((c)->NRx3)) & 0x7)
+#define CHANNEL4_CLOCK_SHIFT(c) ( ((c)->NRx3 >> 4) & 0xf)
+#define CHANNEL4_LFSR_SHORT_MODE(c) ( ((c)->NRx3) & 0x8)
+#define CHANNEL4_CLOCK_DIVIDER(c) ( ((c)->NRx3) & 0x7)
 
 #define WAVEFORM_SAMPLE(wav, idx) ((wav) & (1 << (idx)) ? 1 : 0)
 
@@ -73,11 +73,11 @@ typedef struct gbc_audio gbc_audio_t;
 typedef struct gbc_audio_channel gbc_audio_channel_t;
 
 struct gbc_audio_channel {
-    uint8_t *NRx0;
-    uint8_t *NRx1;
-    uint8_t *NRx2;
-    uint8_t *NRx3;
-    uint8_t *NRx4;
+    uint8_t NRx0;
+    uint8_t NRx1;
+    uint8_t NRx2;
+    uint8_t NRx3;
+    uint8_t NRx4;
 
     uint32_t sample_cycles;
     union {
@@ -108,9 +108,9 @@ struct gbc_audio {
     /* https://gbdev.gg8.se/wiki/articles/Gameboy_sound_hardware#Registers */
 
     /* Control/Status */
-    uint8_t *NR52;
-    uint8_t *NR51;
-    uint8_t *NR50;
+    uint8_t NR52;
+    uint8_t NR51;
+    uint8_t NR50;
     gbc_memory_t *mem;
 
     void (*audio_write)(int8_t, int8_t);
@@ -120,13 +120,12 @@ struct gbc_audio {
     uint16_t output_sample_cycles;
     int16_t sample;
     int16_t sample_divider;
-    /* https://gbdev.gg8.se/wiki/articles/Gameboy_sound_hardware#Frame_Sequencer */
-    uint16_t frame_sequencer_cycles;
 
     uint8_t m_cycles;
     uint8_t frame_sequencer;
+    uint8_t div_apu;
 
-    uint8_t audio_mem[AUDIO_END-AUDIO_BEGIN+1];
+    uint8_t waveforms[CH3_WAVEFORM_SAMPLES/2];
 };
 
 void gbc_audio_connect(gbc_audio_t *audio, gbc_memory_t *mem);

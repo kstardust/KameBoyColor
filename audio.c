@@ -9,55 +9,423 @@
  * https://gbdev.io/pandocs/Audio_Registers.html
  */
 
+/* audio is annoying obscure */
+/* very register has its own mask for reading
+https://gbdev.gg8.se/wiki/articles/Gameboy_sound_hardware#Register_Reading
+
+     NRx0 NRx1 NRx2 NRx3 NRx4
+    ---------------------------
+NR1x  $80  $3F $00  $FF  $BF
+NR2x  $FF  $3F $00  $FF  $BF
+NR3x  $7F  $FF $9F  $FF  $BF
+NR4x  $FF  $FF $00  $00  $BF
+NR5x  $00  $00 $70
+
+$FF27-$FF2F always read back as $FF
+*/
+
 static uint8_t _duty_waveform[] = {
     0b00000001, 0b10000001, 0b10000111, 0b01111110
 };
+
+static void
+zero_channel(gbc_audio_channel_t *c)
+{
+    c->NRx0 = 0;
+    c->NRx1 = 0;
+    c->NRx2 = 0;
+    c->NRx3 = 0;
+    c->NRx4 = 0;
+    c->sample_cycles = 0;
+    c->lfsr = 0;
+    c->waveform_idx = 0;
+    c->volume = 0;
+    c->volume_pace = 0;
+    c->volume_pace_counter = 0;
+    c->volume_dir = 0;
+}
+
+
+static uint8_t
+read_nr10(gbc_audio_t *audio, uint16_t addr)
+{
+    return audio->c1.NRx0 | 0x80;
+}
+
+static uint8_t
+write_nr10(gbc_audio_t *audio, uint16_t addr, uint8_t data)
+{
+    audio->c1.NRx0 = data;
+    return data;
+}
+
+static uint8_t
+read_nr11(gbc_audio_t *audio, uint16_t addr)
+{
+    return audio->c1.NRx1 | 0x3f;
+}
+
+static uint8_t
+write_nr11(gbc_audio_t *audio, uint16_t addr, uint8_t data)
+{
+    audio->c1.NRx1 = data;
+    return data;
+}
+
+static uint8_t
+read_nr12(gbc_audio_t *audio, uint16_t addr)
+{
+    return audio->c1.NRx2;
+}
+
+static uint8_t
+write_nr12(gbc_audio_t *audio, uint16_t addr, uint8_t data)
+{
+    audio->c1.NRx2 = data;
+    return data;
+}
+
+static uint8_t
+read_nr13(gbc_audio_t *audio, uint16_t addr)
+{
+    return audio->c1.NRx3 | 0xff;
+}
+
+static uint8_t
+write_nr13(gbc_audio_t *audio, uint16_t addr, uint8_t data)
+{
+    audio->c1.NRx3 = data;
+    return data;
+}
+
+static uint8_t
+read_nr14(gbc_audio_t *audio, uint16_t addr)
+{
+    return audio->c1.NRx4 | 0xbf;
+}
+
+static uint8_t
+write_nr14(gbc_audio_t *audio, uint16_t addr, uint8_t data)
+{
+    audio->c1.NRx4 = data;
+    return data;
+}
+
+static uint8_t
+read_nr21(gbc_audio_t *audio, uint16_t addr)
+{
+    return audio->c2.NRx1 | 0x3f;
+}
+
+static uint8_t
+write_nr21(gbc_audio_t *audio, uint16_t addr, uint8_t data)
+{
+    audio->c2.NRx1 = data;
+    return data;
+}
+
+static uint8_t
+read_nr22(gbc_audio_t *audio, uint16_t addr)
+{
+    return audio->c2.NRx2;
+}
+
+static uint8_t
+write_nr22(gbc_audio_t *audio, uint16_t addr, uint8_t data)
+{
+    audio->c2.NRx2 = data;
+    return data;
+}
+
+
+static uint8_t
+read_nr23(gbc_audio_t *audio,  uint16_t addr)
+{
+    return audio->c2.NRx3 | 0xff;
+}
+
+static uint8_t
+write_nr23(gbc_audio_t *audio, uint16_t addr, uint8_t data)
+{
+    audio->c2.NRx3 = data;
+    return data;
+}
+
+static uint8_t
+read_nr24(gbc_audio_t *audio, uint16_t addr)
+{
+    return audio->c2.NRx4 | 0xbf;
+}
+
+static uint8_t
+write_nr24(gbc_audio_t *audio, uint16_t addr, uint8_t data)
+{
+    audio->c2.NRx4 = data;
+    return data;
+}
+
+static uint8_t
+read_nr30(gbc_audio_t *audio, uint16_t addr)
+{
+    return audio->c3.NRx0 | 0x7f;
+}
+
+static uint8_t
+write_nr30(gbc_audio_t *audio, uint16_t addr, uint8_t data)
+{
+    audio->c3.NRx0 = data;
+    return data;
+}
+
+static uint8_t
+read_nr31(gbc_audio_t *audio, uint16_t addr)
+{
+    return audio->c3.NRx1 | 0xff;
+}
+
+static uint8_t
+write_nr31(gbc_audio_t *audio, uint16_t addr, uint8_t data)
+{
+    audio->c3.NRx1 = data;
+    return data;
+}
+
+static uint8_t
+read_nr32(gbc_audio_t *audio, uint16_t addr)
+{
+    return audio->c3.NRx2 | 0x9f;
+}
+
+static uint8_t
+write_nr32(gbc_audio_t *audio, uint16_t addr, uint8_t data)
+{
+    audio->c3.NRx2 = data;
+    return data;
+}
+
+static uint8_t
+read_nr33(gbc_audio_t *audio, uint16_t addr)
+{
+    return audio->c3.NRx3 | 0xff;
+}
+
+static uint8_t
+write_nr33(gbc_audio_t *audio, uint16_t addr, uint8_t data)
+{
+    audio->c3.NRx3 = data;
+    return data;
+}
+
+static uint8_t
+read_nr34(gbc_audio_t *audio, uint16_t addr)
+{
+    return audio->c3.NRx4 | 0xbf;
+}
+
+static uint8_t
+write_nr34(gbc_audio_t *audio, uint16_t addr, uint8_t data)
+{
+    audio->c3.NRx4 = data;
+    return data;
+}
+
+static uint8_t
+read_nr41(gbc_audio_t *audio, uint16_t addr)
+{
+    return audio->c4.NRx1 | 0xff;
+}
+
+static uint8_t
+write_nr41(gbc_audio_t *audio, uint16_t addr, uint8_t data)
+{
+    audio->c4.NRx1 = data;
+    return data;
+}
+
+static uint8_t
+read_nr42(gbc_audio_t *audio, uint16_t addr)
+{
+    return audio->c4.NRx2;
+}
+
+static uint8_t
+write_nr42(gbc_audio_t *audio, uint16_t addr, uint8_t data)
+{
+    audio->c4.NRx2 = data;
+    return data;
+}
+
+static uint8_t
+read_nr43(gbc_audio_t *audio, uint16_t addr)
+{
+    return audio->c4.NRx3;
+}
+
+static uint8_t
+write_nr43(gbc_audio_t *audio, uint16_t addr, uint8_t data)
+{
+    audio->c4.NRx3 = data;
+    return data;
+}
+
+static uint8_t
+read_nr44(gbc_audio_t *audio, uint16_t addr)
+{
+    return audio->c4.NRx4 | 0xbf;
+}
+
+static uint8_t
+write_nr44(gbc_audio_t *audio, uint16_t addr, uint8_t data)
+{
+    audio->c4.NRx4 = data;
+    return data;
+}
+
+static uint8_t
+read_nr50(gbc_audio_t *audio, uint16_t addr)
+{
+    return audio->NR50;
+}
+
+static uint8_t
+write_nr50(gbc_audio_t *audio, uint16_t addr, uint8_t data)
+{
+    audio->NR50 = data;
+    return data;
+}
+
+static uint8_t
+read_nr51(gbc_audio_t *audio, uint16_t addr)
+{
+    return audio->NR51;
+}
+
+static uint8_t
+write_nr51(gbc_audio_t *audio, uint16_t addr, uint8_t data)
+{
+    audio->NR51 = data;
+    return data;
+}
+
+static uint8_t
+read_nr52(gbc_audio_t *audio, uint16_t addr)
+{
+    return audio->NR52 | 0x70;
+}
+
+static uint8_t
+write_nr52(gbc_audio_t *audio, uint16_t addr, uint8_t data)
+{
+    /* https://gbdev.gg8.se/wiki/articles/Gameboy_sound_hardware#Power_Control */
+    /* lower 4 bits are read only */
+    data &= 0xf0;
+    printf("NR52: %x\n", data);
+    if (!(data & NR52_AUDIO_ON)) {
+        /* power off */
+        printf("power off\n");
+        zero_channel(&(audio->c1));
+        zero_channel(&(audio->c2));
+        zero_channel(&(audio->c3));
+        zero_channel(&(audio->c4));
+        audio->NR50 = 0;
+        audio->NR51 = 0;
+    } else {
+        /* power on */
+        audio->frame_sequencer = 0;
+    }
+
+    audio->NR52 = data;
+    return data;
+}
+
+static uint8_t
+read_waveform(gbc_audio_t *audio, uint16_t addr)
+{
+    return audio->waveforms[addr-IO_PORT_BASE-IO_PORT_WAVE_RAM];
+}
+
+static uint8_t
+write_waveform(gbc_audio_t *audio, uint16_t addr, uint8_t data)
+{
+    audio->waveforms[addr-IO_PORT_BASE-IO_PORT_WAVE_RAM] = data;
+    return data;
+}
+
+static uint8_t
+read_unused(gbc_audio_t *audio, uint16_t addr)
+{
+    return 0xff;
+}
+
+static uint8_t
+write_unused(gbc_audio_t *audio, uint16_t addr, uint8_t data)
+{
+    return 0xff;
+};
+
+
+static uint8_t (*_read_trampolines[])(gbc_audio_t*, uint16_t) = {
+    read_nr10, read_nr11, read_nr12, read_nr13, read_nr14,
+
+    read_unused, read_nr21, read_nr22, read_nr23, read_nr24,
+
+    read_nr30, read_nr31, read_nr32, read_nr33, read_nr34,
+
+    read_unused, read_nr41, read_nr42, read_nr43, read_nr44,
+
+    read_nr50, read_nr51, read_nr52,
+};
+
+static uint8_t (*_write_trampolines[])(gbc_audio_t*, uint16_t, uint8_t) = {
+    write_nr10, write_nr11, write_nr12, write_nr13, write_nr14,
+
+    write_unused, write_nr21, write_nr22, write_nr23, write_nr24,
+
+    write_nr30, write_nr31, write_nr32, write_nr33, write_nr34,
+
+    write_unused, write_nr41, write_nr42, write_nr43, write_nr44,
+
+    write_nr50, write_nr51, write_nr52,
+};
+
 
 void
 gbc_audio_init(gbc_audio_t *audio)
 {
     memset(audio, 0, sizeof(gbc_audio_t));
-    audio->NR52 = audio->audio_mem + IO_PORT_NR52 - AUDIO_PORT_BEGIN;
-    audio->NR51 = audio->audio_mem + IO_PORT_NR51 - AUDIO_PORT_BEGIN;
-    audio->NR50 = audio->audio_mem + IO_PORT_NR50 - AUDIO_PORT_BEGIN;
-
-    audio->c1.NRx0 = audio->audio_mem + IO_PORT_NR10 - AUDIO_PORT_BEGIN;
-    audio->c1.NRx1 = audio->audio_mem + IO_PORT_NR11 - AUDIO_PORT_BEGIN;
-    audio->c1.NRx2 = audio->audio_mem + IO_PORT_NR12 - AUDIO_PORT_BEGIN;
-    audio->c1.NRx3 = audio->audio_mem + IO_PORT_NR13 - AUDIO_PORT_BEGIN;
-    audio->c1.NRx4 = audio->audio_mem + IO_PORT_NR14 - AUDIO_PORT_BEGIN;
-
-    audio->c2.NRx1 = audio->audio_mem + IO_PORT_NR21 - AUDIO_PORT_BEGIN;
-    audio->c2.NRx2 = audio->audio_mem + IO_PORT_NR22 - AUDIO_PORT_BEGIN;
-    audio->c2.NRx3 = audio->audio_mem + IO_PORT_NR23 - AUDIO_PORT_BEGIN;
-    audio->c2.NRx4 = audio->audio_mem + IO_PORT_NR24 - AUDIO_PORT_BEGIN;
-
-    audio->c3.NRx0 = audio->audio_mem + IO_PORT_NR30 - AUDIO_PORT_BEGIN;
-    audio->c3.NRx1 = audio->audio_mem + IO_PORT_NR31 - AUDIO_PORT_BEGIN;
-    audio->c3.NRx2 = audio->audio_mem + IO_PORT_NR32 - AUDIO_PORT_BEGIN;
-    audio->c3.NRx3 = audio->audio_mem + IO_PORT_NR33 - AUDIO_PORT_BEGIN;
-    audio->c3.NRx4 = audio->audio_mem + IO_PORT_NR34 - AUDIO_PORT_BEGIN;
-
-    audio->c4.NRx1 = audio->audio_mem + IO_PORT_NR41 - AUDIO_PORT_BEGIN;
-    audio->c4.NRx2 = audio->audio_mem + IO_PORT_NR42 - AUDIO_PORT_BEGIN;
-    audio->c4.NRx3 = audio->audio_mem + IO_PORT_NR43 - AUDIO_PORT_BEGIN;
-    audio->c4.NRx4 = audio->audio_mem + IO_PORT_NR44 - AUDIO_PORT_BEGIN;
-
 }
 
 uint8_t
 audio_read(void *udata, uint16_t addr)
 {
     gbc_audio_t *audio = (gbc_audio_t*)udata;
-    return audio->audio_mem[addr - AUDIO_BEGIN];
+
+    uint8_t port = IO_ADDR_PORT(addr);
+    if (port >= IO_PORT_NR10 && port <= IO_PORT_NR52) {
+        return _read_trampolines[port - IO_PORT_NR10](audio, addr);
+    } else if (port >= IO_PORT_WAVE_RAM) {
+        return read_waveform(audio, addr);
+    }
+    return read_unused(audio, addr);
 }
 
 uint8_t
 audio_write(void *udata, uint16_t addr, uint8_t data)
 {
     gbc_audio_t *audio = (gbc_audio_t*)udata;
-    audio->audio_mem[addr - AUDIO_BEGIN] = data;
-    return data;
+
+    uint8_t port = IO_ADDR_PORT(addr);
+    if (port >= IO_PORT_NR10 && port <= IO_PORT_NR52) {
+        if (port != IO_PORT_NR52 && !(audio->NR52 & NR52_AUDIO_ON)) {
+            /* power is off */
+            return 0;
+        }
+        return _write_trampolines[port - IO_PORT_NR10](audio, addr, data);
+    } else if (port >= IO_PORT_WAVE_RAM) {
+        return write_waveform(audio, addr, data);
+    }
+
+    return write_unused(audio, addr, data);
 }
 
 void
@@ -82,13 +450,13 @@ ch1_audio(gbc_audio_t *audio)
     gbc_audio_channel_t *ch = &(audio->c1);
 
     /* https://gbdev.io/pandocs/Audio_details.html#dacs */
-    if (!(*(ch->NRx2) & DAC_ON_MASK))
+    if (!((ch->NRx2) & DAC_ON_MASK))
         return 0;
 
     uint8_t triggered =  0;
-    if (*(ch->NRx4) & CHANNEL_TRIGGER_MASK) {
+    if (ch->NRx4 & CHANNEL_TRIGGER_MASK) {
         /* since the game cannot read this field, i think we can change it */
-        *(ch->NRx4) &= ~CHANNEL_TRIGGER_MASK;
+        ch->NRx4 &= ~CHANNEL_TRIGGER_MASK;
         ch->on = 1;
         triggered = 1;
 
@@ -144,16 +512,16 @@ ch1_audio(gbc_audio_t *audio)
 
     if ((audio->frame_sequencer % FRAME_SOUND_LENGTH == 0)) {
         /* sound length */
-        if (*(ch->NRx4) & CHANNEL_LENGTH_ENABLE_MASK) {
-            uint8_t length = *(ch->NRx1) & 0x3f;
+        if (ch->NRx4 & CHANNEL_LENGTH_ENABLE_MASK) {
+            uint8_t length = ch->NRx1 & 0x3f;
             if (length == 0) {
                 ch->on = 0;
             } else {
                 length++;
                 /* again, games cannot read this field, i think we can change it */
                 length &= 0x3f;
-                *(ch->NRx1) &= ~0x3f;
-                *(ch->NRx1) |= length;
+                ch->NRx1 &= ~0x3f;
+                ch->NRx1 |= length;
             }
         }
     }
@@ -195,13 +563,13 @@ ch2_audio(gbc_audio_t *audio)
     gbc_audio_channel_t *ch = &(audio->c2);
 
     /* https://gbdev.io/pandocs/Audio_details.html#dacs */
-    if (!(*(ch->NRx2) & DAC_ON_MASK))
+    if (!(ch->NRx2 & DAC_ON_MASK))
         return 0;
 
     uint8_t triggered =  0;
-    if (*(ch->NRx4) & CHANNEL_TRIGGER_MASK) {
+    if (ch->NRx4 & CHANNEL_TRIGGER_MASK) {
         /* since the game cannot read this field, i think we can change it */
-        *(ch->NRx4) &= ~CHANNEL_TRIGGER_MASK;
+        ch->NRx4 &= ~CHANNEL_TRIGGER_MASK;
         ch->on = 1;
         triggered = 1;
         ch->sample_cycles = 0;
@@ -219,16 +587,16 @@ ch2_audio(gbc_audio_t *audio)
 
     if ((audio->frame_sequencer % FRAME_SOUND_LENGTH == 0)) {
         /* sound length */
-        if (*(ch->NRx4) & CHANNEL_LENGTH_ENABLE_MASK) {
-            uint8_t length = *(ch->NRx1) & 0x3f;
+        if (ch->NRx4 & CHANNEL_LENGTH_ENABLE_MASK) {
+            uint8_t length = ch->NRx1 & 0x3f;
             if (length == 0) {
                 ch->on = 0;
             } else {
                 length++;
                 /* again, games cannot read this field, i think we can change it */
                 length &= 0x3f;
-                *(ch->NRx1) &= ~0x3f;
-                *(ch->NRx1) |= length;
+                ch->NRx1 &= ~0x3f;
+                ch->NRx1 |= length;
             }
         }
     }
@@ -269,13 +637,10 @@ ch3_audio(gbc_audio_t *audio)
 {
     gbc_audio_channel_t *ch = &(audio->c3);
 
-    if (!(*(ch->NRx0) & CH3_DAC_ON_MASK))
-        return 0;
-
     uint8_t triggered =  0;
-    if (*(ch->NRx4) & CHANNEL_TRIGGER_MASK) {
+    if (ch->NRx4 & CHANNEL_TRIGGER_MASK) {
         /* since the game cannot read this field, i think we can change it */
-        *(ch->NRx4) &= ~CHANNEL_TRIGGER_MASK;
+        ch->NRx4 &= ~CHANNEL_TRIGGER_MASK;
         ch->on = 1;
         triggered = 1;
         ch->sample_cycles = 0;
@@ -283,19 +648,21 @@ ch3_audio(gbc_audio_t *audio)
         ch->sweep_pace = 0;
     }
 
+    ch->on &= (ch->NRx0 & CH3_DAC_ON_MASK);
+
     if (!ch->on) {
         return 0;
     }
 
     if ((audio->frame_sequencer % FRAME_SOUND_LENGTH == 0)) {
         /* sound length */
-        if (*(ch->NRx4) & CHANNEL_LENGTH_ENABLE_MASK) {
-            uint8_t length = *(ch->NRx1);
+        if (ch->NRx4 & CHANNEL_LENGTH_ENABLE_MASK) {
+            uint8_t length = ch->NRx1;
             if (length == 0) {
                 ch->on = 0;
             } else {
                 length++;
-                *(ch->NRx1) = length;
+                ch->NRx1 = length;
             }
         }
     }
@@ -330,13 +697,13 @@ ch4_audio(gbc_audio_t *audio)
 {
     gbc_audio_channel_t *ch = &(audio->c4);
 
-    if (!(*(ch->NRx2) & DAC_ON_MASK))
+    if (!(ch->NRx2 & DAC_ON_MASK))
         return 0;
 
     uint8_t triggered =  0;
-    if (*(ch->NRx4) & CHANNEL_TRIGGER_MASK) {
+    if (ch->NRx4 & CHANNEL_TRIGGER_MASK) {
         /* since the game cannot read this field, i think we can change it */
-        *(ch->NRx4) &= ~CHANNEL_TRIGGER_MASK;
+        ch->NRx4 &= ~CHANNEL_TRIGGER_MASK;
         ch->on = 1;
         triggered = 1;
 
@@ -356,17 +723,17 @@ ch4_audio(gbc_audio_t *audio)
 
     if ((audio->frame_sequencer % FRAME_SOUND_LENGTH == 0)) {
         /* sound length */
-        if (*(ch->NRx4) & CHANNEL_LENGTH_ENABLE_MASK) {
+        if (ch->NRx4 & CHANNEL_LENGTH_ENABLE_MASK) {
 
-            uint8_t length = *(ch->NRx1) & 0x3f;
+            uint8_t length = ch->NRx1 & 0x3f;
 
             if (length == 0) {
                 ch->on = 0;
             } else {
                 length++;
                 length &= 0x3f;
-                *(ch->NRx1) &= ~0x3f;
-                *(ch->NRx1) |= length;
+                ch->NRx1 &= ~0x3f;
+                ch->NRx1 |= length;
             }
         }
     }
@@ -424,8 +791,22 @@ ch4_audio(gbc_audio_t *audio)
 void
 gbc_audio_cycle(gbc_audio_t *audio)
 {
-    if (!(*(audio->NR52) & NR52_AUDIO_ON))
+    if (!(audio->NR52 & NR52_AUDIO_ON))
         return;
+
+    uint8_t div = IO_PORT_READ(audio->mem, IO_PORT_DIV);
+    uint8_t mask = 0x10;
+
+    if (IO_PORT_READ(audio->mem, IO_PORT_KEY1) & 0x80) {
+        /* double speed mode */
+        mask = 0x20;
+    }
+
+    if ((audio->div_apu & mask) && !(div & mask)) {
+        audio->frame_sequencer++;
+    }
+
+    audio->div_apu = div;
 
     audio->m_cycles++;
     if (audio->m_cycles != AUDIO_CLOCK_CYCLES) {
@@ -439,11 +820,6 @@ gbc_audio_cycle(gbc_audio_t *audio)
     Actually frame sequencer is not a seperate timer in real GameBoy, it is tied to DIV register.
     I simplied it.
     https://gbdev.io/pandocs/Audio_details.html#div-apu */
-    audio->frame_sequencer_cycles++;
-    if (audio->frame_sequencer_cycles == FRAME_SEQUENCER_CYCLES) {
-        audio->frame_sequencer_cycles = 0;
-        audio->frame_sequencer++;
-    }
 
     int8_t c1 = ch1_audio(audio);
     int8_t c2 = ch2_audio(audio);
@@ -453,8 +829,8 @@ gbc_audio_cycle(gbc_audio_t *audio)
     int8_t c3 = (ch3_audio(audio) + ch3_audio(audio)) / 2;
     int8_t c4 = ch4_audio(audio) * 4;
 
-    *(audio->NR52) &= ~0xf;
-    *(audio->NR52) |= (audio->c1.on)
+    audio->NR52 &= ~0xf;
+    audio->NR52 |= (audio->c1.on)
                     | ((audio->c2.on) << 1)
                     | ((audio->c3.on) << 2)
                     | ((audio->c4.on) << 3);
