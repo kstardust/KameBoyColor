@@ -31,7 +31,9 @@ int main()
     //char* cartridge = "/Users/Kevin/Development/GBC/gb-test-roms/cgb_sound/rom_singles/02-len ctr.gb"; // ok
     //char* cartridge = "/Users/Kevin/Development/GBC/gb-test-roms/cgb_sound/rom_singles/03-trigger.gb"; // ok
     //char* cartridge = "/Users/Kevin/Development/GBC/gb-test-roms/cgb_sound/rom_singles/04-sweep.gb"; // ok
-    char* cartridge = "/Users/Kevin/Development/GBC/gb-test-roms/cgb_sound/rom_singles/05-sweep details.gb";
+    //char* cartridge = "/Users/Kevin/Development/GBC/gb-test-roms/cgb_sound/rom_singles/05-sweep details.gb"; // ok
+    //char* cartridge = "/Users/Kevin/Development/GBC/gb-test-roms/cgb_sound/rom_singles/06-overflow on trigger.gb"; // ok
+    char* cartridge = "/Users/Kevin/Development/GBC/gb-test-roms/cgb_sound/rom_singles/07-len sweep period sync.gb";
     //char* cartridge = "/Users/Kevin/Development/GBC/tetris_dx.gbc";
     char* boot_rom = NULL;//"/Users/Kevin/Development/GBC/gb-test-roms/cgb_boot.bin";
 

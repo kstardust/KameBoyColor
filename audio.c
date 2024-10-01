@@ -604,7 +604,7 @@ ch1_audio(gbc_audio_t *audio)
     }
 
     /* disabled channel should still counting the length */
-    if (div_frame && (audio->frame_sequencer % FRAME_SOUND_LENGTH == 0)) {
+    if (div_frame && audio->frame_sound_length) {
         /* sound length */
         if (ch->length_enabled && ch->length_counter > 0) {
             ch->length_counter--;
@@ -613,7 +613,7 @@ ch1_audio(gbc_audio_t *audio)
         }
     }
 
-    if (div_frame && audio->frame_sequencer % FRAME_FREQ_SWEEP == 0) {
+    if (div_frame && audio->frame_freq_sweep) {
         /* frequency sweep */
         ch1_sweep(audio);
     }
@@ -623,7 +623,7 @@ ch1_audio(gbc_audio_t *audio)
     }
 
     if (ch->volume_pace != 0 && div_frame &&
-        (audio->frame_sequencer % FRAME_ENVELOPE_SWEEP == 0)) {
+        audio->frame_envelope_sweep) {
         /* envelope sweep */
         ch->volume_pace_counter--;
         if (ch->volume_pace_counter == 0) {
@@ -681,7 +681,7 @@ ch2_audio(gbc_audio_t *audio)
         ch->volume_dir = CHANNEL_EVENVLOPE_DIRECTION(ch);
     }
 
-    if (div_frame && (audio->frame_sequencer % FRAME_SOUND_LENGTH == 0)) {
+    if (div_frame && audio->frame_sound_length) {
         /* sound length */
         if (ch->length_enabled && ch->length_counter > 0) {
             ch->length_counter--;
@@ -695,7 +695,7 @@ ch2_audio(gbc_audio_t *audio)
     }
 
     if (ch->volume_pace != 0 && div_frame &&
-        (audio->frame_sequencer % FRAME_ENVELOPE_SWEEP == 0)) {
+        audio->frame_envelope_sweep) {
         /* envelope sweep */
         ch->volume_pace_counter--;
         if (ch->volume_pace_counter == 0) {
@@ -749,7 +749,7 @@ ch3_audio(gbc_audio_t *audio)
     }
 
     /* disabled channel should still counting the length */
-    if (div_frame && (audio->frame_sequencer % FRAME_SOUND_LENGTH == 0)) {
+    if (div_frame && audio->frame_sound_length) {
         /* sound length */
         if (ch->length_enabled && ch->length_counter > 0) {
             ch->length_counter--;
@@ -817,7 +817,7 @@ ch4_audio(gbc_audio_t *audio)
     }
 
     /* disabled channel should still counting the length */
-    if (div_frame && (audio->frame_sequencer % FRAME_SOUND_LENGTH == 0)) {
+    if (div_frame && audio->frame_sound_length) {
         /* sound length */
         if (ch->length_enabled && ch->length_counter > 0) {
             ch->length_counter--;
@@ -831,7 +831,7 @@ ch4_audio(gbc_audio_t *audio)
     }
 
     if (ch->volume_pace != 0 && div_frame &&
-        (audio->frame_sequencer % FRAME_ENVELOPE_SWEEP == 0)) {
+        audio->frame_envelope_sweep) {
         /* envelope sweep */
         ch->volume_pace_counter--;
         if (ch->volume_pace_counter == 0) {
@@ -896,6 +896,24 @@ gbc_audio_cycle(gbc_audio_t *audio)
         /* rewind */
         if (audio->frame_sequencer == FRAME_ENVELOPE_SWEEP)
             audio->frame_sequencer = 0;
+
+        audio->frame_sound_length = 0;
+        audio->frame_envelope_sweep = 0;
+        audio->frame_freq_sweep = 0;
+
+        /* https://gbdev.gg8.se/wiki/articles/Gameboy_sound_hardware#Frame_Sequencer */
+        if (audio->frame_sequencer == 0 ||
+            audio->frame_sequencer == 2 ||
+            audio->frame_sequencer == 4 ||
+            audio->frame_sequencer == 6)
+            audio->frame_sound_length = 1;
+
+        if (audio->frame_sequencer == 7)
+            audio->frame_envelope_sweep = 1;
+
+        if (audio->frame_sequencer == 2 ||
+            audio->frame_sequencer == 6)
+            audio->frame_freq_sweep = 1;
 
         audio->c1.frame_sequencer_flag = 1;
         audio->c2.frame_sequencer_flag = 1;

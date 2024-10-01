@@ -134,10 +134,14 @@ struct gbc_audio {
 
     uint8_t m_cycles;
     uint8_t frame_sequencer;
+
+    uint8_t frame_envelope_sweep:1;
+    uint8_t frame_sound_length:1;
+    uint8_t frame_freq_sweep:1;
+
     uint8_t div_apu;
 
     uint8_t waveforms[CH3_WAVEFORM_SAMPLES/2];
-    int test;
 };
 
 void gbc_audio_connect(gbc_audio_t *audio, gbc_memory_t *mem);
