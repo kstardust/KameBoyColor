@@ -638,7 +638,8 @@ ch1_audio(gbc_audio_t *audio)
         }
     }
 
-    uint16_t sample_period = ch->sweep_shadow_period;
+    /* the sound effect is wrong if we use the value in the shadow period */
+    uint16_t sample_period = CHANNEL_PERIOD(ch);
     ch->sample_cycles++;
     if (ch->sample_cycles == 0x7ff) {
         if (ch->waveform_idx == WAVEFORM_SAMPLES)
