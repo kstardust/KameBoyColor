@@ -48,6 +48,17 @@ static uint8_t
 write_nr10(gbc_audio_t *audio, uint16_t addr, uint8_t data)
 {
     gbc_audio_channel_t *ch = &(audio->c1);
+    uint8_t old_direct = CHANNEL_SWEEP_DIRECTION(ch);
+    ch->NRx0 = data;
+    if (ch->sweep_negate_obscure_bit && old_direct && !CHANNEL_SWEEP_DIRECTION(ch)) {
+        /* https://gbdev.gg8.se/wiki/articles/Gameboy_sound_hardware#Obscure_Behavior
+        Clearing the sweep negate mode bit in NR10 after at least one sweep calculation has
+        been made using the negate mode since the last trigger causes the channel to be immediately
+        disabled.
+        */
+        ch->on = 0;
+    }
+
     audio->c1.NRx0 = data;
     if (CHANNEL_SWEEP_PACE(ch) == 0) {
         /* write 0 to sweep pace immediately disable the sweep */
@@ -55,7 +66,6 @@ write_nr10(gbc_audio_t *audio, uint16_t addr, uint8_t data)
         ch->sweep_pace_counter = 0;
     } else {
         ch->sweep_pace = CHANNEL_SWEEP_PACE(ch);
-        ch->sweep_pace_counter = ch->sweep_pace;
     }
 
     return data;
@@ -494,10 +504,13 @@ ch1_sweep_calfreq(gbc_audio_t *audio)
     gbc_audio_channel_t *ch = &(audio->c1);
     uint16_t period = ch->sweep_shadow_period;
     uint8_t steps = CHANNEL_SWEEP_STEPS(ch);
-    if (CHANNEL_SWEEP_DIRECTION(ch))
+    if (CHANNEL_SWEEP_DIRECTION(ch)) {
+        /* https://gbdev.gg8.se/wiki/articles/Gameboy_sound_hardware#Obscure_Behavior */
+        ch->sweep_negate_obscure_bit = 1;
         period -= period >> steps;
-    else
+    } else {
         period += period >> steps;
+    }
     return period;
 }
 
@@ -531,6 +544,8 @@ ch1_sweep(gbc_audio_t *audio)
 
     if (ch->sweep_pace_counter == 0) {
         if (ch->sweep_pace == 0) {
+            /* The volume envelope and sweep timers treat a period of 0 as 8. */
+            ch->sweep_pace_counter = 8;
             return;
         }
         ch->sweep_pace_counter = ch->sweep_pace;
@@ -581,8 +596,10 @@ ch1_audio(gbc_audio_t *audio)
 
         ch->sweep_shadow_period = CHANNEL_PERIOD(ch);
         ch->sweep_pace = CHANNEL_SWEEP_PACE(ch);
-        ch->sweep_pace_counter = ch->sweep_pace;
+        /* The volume envelope and sweep timers treat a period of 0 as 8. */
+        ch->sweep_pace_counter = ch->sweep_pace == 0 ? 8 : ch->sweep_pace;
         ch->sweep_pace_enabled = (ch->sweep_pace > 0 || CHANNEL_SWEEP_STEPS(ch) > 0);
+        ch->sweep_negate_obscure_bit = 0;
         ch1_sweep_trigger(audio);
     }
 
@@ -657,7 +674,7 @@ ch2_audio(gbc_audio_t *audio)
         triggered = 1;
         ch->sample_cycles = 0;
         ch->waveform_idx = 0;
-        ch->sweep_pace = 0;
+
         ch->volume = CHANNEL_EVENVLOPE_VOLUME(ch);
         ch->volume_pace = CHANNEL_EVENVLOPE_PACE(ch);
         ch->volume_pace_counter = ch->volume_pace;
@@ -729,7 +746,6 @@ ch3_audio(gbc_audio_t *audio)
         triggered = 1;
         ch->sample_cycles = 0;
         ch->waveform_idx = 0;
-        ch->sweep_pace = 0;
     }
 
     /* disabled channel should still counting the length */

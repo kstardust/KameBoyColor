@@ -88,9 +88,10 @@ struct gbc_audio_channel {
     union {
         uint16_t lfsr;              /* channel 4 */
         struct {
-            uint8_t sweep_pace:7;           /* channel 1 */
-            uint8_t sweep_pace_enabled:1; /* channel 1 */
-            uint8_t sweep_pace_counter;   /* channel 1 */
+            uint8_t sweep_pace:6;               /* channel 1 */
+            uint8_t sweep_pace_enabled:1;       /* channel 1 */
+            uint8_t sweep_negate_obscure_bit:1; /* channel 1 */
+            uint8_t sweep_pace_counter;         /* channel 1 */
         };
     };
     uint16_t sweep_shadow_period;
