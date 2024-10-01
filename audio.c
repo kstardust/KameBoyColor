@@ -385,7 +385,9 @@ write_nr52(gbc_audio_t *audio, uint16_t addr, uint8_t data)
         audio->NR51 = 0;
     } else {
         /* power on */
-        audio->frame_sequencer = 0;
+        if (!(audio->NR52 & NR52_AUDIO_ON)) {
+            audio->frame_sequencer = 7; // next step is 0
+        }
     }
 
     audio->NR52 = data;
