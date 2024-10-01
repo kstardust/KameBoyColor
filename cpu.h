@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include "memory.h"
-    
+
 typedef struct cpu_register cpu_register_t;
 typedef struct gbc_cpu gbc_cpu_t;
 
@@ -51,18 +51,18 @@ struct cpu_register
     REGISTER_PAIR(D, E);
     REGISTER_PAIR(H, L);
     uint16_t SP;
-    uint16_t PC;        
-    
-    /* r16 */    
+    uint16_t PC;
+
+    /* r16 */
     #define _REG_16_OFFSET(h, l) OFFSET_OF_2(cpu_register_t, REG_FIELD_NAME(h, l), REG_TYPE(h, l), REG_16_NAME(h, l))
     #define REG_AF _REG_16_OFFSET(A, F)
     #define REG_BC _REG_16_OFFSET(B, C)
-    #define REG_DE _REG_16_OFFSET(D, E)    
+    #define REG_DE _REG_16_OFFSET(D, E)
     #define REG_HL _REG_16_OFFSET(H, L)
 
     #define REG_SP OFFSET_OF(cpu_register_t, SP)
     #define REG_PC OFFSET_OF(cpu_register_t, PC)
-    
+
     /* r8 */
     #define _REG_8_OFFSET(h, l, t) OFFSET_OF_3(cpu_register_t, REG_FIELD_NAME(h, l), REG_TYPE(h, l), REG_PAIR_NAME(h, l), REG_PAIR_TYPE(h, l), REG_8_NAME(t))
     #define REG_A _REG_8_OFFSET(A, F, A)
@@ -72,19 +72,19 @@ struct cpu_register
     #define REG_D _REG_8_OFFSET(D, E, D)
     #define REG_E _REG_8_OFFSET(D, E, E)
     #define REG_H _REG_8_OFFSET(H, L, H)
-    #define REG_L _REG_8_OFFSET(H, L, L)    
+    #define REG_L _REG_8_OFFSET(H, L, L)
 };
 
 struct gbc_cpu
-{    
-    cpu_register_t regs;    
+{
+    cpu_register_t regs;
 
     memory_read mem_read;  /* memory op */
     memory_write mem_write;
     void *mem_data;
     uint8_t *ifp;           /* interrupt flag 'pointer'(it is a pointer to io port) */
 
-    uint64_t cycles;    
+    uint64_t cycles;
     uint16_t ins_cycles;   /* current instruction cost */
     uint8_t ime;           /* interrupt master enable */
     uint8_t ier;           /* interrupt enable register */
@@ -138,7 +138,7 @@ struct gbc_cpu
 
 #define INTERRUPT_VBLANK   0x1
 #define INTERRUPT_LCD_STAT 0x2
-#define INTERRUPT_TIMER    0x4 
+#define INTERRUPT_TIMER    0x4
 #define INTERRUPT_SERIAL   0x8
 #define INTERRUPT_JOYPAD   0x10
 #define INTERRUPT_MASK     0x1F

@@ -20,8 +20,9 @@
 #define GBC_AUDIO_SAMPLE_RATE 44100
 #define GBC_AUDIO_SAMPLE_SIZE (GBC_AUDIO_SAMPLE_RATE / FRAME_PER_SECOND)
 
-/* https://gbdev.io/pandocs/Audio_Registers.html#ff13--nr13-channel-1-period-low-write-only */
-#define AUDIO_CLOCK_RATE        1048576
+/* https://gbdev.io/pandocs/Audio_Registers.html#ff1d--nr33-channel-3-period-low-write-only */
+/* Audio module runs at the period clock rate of channel 3, which is the fastest, other channels runs at half of this rate */
+#define AUDIO_CLOCK_RATE        (1048576 << 1)
 #define AUDIO_CLOCK_CYCLES      (CLOCK_RATE / AUDIO_CLOCK_RATE)
 #define WAVEFORM_SAMPLES        8
 #define CH3_WAVEFORM_SAMPLES    32

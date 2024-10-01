@@ -397,13 +397,29 @@ write_nr52(gbc_audio_t *audio, uint16_t addr, uint8_t data)
 static uint8_t
 read_waveform(gbc_audio_t *audio, uint16_t addr)
 {
-    return audio->waveforms[addr-IO_PORT_BASE-IO_PORT_WAVE_RAM];
+    gbc_audio_channel_t *ch = &(audio->c3);
+    if (!ch->on) {
+        return audio->waveforms[IO_ADDR_PORT(addr) - IO_PORT_WAVE_RAM];
+    }
+
+    uint8_t sample_offset = ch->waveform_idx >> 1;
+    uint8_t wave_form = audio->waveforms[sample_offset];
+
+    return wave_form;
 }
 
 static uint8_t
 write_waveform(gbc_audio_t *audio, uint16_t addr, uint8_t data)
 {
-    audio->waveforms[addr-IO_PORT_BASE-IO_PORT_WAVE_RAM] = data;
+    gbc_audio_channel_t *ch = &(audio->c3);
+    if (!ch->on) {
+        audio->waveforms[IO_ADDR_PORT(addr) - IO_PORT_WAVE_RAM] = data;
+        return data;
+    }
+    uint8_t sample_offset = ch->waveform_idx >> 1;
+    uint8_t wave_form = audio->waveforms[sample_offset];
+
+    audio->waveforms[sample_offset] = data;
     return data;
 }
 
@@ -589,7 +605,7 @@ ch1_audio(gbc_audio_t *audio)
         ch->NRx4 &= ~CHANNEL_TRIGGER_MASK;
         ch->on = 1;
 
-        ch->sample_cycles = 0;
+        ch->sample_cycles = (CHANNEL_PERIOD(ch) << 1);
         ch->waveform_idx = 0;
         ch->volume = CHANNEL_EVENVLOPE_VOLUME(ch);
         ch->volume_pace = CHANNEL_EVENVLOPE_PACE(ch);
@@ -643,12 +659,12 @@ ch1_audio(gbc_audio_t *audio)
     /* the sound effect is wrong if we use the value in the shadow period */
     uint16_t sample_period = CHANNEL_PERIOD(ch);
     ch->sample_cycles++;
-    if (ch->sample_cycles == 0x7ff) {
+    if (ch->sample_cycles == (0x800 << 1)) {
         if (ch->waveform_idx == WAVEFORM_SAMPLES)
             ch->waveform_idx = 1;
         else
             ch->waveform_idx += 1;
-        ch->sample_cycles = sample_period;
+        ch->sample_cycles = (sample_period << 1);
     }
 
     uint8_t on = WAVEFORM_SAMPLE(_duty_waveform[CHANNEL_DUTY(ch)], ch->waveform_idx-1);
@@ -675,7 +691,7 @@ ch2_audio(gbc_audio_t *audio)
         ch->NRx4 &= ~CHANNEL_TRIGGER_MASK;
         ch->on = 1;
         triggered = 1;
-        ch->sample_cycles = 0;
+        ch->sample_cycles = (CHANNEL_PERIOD(ch) << 1);
         ch->waveform_idx = 0;
 
         ch->volume = CHANNEL_EVENVLOPE_VOLUME(ch);
@@ -715,12 +731,12 @@ ch2_audio(gbc_audio_t *audio)
 
     uint16_t sample_period = CHANNEL_PERIOD(ch);
     ch->sample_cycles++;
-    if (ch->sample_cycles == 0x7ff) {
+    if (ch->sample_cycles == (0x800 << 1)) {
         if (ch->waveform_idx == WAVEFORM_SAMPLES)
             ch->waveform_idx = 1;
         else
             ch->waveform_idx += 1;
-        ch->sample_cycles = sample_period;
+        ch->sample_cycles = (sample_period << 1);
     }
 
     uint8_t on = WAVEFORM_SAMPLE(_duty_waveform[CHANNEL_DUTY(ch)], ch->waveform_idx-1);
@@ -747,8 +763,18 @@ ch3_audio(gbc_audio_t *audio)
         ch->NRx4 &= ~CHANNEL_TRIGGER_MASK;
         ch->on = 1;
         triggered = 1;
-        ch->sample_cycles = 0;
+        /* channel 3's sample cycles is twice the speed of other channels */
+        ch->sample_cycles = 0x800 - CHANNEL_PERIOD(ch);
+        /*
+          I have no idea what the hell is this, you have to add 6 cycles to the sample cycles on trigger,
+          otherwise it will fail Blargg's sound test "09-wave read while on"
+          Since our audio module is running at half the speed, we only need to add 3 cycles
+          https://forums.nesdev.org/viewtopic.php?p=188035#p188035
+        */
+        ch->sample_cycles += (6 >> 1);
         ch->waveform_idx = 0;
+        if (ch->length_counter == 0)
+            ch->length_counter = CHANNEL3_MAX_LENGTH;
     }
 
     /* disabled channel should still counting the length */
@@ -766,13 +792,13 @@ ch3_audio(gbc_audio_t *audio)
     }
 
     uint16_t sample_period = CHANNEL_PERIOD(ch);
-    ch->sample_cycles += 1;
-    if (ch->sample_cycles == 0x7ff) {
+    ch->sample_cycles -= 1;
+    if (ch->sample_cycles <= 0) {
         if (ch->waveform_idx == CH3_WAVEFORM_SAMPLES)
             ch->waveform_idx = 1;
         else
             ch->waveform_idx += 1;
-        ch->sample_cycles = sample_period;
+        ch->sample_cycles = 0x800 - sample_period;
     }
 
     uint8_t volume = CHANNEL3_OUTPUT_LEVEL(ch);
@@ -780,8 +806,7 @@ ch3_audio(gbc_audio_t *audio)
         return 0;
 
     uint8_t sample_offset = (ch->waveform_idx-1) / 2;
-    /* According to Pandoc, when CH3 is started, the first sample read is the one at index 1, I didn't implement this */
-    uint8_t wave_form = IO_PORT_READ(audio->mem, IO_PORT_WAVE_RAM + sample_offset);
+    uint8_t wave_form = audio->waveforms[sample_offset];
     if (ch->waveform_idx % 2 == 0)
         wave_form &= 0xf;
     else
@@ -944,10 +969,7 @@ gbc_audio_cycle(gbc_audio_t *audio)
 
     int8_t c1 = ch1_audio(audio);
     int8_t c2 = ch2_audio(audio);
-    /* ch3 runs at 2097152 Hz, but our audio module updates at 1048576 Hz,
-        I'm doing linear interpolation here
-    */
-    int8_t c3 = (ch3_audio(audio) + ch3_audio(audio)) / 2;
+    int8_t c3 = ch3_audio(audio);
     int8_t c4 = ch4_audio(audio);
 
     audio->NR52 &= ~0xf;
