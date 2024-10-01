@@ -20,6 +20,7 @@ static uint8_t _duty_waveform[] = {
     0b00000001, 0b10000001, 0b10000111, 0b01111110
 };
 
+
 static void
 zero_channel(gbc_audio_channel_t *c)
 {
@@ -46,7 +47,17 @@ read_nr10(gbc_audio_t *audio, uint16_t addr)
 static uint8_t
 write_nr10(gbc_audio_t *audio, uint16_t addr, uint8_t data)
 {
+    gbc_audio_channel_t *ch = &(audio->c1);
     audio->c1.NRx0 = data;
+    if (CHANNEL_SWEEP_PACE(ch) == 0) {
+        /* write 0 to sweep pace immediately disable the sweep */
+        ch->sweep_pace = 0;
+        ch->sweep_pace_counter = 0;
+    } else {
+        ch->sweep_pace = CHANNEL_SWEEP_PACE(ch);
+        ch->sweep_pace_counter = ch->sweep_pace;
+    }
+
     return data;
 }
 
@@ -169,7 +180,6 @@ write_nr22(gbc_audio_t *audio, uint16_t addr, uint8_t data)
     audio->c2.NRx2 = data;
     return data;
 }
-
 
 static uint8_t
 read_nr23(gbc_audio_t *audio,  uint16_t addr)
@@ -478,6 +488,71 @@ gbc_audio_connect(gbc_audio_t *audio, gbc_memory_t *mem)
     audio->mem = mem;
 }
 
+static int16_t
+ch1_sweep_calfreq(gbc_audio_t *audio)
+{
+    gbc_audio_channel_t *ch = &(audio->c1);
+    uint16_t period = ch->sweep_shadow_period;
+    uint8_t steps = CHANNEL_SWEEP_STEPS(ch);
+    if (CHANNEL_SWEEP_DIRECTION(ch))
+        period -= period >> steps;
+    else
+        period += period >> steps;
+    return period;
+}
+
+static void
+ch1_sweep_trigger(gbc_audio_t *audio)
+{
+    gbc_audio_channel_t *ch = &(audio->c1);
+
+    if (!ch->sweep_pace_enabled || !ch->on)
+        return;
+
+    if (CHANNEL_SWEEP_STEPS(ch) == 0)
+        return;
+
+    uint16_t period = ch1_sweep_calfreq(audio);
+    if (period > 0x7ff) {
+        ch->on = 0;
+    }
+}
+
+static void
+ch1_sweep(gbc_audio_t *audio)
+{
+    gbc_audio_channel_t *ch = &(audio->c1);
+
+    if (!ch->sweep_pace_enabled || !ch->on)
+        return;
+
+    if (ch->sweep_pace_counter > 0)
+        ch->sweep_pace_counter--;
+
+    if (ch->sweep_pace_counter == 0) {
+        if (ch->sweep_pace == 0) {
+            return;
+        }
+        ch->sweep_pace_counter = ch->sweep_pace;
+        uint16_t period = ch1_sweep_calfreq(audio);
+        if (period > 0x7ff) {
+            /* overflowed */
+            ch->on = 0;
+        }
+        /* update the period when the shift is non-zero */
+        if (CHANNEL_SWEEP_STEPS(ch) > 0 && period <= 0x7ff) {
+            CHANNEL_PERIOD_UPDATE(ch, period & 0x7ff);
+            ch->sweep_shadow_period = CHANNEL_PERIOD(ch);
+            /* And calculate again with the new period, but without updating the period */
+            period = ch1_sweep_calfreq(audio);
+            if (period > 0x7ff) {
+                ch->on = 0;
+            }
+        }
+    }
+}
+
+
 static int8_t
 ch1_audio(gbc_audio_t *audio)
 {
@@ -492,21 +567,23 @@ ch1_audio(gbc_audio_t *audio)
         return 0;
     }
 
-    uint8_t triggered =  0;
     if (ch->NRx4 & CHANNEL_TRIGGER_MASK) {
         /* since the game cannot read this field, i think we can change it */
         ch->NRx4 &= ~CHANNEL_TRIGGER_MASK;
         ch->on = 1;
-        triggered = 1;
 
-        /* TODO: we need to somehow retrigger this channel which I'm not exactly sure what it means */
         ch->sample_cycles = 0;
         ch->waveform_idx = 0;
-        ch->sweep_pace = 0;
         ch->volume = CHANNEL_EVENVLOPE_VOLUME(ch);
         ch->volume_pace = CHANNEL_EVENVLOPE_PACE(ch);
         ch->volume_pace_counter = ch->volume_pace;
         ch->volume_dir = CHANNEL_EVENVLOPE_DIRECTION(ch);
+
+        ch->sweep_shadow_period = CHANNEL_PERIOD(ch);
+        ch->sweep_pace = CHANNEL_SWEEP_PACE(ch);
+        ch->sweep_pace_counter = ch->sweep_pace;
+        ch->sweep_pace_enabled = (ch->sweep_pace > 0 || CHANNEL_SWEEP_STEPS(ch) > 0);
+        ch1_sweep_trigger(audio);
     }
 
     /* disabled channel should still counting the length */
@@ -519,45 +596,13 @@ ch1_audio(gbc_audio_t *audio)
         }
     }
 
-    if (!ch->on) {
-        return 0;
+    if (div_frame && audio->frame_sequencer % FRAME_FREQ_SWEEP == 0) {
+        /* frequency sweep */
+        ch1_sweep(audio);
     }
 
-    if (triggered || (div_frame && audio->frame_sequencer % FRAME_FREQ_SWEEP == 0)) {
-        /* frequency sweep */
-
-        if (CHANNEL_SWEEP_PACE(ch) == 0) {
-            /* write 0 to sweep pace immediately disable the sweep */
-            ch->sweep_pace = 0;
-        } else {
-            if (ch->sweep_pace == 0) {
-                ch->sweep_pace = CHANNEL_SWEEP_PACE(ch);
-                uint8_t steps = CHANNEL_SWEEP_STEPS(ch);
-                uint16_t period = CHANNEL_PERIOD(ch);
-                /* step shift needs be non-zero
-                    which isn't mentioned in the PanDoc but in gg8 wiki
-                    https://gbdev.gg8.se/wiki/articles/Gameboy_sound_hardware#Frequency_Sweep
-                */
-                if (steps != 0) {
-                    if (CHANNEL_SWEEP_DIRECTION(ch)) {
-                        /* decrease */
-                        period -= period >> steps;
-                    } else {
-                        /* increase */
-                        period += period >> steps;
-                    }
-                    period &= 0x7ff;
-                    CHANNEL_PERIOD_UPDATE(ch, period);
-                    if (period >= 0x7ff) {
-                        /* overflowed */
-                        ch->on = 0;
-                        return 0;
-                    }
-                }
-            } else {
-                ch->sweep_pace--;
-            }
-        }
+    if (!ch->on) {
+        return 0;
     }
 
     if (ch->volume_pace != 0 && div_frame &&
@@ -576,7 +621,7 @@ ch1_audio(gbc_audio_t *audio)
         }
     }
 
-    uint16_t sample_period = CHANNEL_PERIOD(ch);
+    uint16_t sample_period = ch->sweep_shadow_period;
     ch->sample_cycles++;
     if (ch->sample_cycles == 0x7ff) {
         if (ch->waveform_idx == WAVEFORM_SAMPLES)

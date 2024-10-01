@@ -40,9 +40,9 @@
 
 
 #define CHANNEL_PERIOD_UPDATE(c, p) {    \
-    (c)->NRx3 = (p & 0xff);            \
+    (c)->NRx3 = ((p) & 0xff);          \
     (c)->NRx4 &= 0xf8;                 \
-    (c)->NRx4 |= (p >> 8) & 0x7;       \
+    (c)->NRx4 |= ((p) >> 8) & 0x7;     \
 }
 
 #define CHANNEL_PERIOD(c) (uint16_t)((( ((c)->NRx4) & 0x7) << 8) | ((c)->NRx3) )
@@ -88,10 +88,12 @@ struct gbc_audio_channel {
     union {
         uint16_t lfsr;              /* channel 4 */
         struct {
-            uint8_t sweep_pace;         /* channel 1 */
-            uint8_t sweep_pace_counter; /* channel 1 */
+            uint8_t sweep_pace:7;           /* channel 1 */
+            uint8_t sweep_pace_enabled:1; /* channel 1 */
+            uint8_t sweep_pace_counter;   /* channel 1 */
         };
     };
+    uint16_t sweep_shadow_period;
 
     uint16_t length_counter;
     uint8_t waveform_idx;

@@ -11,7 +11,7 @@
 
 typedef struct gbc gbc_t;
 
-struct gbc {    
+struct gbc {
     gbc_cpu_t cpu;
     gbc_memory_t mem;
     gbc_mbc_t mbc;
@@ -22,7 +22,7 @@ struct gbc {
 
     uint32_t debug_steps;
     volatile uint8_t running:1;
-    volatile uint8_t paused:1;    
+    volatile uint8_t paused:1;
 };
 
 int gbc_init(gbc_t *gbc, const char *game_rom, const char *boot_rom);
