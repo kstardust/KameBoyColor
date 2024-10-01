@@ -109,21 +109,28 @@ _write_nrx4(gbc_audio_t *audio, uint16_t addr, uint8_t data, gbc_audio_channel_t
     /* https://gbdev.gg8.se/wiki/articles/Gameboy_sound_hardware#Obscure_Behavior */
     uint8_t next_step_doesnt_update = ((audio->frame_sequencer & 1) == 0);
     if (next_step_doesnt_update) {
-        if (length_enable && !ch->length_enabled) {
+        if (length_enable && !ch->length_enabled && ch->length_counter > 0) {
             ch->length_counter--;
-            if (ch->length_counter == 0) {
+            if (ch->length_counter == 0)
                 ch->on = 0;
-            }
         }
     }
 
-    if ((data & CHANNEL_TRIGGER_MASK) && length_enable && ch->length_counter == max) {
+    /* I used 'length_enable' instead of 'ch->length_enabled', because the doc says "the length counter is now enabled",
+      which means the data will enable the length counter, not the current state of the length counter in the 5th rule:
+      https://gbdev.gg8.se/wiki/articles/Gameboy_sound_hardware#Obscure_Behavior
+      but it failed Blargg's sound test 3 "Trigger shouldn't otherwise affect length"
+      I have to check out the code of wasmboy to notice this:
+      https://github.com/torch2424/wasmboy/blob/master/core/sound/channel1.ts
+    */
+    if ((data & CHANNEL_TRIGGER_MASK) && ch->length_enabled && ch->length_counter == max) {
         ch->length_counter -= 1;
     }
 
     /* I didnt find it in the docs(pandoc & gbdev), but is in Blargg's sound test 2 */
-    if (data & CHANNEL_TRIGGER_MASK && ch->length_counter == 0)
+    if ((data & CHANNEL_TRIGGER_MASK) && ch->length_counter == 0) {
         ch->length_counter = max;
+    }
 
     ch->length_enabled = length_enable;
     return data;
