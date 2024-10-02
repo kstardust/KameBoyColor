@@ -968,10 +968,6 @@ gbc_audio_cycle(gbc_audio_t *audio)
 
     if (!(audio->NR52 & NR52_AUDIO_ON))
         return;
-    /*
-    Actually frame sequencer is not a seperate timer in real GameBoy, it is tied to DIV register.
-    I simplied it.
-    https://gbdev.io/pandocs/Audio_details.html#div-apu */
 
     int8_t c1 = ch1_audio(audio);
     int8_t c2 = ch2_audio(audio);
