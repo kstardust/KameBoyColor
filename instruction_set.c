@@ -5,10 +5,23 @@
 static void
 stop(gbc_cpu_t *cpu, instruction_t *ins)
 {
-    /* TODO */
     LOG_DEBUG("STOP: %s\n", ins->name);
-    LOG_ERROR("STOP instruction(cpu speed mode) is not implemented\n");
-    abort();
+    gbc_memory_t *mem = (gbc_memory_t*)cpu->mem_data;
+    uint8_t key1 = IO_PORT_READ(mem, IO_PORT_KEY1);
+    if (key1 & KEY1_CPU_SWITCH_ARMED) {
+        cpu->dspeed = !cpu->dspeed;
+        if (cpu->dspeed)
+            key1 |= KEY1_CPU_CURRENT_MODE;
+        else
+            key1 &= ~KEY1_CPU_CURRENT_MODE;
+
+        key1 &= ~KEY1_CPU_SWITCH_ARMED;
+        IO_PORT_WRITE(mem, IO_PORT_KEY1, key1);
+    }
+
+    LOG_INFO("[CPU]Speed switch %s -> %s\n",
+        (cpu->dspeed ? "DOUBLE" : "NORMAL"),
+        (cpu->dspeed ? "NORMAL" : "DOUBLE"));
 }
 
 static void

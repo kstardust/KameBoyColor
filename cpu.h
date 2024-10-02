@@ -151,6 +151,10 @@ struct gbc_cpu
 #define INT_HANDLER_SERIAL   0x58
 #define INT_HANDLER_JOYPAD   0x60
 
+/* https://gbdev.io/pandocs/CGB_Registers.html#ff4d--key1-cgb-mode-only-prepare-speed-switch */
+#define KEY1_CPU_SWITCH_ARMED 0x1
+#define KEY1_CPU_CURRENT_MODE 0x80
+
 void gbc_cpu_init(gbc_cpu_t *cpu);
 void gbc_cpu_connect(gbc_cpu_t *cpu, gbc_memory_t *mem);
 void gbc_cpu_cycle(gbc_cpu_t *cpu);
