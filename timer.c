@@ -1,7 +1,7 @@
 #include "timer.h"
 #include "cpu.h"
 
-static uint8_t _timer_mode_cycles[] = {
+static uint16_t _timer_mode_cycles[] = {
     TAC_TIMER_SPEED_MODE_0_CYCLES,
     TAC_TIMER_SPEED_MODE_1_CYCLES,
     TAC_TIMER_SPEED_MODE_2_CYCLES,
@@ -36,7 +36,7 @@ void gbc_timer_cycle(gbc_timer_t *timer)
     }
 
     uint8_t mode = *timer->tacp & TAC_TIMER_SPEED_MASK;
-    uint8_t cycles = _timer_mode_cycles[mode];
+    uint16_t cycles = _timer_mode_cycles[mode];
 
     uint16_t tima = *timer->timap;
 

@@ -26,7 +26,7 @@ struct gbc_timer
 {
     gbc_memory_t *mem;
     uint16_t div_cycles;
-    uint8_t timer_cycles;
+    uint16_t timer_cycles;
     uint8_t *divp;
     uint8_t *timap;
     uint8_t *tmap;
