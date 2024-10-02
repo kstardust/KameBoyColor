@@ -33,7 +33,7 @@ ier_read(void *udata, uint16_t addr)
 static uint8_t
 ier_write(void *udata, uint16_t addr, uint8_t val)
 {
-    LOG_DEBUG("[CPU] Writing to IE register [%x]\n", val);    
+    LOG_DEBUG("[CPU] Writing to IE register [%x]\n", val);
     ((gbc_cpu_t*)udata)->ier = val;
     return val;
 }
@@ -43,7 +43,7 @@ gbc_cpu_connect(gbc_cpu_t *cpu, gbc_memory_t *mem)
 {
     cpu->mem_data = mem;
     cpu->mem_read = mem->read;
-    cpu->mem_write = mem->write;    
+    cpu->mem_write = mem->write;
 
     memory_map_entry_t entry;
     entry.read = ier_read;
@@ -60,7 +60,7 @@ gbc_cpu_connect(gbc_cpu_t *cpu, gbc_memory_t *mem)
 
 uint8_t
 gbc_cpu_interrupt(gbc_cpu_t *cpu)
-{   
+{
     if (cpu->ime == 0)
         return 0;
 
@@ -69,7 +69,7 @@ gbc_cpu_interrupt(gbc_cpu_t *cpu)
     if (ints) {
         /* disable interrupts */
         cpu->ime = 0;
-        /* according to interrupt priorities */        
+        /* according to interrupt priorities */
         uint16_t pc = 0;
         if (ints & INTERRUPT_VBLANK) {
             *cpu->ifp &= ~INTERRUPT_VBLANK;
@@ -111,18 +111,18 @@ print_cpu_stat(gbc_cpu_t *cpu)
 
 void
 gbc_cpu_cycle(gbc_cpu_t *cpu)
-{    
+{
     cpu->cycles++;
-    
+
     if (cpu->ins_cycles) {
         /* Waiting for instruction to run up its cycles,
-           the operation is already completed 
+           the operation is already completed
         */
         cpu->ins_cycles--;
         return;
     }
 
-    /* di instruction will enable ime AFTER the next instruction */    
+    /* di instruction will enable ime AFTER the next instruction */
     if (cpu->ime_insts) {
         cpu->ime_insts--;
         if (cpu->ime_insts == 0)
@@ -156,8 +156,8 @@ gbc_cpu_cycle(gbc_cpu_t *cpu)
     WRITE_R16(cpu, REG_PC, pc + ins->size);
     ins->func(cpu, ins);
 
-    /* https://forums.nesdev.org/viewtopic.php?t=12815 
-        The lower 4 bits of the F register are always 0    
+    /* https://forums.nesdev.org/viewtopic.php?t=12815
+        The lower 4 bits of the F register are always 0
         Blargg test cpu_instrs/01-special
     */
     WRITE_R8(cpu, REG_F, READ_R8(cpu, REG_F) & 0xF0);
@@ -166,13 +166,13 @@ gbc_cpu_cycle(gbc_cpu_t *cpu)
 
     #if LOGLEVEL == LOG_LEVEL_DEBUG
     print_cpu_stat(cpu);
-    #endif    
+    #endif
 }
 
 void
 debug_get_all_registers(gbc_cpu_t *cpu, int values[DEBUG_CPU_REGISTERS_SIZE])
 {
-    /* ORDER: "PC", "SP", "A", "F", "B", "C", "D", "E", "H", "L", "Z", "N", "H", "C", "IME", "IE", "IF" */    
+    /* ORDER: "PC", "SP", "A", "F", "B", "C", "D", "E", "H", "L", "Z", "N", "H", "C", "IME", "IE", "IF" */
     values[0] = READ_R16(&cpu->regs, REG_PC);
     values[1] = READ_R16(&cpu->regs, REG_SP);
     values[2] = READ_R8(&cpu->regs, REG_A);
@@ -189,5 +189,5 @@ debug_get_all_registers(gbc_cpu_t *cpu, int values[DEBUG_CPU_REGISTERS_SIZE])
     values[13] = READ_R_FLAG(&cpu->regs, FLAG_C);
     values[14] = cpu->ime;
     values[15] = cpu->ier;
-    values[16] = *cpu->ifp;    
+    values[16] = *cpu->ifp;
 }

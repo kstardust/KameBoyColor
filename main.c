@@ -35,28 +35,29 @@ int main()
     //char* cartridge = "/Users/Kevin/Development/GBC/gb-test-roms/cgb_sound/rom_singles/06-overflow on trigger.gb"; // ok
     //char* cartridge = "/Users/Kevin/Development/GBC/gb-test-roms/cgb_sound/rom_singles/07-len sweep period sync.gb"; // ok
     //char* cartridge = "/Users/Kevin/Development/GBC/gb-test-roms/cgb_sound/rom_singles/08-len ctr during power.gb"; // ok
-    char* cartridge = "/Users/Kevin/Development/GBC/gb-test-roms/cgb_sound/rom_singles/09-wave read while on.gb"; // ok
-    //char* cartridge = "/Users/Kevin/Development/GBC/tetris_dx.gbc";
-    char* boot_rom = NULL;//"/Users/Kevin/Development/GBC/gb-test-roms/cgb_boot.bin";
+    //char* cartridge = "/Users/Kevin/Development/GBC/gb-test-roms/cgb_sound/rom_singles/09-wave read while on.gb"; // ok
+    //char* cartridge = "/Users/Kevin/Development/GBC/gb-test-roms/cgb_sound/rom_singles/10-wave trigger while on.gb"; // ok
+    //char* cartridge = "/Users/Kevin/Development/GBC/gb-test-roms/cgb_sound/rom_singles/10-wave trigger while on.gb"; // ok
+    // char* cartridge = "/Users/Kevin/Development/GBC/gb-test-roms/cgb_sound/rom_singles/11-regs after power.gb"; // ok
+    //char* cartridge = "/Users/Kevin/Development/GBC/gb-test-roms/cgb_sound/rom_singles/12-wave.gb"; // ok
+    //char* cartridge = "/Users/Kevin/Development/GBC/gb-test-roms/cgb_sound/cgb_sound.gb"; // ok
+    char* cartridge = "/Users/Kevin/Development/GBC/tetris_dx.gbc";
+    char* boot_rom = "/Users/Kevin/Development/GBC/gb-test-roms/cgb_boot.bin";
 
-    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/01-special.gb", "rb"); // OK
-
-    //char* boot_rom = NULL;//"/Users/Kevin/Development/GBC/gb-test-roms/cgb_boot.bin";
-
-    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/01-special.gb", "rb"); // OK
-    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/02-interrupts.gb", "rb"); // OK
-    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/03-op sp,hl.gb", "rb"); // OK
-    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/04-op r,imm.gb", "rb"); // OK
-    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/05-op rp.gb", "rb"); // OK
-    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/06-ld r,r.gb", "rb"); // OK
-    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/07-jr,jp,call,ret,rst.gb", "rb");
-    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/08-misc instrs.gb", "rb"); // OK
-    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/09-op r,r.gb", "rb"); // OK
-    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/10-bit ops.gb", "rb"); // OK
-    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/11-op a,(hl).gb", "rb"); // OK
-    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/cpu_instrs.gb", "rb"); // OK
-    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/instr_timing/instr_timing.gb", "rb"); // OK
-    // FILE* cartridge = fopen("/Users/Kevin/Development/GBC/gb-test-roms/interrupt_time/interrupt_time.gb", "rb");
+    // cartridge = "/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/01-special.gb"; // OK
+    // cartridge = "/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/02-interrupts.gb"; // OK
+    // cartridge = "/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/03-op sp,hl.gb"; // OK
+    // cartridge = "/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/04-op r,imm.gb"; // OK
+    // cartridge = "/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/05-op rp.gb"; // OK
+    // cartridge = "/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/06-ld r,r.gb"; // OK
+    // cartridge = "/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/07-jr,jp,call,ret,rst.gb";
+    // cartridge = "/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/08-misc instrs.gb"; // OK
+    // cartridge = "/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/09-op r,r.gb"; // OK
+    // cartridge = "/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/10-bit ops.gb"; // OK
+    // cartridge = "/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/individual/11-op a,(hl).gb"; // OK
+    // cartridge = "/Users/Kevin/Development/GBC/gb-test-roms/cpu_instrs/cpu_instrs.gb"; // OK
+    // cartridge = "/Users/Kevin/Development/GBC/gb-test-roms/instr_timing/instr_timing.gb"; // ok
+    // cartridge = "/Users/Kevin/Development/GBC/gb-test-roms/interrupt_time/interrupt_time.gb";
     #endif
     gbc_t gbc;
     if (gbc_init(&gbc, cartridge, boot_rom) == 0) {

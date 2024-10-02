@@ -10,7 +10,8 @@ typedef struct gbc_cpu gbc_cpu_t;
 #define CLOCK_RATE 4194304                        /* 4.194304 MHz */
 #define CLOCK_CYCLE (1000000000 / CLOCK_RATE)     /* nanoseconds */
 #define FRAME_PER_SECOND 60
-#define FRAME_INTERVAL (1000000000 / FRAME_PER_SECOND)
+#define LOGIC_FRAME_RATE 60
+#define FRAME_INTERVAL (1000000000 / LOGIC_FRAME_RATE)
 #define CYCLES_PER_FRAME (CLOCK_RATE / FRAME_PER_SECOND)
 
 
