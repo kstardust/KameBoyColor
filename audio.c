@@ -1,6 +1,10 @@
 #include "audio.h"
 
-/* audio is annoyingly obscure, a nightmare to implement */
+/*
+Audio is annoyingly obscure, a nightmare to implement,
+this code is very fragile, a delicate balance to pass
+Blargg's test, be careful when modifying it.
+*/
 
 /* every register has its own mask for reading
 https://gbdev.gg8.se/wiki/articles/Gameboy_sound_hardware#Register_Reading
@@ -30,6 +34,7 @@ zero_channel(gbc_audio_channel_t *c)
     c->NRx3 = 0;
     c->NRx4 = 0;
     c->sample_cycles = 0;
+    c->length_counter = 0;
     c->lfsr = 0;
     c->waveform_idx = 0;
     c->volume = 0;
@@ -376,13 +381,15 @@ write_nr52(gbc_audio_t *audio, uint16_t addr, uint8_t data)
     /* lower 4 bits are read only */
     data &= 0xf0;
     if (!(data & NR52_AUDIO_ON)) {
-        /* power off */
-        zero_channel(&(audio->c1));
-        zero_channel(&(audio->c2));
-        zero_channel(&(audio->c3));
-        zero_channel(&(audio->c4));
-        audio->NR50 = 0;
-        audio->NR51 = 0;
+        if (audio->NR52 & NR52_AUDIO_ON) {
+            /* power off */
+            zero_channel(&(audio->c1));
+            zero_channel(&(audio->c2));
+            zero_channel(&(audio->c3));
+            zero_channel(&(audio->c4));
+            audio->NR50 = 0;
+            audio->NR51 = 0;
+        }
     } else {
         /* power on */
         if (!(audio->NR52 & NR52_AUDIO_ON)) {
@@ -841,7 +848,6 @@ ch4_audio(gbc_audio_t *audio)
         ch->lfsr = 0x7fff;
 
         ch->sample_cycles = 0;
-
     }
 
     /* disabled channel should still counting the length */
