@@ -9,17 +9,17 @@ if(APPLE)
     set(HOMEBREW_PATH /opt/homebrew)
     # Set up SDL2
     find_package(SDL2 REQUIRED)
-    include_directories(${SDL2_INCLUDE_DIRS})    
+    include_directories(${SDL2_INCLUDE_DIRS})
 elseif(WIN32)
     # https://stackoverflow.com/questions/60020392/why-is-timespec-get-not-supported-by-mingw-gcc-8-2-0-std-c11
     set(CMAKE_C_FLAGS "-D_UCRT")
     set(CMAKE_CXX_FLAGS "-D_UCRT")
-    set(MSYS2_PATH "C:\\MyPrograms\\msys2")    
- 
+    set(MSYS2_PATH "C:\\MyPrograms\\msys2")
+
 endif()
 
 # Set up the source files
-set(SOURCES    
+set(SOURCES
     gbc.c
     cpu.c
     mbc.c
@@ -40,24 +40,24 @@ set(IMGUI_SOURCES
     gui/mywindow.cpp
     gui/imgui/imgui.cpp
     gui/imgui/imgui_draw.cpp
-    gui/imgui/imgui_widgets.cpp    
+    gui/imgui/imgui_widgets.cpp
     gui/imgui/imgui_tables.cpp
     gui/imgui/imgui_demo.cpp
     gui/imgui/backends/imgui_impl_sdl2.cpp
     gui/imgui/backends/imgui_impl_opengl3.cpp
-)    
+)
 
 set(IMGUI_INCLUDE_DIRS ./ gui/ gui/imgui gui/imgui/backends)
 
 if (WIN32)
-    list(APPEND IMGUI_INCLUDE_DIRS         
+    list(APPEND IMGUI_INCLUDE_DIRS
         ${MSYS2_PATH}/clang64/include
         ${MSYS2_PATH}/mingw64/include/SDL2
     )
 
-    link_directories(                
+    link_directories(
         ${MSYS2_PATH}/clang64/lib
-        ${MSYS2_PATH}/mingw64/lib                
+        ${MSYS2_PATH}/mingw64/lib
     )
 elseif(APPLE)
     list(APPEND IMGUI_INCLUDE_DIRS
@@ -80,5 +80,5 @@ add_compile_options(-g)
 #add_link_options(-fsanitize=address)
 
 include_directories(${IMGUI_INCLUDE_DIRS})
-add_executable(main ${SOURCES} ${IMGUI_SOURCES})
-target_link_libraries(main ${IMGUI_LIBS})
+add_executable(xgbc ${SOURCES} ${IMGUI_SOURCES})
+target_link_libraries(xgbc ${IMGUI_LIBS})

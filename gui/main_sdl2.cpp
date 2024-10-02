@@ -27,9 +27,6 @@ using std::vector;
 
 #define SAMPLE_RATE GBC_AUDIO_SAMPLE_RATE  // Standard sample rate for audio
 #define SAMPLES_FRAME (2 * GBC_AUDIO_SAMPLE_SIZE)
-#define AMPLITUDE 28000    // Maximum amplitude of the waveform
-#define FREQUENCY1 440     // Frequency of the first tone (A4 note = 440 Hz)
-#define FREQUENCY2 660     // Frequency of the second tone (around E5 note)
 
 void (*gui_close_callback)(void* udata) = NULL;
 void *gui_callback_udata = NULL;
@@ -46,7 +43,7 @@ static int sample_counter = 0;
 #include "../libs/emscripten/emscripten_mainloop_stub.h"
 #endif
 
-#define INIT_WINDOW_WIDTH 1200
+#define INIT_WINDOW_WIDTH 1100
 #define INIT_WINDOW_HEIGHT 700
 
 static std::unordered_map<int, SDL_Keycode> key_map = {
@@ -93,55 +90,6 @@ void AudioThread()
     }
 
     SDL_CloseAudioDevice(audio_device);
-    return;
-}
-
-void test_audio_callback(void* userdata, Uint8* stream, int len) {
-    static double phase1 = 0.0;
-    static double phase2 = 0.0;
-    double phase_increment1 = 2.0 * M_PI * FREQUENCY1 / SAMPLE_RATE;
-    double phase_increment2 = 2.0 * M_PI * FREQUENCY2 / SAMPLE_RATE;
-    Sint16* buffer = (Sint16*)stream;
-    int length = len / 2;  // Since we use Sint16 (2 bytes per sample)
-
-    for (int i = 0; i < length; i++) {
-        // Generate sine waves for both frequencies
-        Sint16 sample1 = (Sint16)(AMPLITUDE * sin(phase1));
-        Sint16 sample2 = (Sint16)(AMPLITUDE * sin(phase2));
-
-        // Mix the two sine waves by adding their values
-        buffer[i] = sample1 + sample2;
-
-        // Update the phase for both sine waves
-        phase1 += phase_increment1;
-        if (phase1 >= 2.0 * M_PI) {
-            phase1 -= 2.0 * M_PI;
-        }
-
-        phase2 += phase_increment2;
-        if (phase2 >= 2.0 * M_PI) {
-            phase2 -= 2.0 * M_PI;
-        }
-    }
-}
-
-void TestAudio() {
-
-    SDL_AudioSpec desired_spec, obtained_spec;
-    desired_spec.freq = SAMPLE_RATE;
-    desired_spec.format = AUDIO_S16SYS;
-    desired_spec.channels = 1;  // Mono
-    desired_spec.samples = 4096;
-    desired_spec.callback = test_audio_callback;
-
-    if (SDL_OpenAudio(&desired_spec, &obtained_spec) < 0) {
-        fprintf(stderr, "Failed to open audio: %s\n", SDL_GetError());
-        return;
-    }
-
-    SDL_PauseAudio(0);  // Start playing audio
-    SDL_Delay(2000);    // Play for 2 seconds
-    SDL_CloseAudio();
     return;
 }
 

@@ -40,10 +40,8 @@ void InitMyWindow() {
     std::srand(std::time(nullptr));
 }
 
-unsigned short GuiWrite(void *udata, unsigned short addr, unsigned short data) {
+void GuiWrite(void *udata, unsigned short addr, unsigned short data) {
     framebuffer[addr] = IM_COL32(GBC_COLOR_TO_RGB_R(data), GBC_COLOR_TO_RGB_G(data), GBC_COLOR_TO_RGB_B(data), 255);
-    // framebuffer[addr] = IM_COL32(std::rand() % 255, std::rand() % 255, std::rand() % 255, std::rand() % 255);
-    return 0;
 }
 
 bool IsPaused() {

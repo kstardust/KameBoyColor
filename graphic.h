@@ -10,11 +10,11 @@ typedef struct gbc_tilemap gbc_tilemap_t;
 typedef struct gbc_tilemap_attr gbc_tilemap_attr_t;
 typedef struct gbc_obj gbc_obj_t;
 
-typedef uint16_t (*screen_write)(void *udata, uint16_t addr, uint16_t data);
+typedef void (*screen_write)(void *udata, uint16_t addr, uint16_t data);
 
 #define VRAM_BANK_SIZE (VRAM_END-VRAM_BEGIN+1)
 
-/* 
+/*
 https://gbdev.io/pandocs/Rendering.html
 I implemented a simplified model of the GameBoy PPU.
 Graphic cycle runs every 80dots, every scanline costs 6 graphic cycles (480 dots)
@@ -83,11 +83,6 @@ TODO: Using cpu cycles may be better?
 #define TILE_ATTR_YFLIP(x) ((x) & 0x40)
 #define TILE_ATTR_PRIORITY(x) ((x) & 0x80)
 
-/* 
-TODO: Translate color (GBC's screen is different from normal RGB screen) 
-This is RGB555 to RGB888 with scale(i.e. the 0x7fff is 0xffffff)
-*/
-#define COLOR_SCALE 
 
 #define GBC_COLOR_TO_RGB_R(x) ((x & 0x1F) * 0xff / 0x1F)
 #define GBC_COLOR_TO_RGB_G(x) (((x & 0x03E0) >> 5) * 0xff / 0x1F)
@@ -109,16 +104,16 @@ This is RGB555 to RGB888 with scale(i.e. the 0x7fff is 0xffffff)
 
 struct gbc_graphic
 {
-    uint32_t dots;   /* dots to next graphic update */    
+    uint32_t dots;   /* dots to next graphic update */
     uint8_t vram[VRAM_BANK_SIZE * 2]; /* 2x8KB */
-    uint8_t scanline;    
+    uint8_t scanline;
     uint8_t mode;
-    
+
     void *screen_udata;
     void (*screen_update)(void *udata);
     screen_write screen_write;
 
-    gbc_memory_t *mem;    
+    gbc_memory_t *mem;
 };
 
 struct gbc_tile
@@ -143,7 +138,7 @@ struct gbc_obj
     uint8_t y;
     uint8_t x;
     uint8_t tile;
-    uint8_t attr;    
+    uint8_t attr;
 };
 
 
