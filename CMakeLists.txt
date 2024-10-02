@@ -5,7 +5,6 @@ set(CMAKE_C_STANDARD_REQUIRED TRUE)
 project(gbc)
 
 if(APPLE)
-    set(CMAKE_OSX_SYSROOT /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk)
     set(HOMEBREW_PATH /opt/homebrew)
     # Set up SDL2
     find_package(SDL2 REQUIRED)

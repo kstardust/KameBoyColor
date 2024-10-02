@@ -101,7 +101,7 @@ print_cpu_stat(gbc_cpu_t *cpu)
 {
     cpu_register_t *r = &cpu->regs;
 
-    printf("{PC: 0x%x, SP: 0x%x, AF: 0x%x, BC: 0x%x, DE: 0x%x, HL: 0x%x, C: %d, Z: %d, N: %d, H: %d, IME: %x, IE: %x, IF: %x}: M-Cycles: %d\n",
+    printf("{PC: 0x%x, SP: 0x%x, AF: 0x%x, BC: 0x%x, DE: 0x%x, HL: 0x%x, C: %d, Z: %d, N: %d, H: %d, IME: %x, IE: %x, IF: %x}: M-Cycles: %llu\n",
            READ_R16(r, REG_PC), READ_R16(r, REG_SP), READ_R16(r, REG_AF),
            READ_R16(r, REG_BC), READ_R16(r, REG_DE), READ_R16(r, REG_HL),
            READ_R_FLAG(r, FLAG_C), READ_R_FLAG(r, FLAG_Z), READ_R_FLAG(r, FLAG_N), READ_R_FLAG(r, FLAG_H),

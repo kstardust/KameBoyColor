@@ -1313,7 +1313,7 @@ static void
 rst(gbc_cpu_t *cpu, instruction_t *ins)
 {
     LOG_DEBUG("RST: %s\n", ins->name);
-    uint16_t addr = (uint16_t)ins->op1;
+    uint16_t addr = (uint16_t)(uintptr_t)ins->op1;
     _call_addr(cpu, ins, addr);
 }
 
@@ -1746,7 +1746,7 @@ cb_bit_r8(gbc_cpu_t *cpu, instruction_t *ins)
     LOG_DEBUG("BIT: %s\n", ins->name);
 
     cpu_register_t *regs = &(cpu->regs);
-    uint8_t bit = (uint8_t)ins->op1;
+    uint8_t bit = (uint8_t)(uintptr_t)ins->op1;
     size_t reg_offset = (size_t)ins->op2;
 
     uint8_t value = READ_R8(regs, reg_offset);
@@ -1763,7 +1763,7 @@ cb_bit_m16(gbc_cpu_t *cpu, instruction_t *ins)
     LOG_DEBUG("BIT: %s\n", ins->name);
 
     cpu_register_t *regs = &(cpu->regs);
-    uint8_t bit = (uint8_t)ins->op1;
+    uint8_t bit = (uint8_t)(uintptr_t)ins->op1;
     size_t reg_offset = (size_t)ins->op2;
     uint16_t addr = READ_R16(regs, reg_offset);
     uint8_t value = cpu->mem_read(cpu->mem_data, addr);
@@ -1781,7 +1781,7 @@ cb_res_r8(gbc_cpu_t *cpu, instruction_t *ins)
     LOG_DEBUG("RES: %s\n", ins->name);
 
     cpu_register_t *regs = &(cpu->regs);
-    uint8_t bit = (uint8_t)ins->op1;
+    uint8_t bit = (uint8_t)(uintptr_t)ins->op1;
     size_t reg_offset = (size_t)ins->op2;
 
     uint8_t value = READ_R8(regs, reg_offset);
@@ -1796,7 +1796,7 @@ cb_res_m16(gbc_cpu_t *cpu, instruction_t *ins)
     LOG_DEBUG("RES: %s\n", ins->name);
 
     cpu_register_t *regs = &(cpu->regs);
-    uint8_t bit = (uint8_t)ins->op1;
+    uint8_t bit = (uint8_t)(uintptr_t)ins->op1;
     size_t reg_offset = (size_t)ins->op2;
     uint16_t addr = READ_R16(regs, reg_offset);
     uint8_t value = cpu->mem_read(cpu->mem_data, addr);
@@ -1812,7 +1812,7 @@ cb_set_r8(gbc_cpu_t *cpu, instruction_t *ins)
     LOG_DEBUG("SET: %s\n", ins->name);
 
     cpu_register_t *regs = &(cpu->regs);
-    uint8_t bit = (uint8_t)ins->op1;
+    uint8_t bit = (uint8_t)(uintptr_t)ins->op1;
     size_t reg_offset = (size_t)ins->op2;
 
     uint8_t value = READ_R8(regs, reg_offset);
@@ -1827,7 +1827,7 @@ cb_set_m16(gbc_cpu_t *cpu, instruction_t *ins)
     LOG_DEBUG("SET: %s\n", ins->name);
 
     cpu_register_t *regs = &(cpu->regs);
-    uint8_t bit = (uint8_t)ins->op1;
+    uint8_t bit = (uint8_t)(uintptr_t)ins->op1;
     size_t reg_offset = (size_t)ins->op2;
     uint16_t addr = READ_R16(regs, reg_offset);
     uint8_t value = cpu->mem_read(cpu->mem_data, addr);
