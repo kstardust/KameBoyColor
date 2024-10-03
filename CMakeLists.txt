@@ -49,13 +49,11 @@ set(IMGUI_SOURCES
 set(IMGUI_INCLUDE_DIRS ./ gui/ gui/imgui gui/imgui/backends)
 
 if (WIN32)
-    list(APPEND IMGUI_INCLUDE_DIRS
-        ${MSYS2_PATH}/clang64/include
+    list(APPEND IMGUI_INCLUDE_DIRS        
         ${MSYS2_PATH}/mingw64/include/SDL2
     )
 
-    link_directories(
-        ${MSYS2_PATH}/clang64/lib
+    link_directories(        
         ${MSYS2_PATH}/mingw64/lib
     )
 elseif(APPLE)
