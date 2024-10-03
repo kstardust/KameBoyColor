@@ -231,7 +231,7 @@ static uint8_t
 write_nr30(gbc_audio_t *audio, uint16_t addr, uint8_t data)
 {
     gbc_audio_channel_t *ch = &(audio->c3);
-    ch->on = (data & CH3_DAC_ON_MASK);
+    ch->on = (data & CH3_DAC_ON_MASK) != 0;
     ch->NRx0 = data;
     return data;
 }
@@ -987,7 +987,9 @@ gbc_audio_cycle(gbc_audio_t *audio)
 
     if (audio->output_sample_cycles == 0) {
         /* linear interpolation */
-        int8_t sample = audio->sample / audio->sample_divider;
+        uint8_t sample = 0;
+        if (audio->sample_divider > 0)
+            sample = audio->sample / audio->sample_divider;
 
         audio->audio_write(sample, sample);
         audio->output_sample_cycles = SAMPLE_TO_AUDIO_CYCLES;
