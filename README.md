@@ -1,5 +1,5 @@
 # A GameBoyColor Emulator
-This is a GameboyColor emulator written in my favorite language `C`. I uses [SDL2](https://github.com/libsdl-org/SDL)+[Dear ImGui](https://github.com/ocornut/imgui) for
+This is a GameBoyColor emulator written in my favorite language `C`. I use [SDL2](https://github.com/libsdl-org/SDL)+[Dear ImGui](https://github.com/ocornut/imgui) for
 sounds, graphics and input. So it can run on any platform that supports SDL2. And the GUI part is totally separated from the core emulator, so you can easily
 replace it with your own GUI. Check the `gui/gui.h`.
 
@@ -71,7 +71,7 @@ cmake -G 'Unix Makefiles'
 make
 ```
 # Run
-6. Run the project
+Run the project
 ```bash
 ./xgbc -r cartridge_file [-b boot_rom]
 ```
