@@ -306,9 +306,9 @@ mbc5_read(gbc_mbc_t *mbc, uint16_t addr)
         return mbc->rom_banks[addr];
 
     } else if (IN_RANGE(addr, MBC1_ROM_BANK_N_BEGIN, MBC1_ROM_BANK_N_END)) {
-        uint32_t mbc1_rom_addr = translate_mbc5_addr(mbc, addr);
-        uint16_t raddr = mbc1_rom_addr & ROM_ADDR_MASK;
-        uint8_t bank = (mbc1_rom_addr >> ROM_ADDR_MASK_SHIFT) & MBC1_ROM_BANK_MASK;
+        uint32_t mbc5_rom_addr = translate_mbc5_addr(mbc, addr);
+        uint16_t raddr = mbc5_rom_addr & ROM_ADDR_MASK;
+        uint8_t bank = (mbc5_rom_addr >> ROM_ADDR_MASK_SHIFT) & MBC5_ROM_BANK_MASK;
 
         LOG_DEBUG("[MBC5] Reading from MBC5 ROM Bank [%x] at address %x\n", bank, raddr);
 
@@ -322,9 +322,9 @@ mbc5_read(gbc_mbc_t *mbc, uint16_t addr)
         return mbc->rom_banks[bank * ROM_BANK_SIZE + raddr];
 
     } else if (IN_RANGE(addr, MBC1_RAM_BEGIN, MBC1_RAM_END)) {
-        uint32_t mbc1_ram_addr = translate_mbc5_addr(mbc, addr);
-        uint16_t raddr = mbc1_ram_addr & RAM_ADDR_MASK;
-        uint8_t bank = (mbc1_ram_addr >> RAM_ADDR_MASK_SHIFT) & MBC5_RAM_BANK_MASK;
+        uint32_t mbc5_ram_addr = translate_mbc5_addr(mbc, addr);
+        uint16_t raddr = mbc5_ram_addr & RAM_ADDR_MASK;
+        uint8_t bank = (mbc5_ram_addr >> RAM_ADDR_MASK_SHIFT) & MBC5_RAM_BANK_MASK;
 
         LOG_DEBUG("[MBC5] Reading from MBC5 RAM Bank [%x] at address %x\n", bank, raddr);
 
@@ -358,7 +358,7 @@ mbc5_write(gbc_mbc_t *mbc, uint16_t addr, uint8_t data)
             mbc->rom_bank = (mbc->rom_bank & ~0xff) | data;
             LOG_DEBUG("[MBC5] Set ROM bank LSB: %x\n", mbc->rom_bank);
         } else if (IN_RANGE(addr, MBC5_REG_ROM_BANK_MSB_BEGIN, MBC5_REG_ROM_BANK_MSB_END)) {
-            mbc->rom_bank = mbc->rom_bank | ((data & MBC5_REG_ROM_BANK_MSB_MASK) << MBC5_REG_ROM_BANK_MSB_SHIFT);
+            mbc->rom_bank = (mbc->rom_bank & ~0x100) | ((data & MBC5_REG_ROM_BANK_MSB_MASK) << MBC5_REG_ROM_BANK_MSB_SHIFT);
             LOG_DEBUG("[MBC5] Set ROM bank MSB: %x %x\n",  (data & MBC5_REG_ROM_BANK_MSB_MASK), mbc->rom_bank);
         } else if (IN_RANGE(addr, MBC1_REG_RAM_BANK_BEGIN, MBC1_REG_RAM_BANK_END)) {
             result = data & MBC5_RAM_BANK_MASK;
