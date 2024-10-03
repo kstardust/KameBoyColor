@@ -379,10 +379,10 @@ mbc5_write(gbc_mbc_t *mbc, uint16_t addr, uint8_t data)
             LOG_INFO("[MBC5] Invalid write: addr %x data: [%x]. External RAM is not enabled. This write is ignored.\n", addr, data);
         } else {
 
-            uint32_t mbc1_ram_addr = translate_mbc5_addr(mbc, addr);
+            uint32_t mbc5_ram_addr = translate_mbc5_addr(mbc, addr);
 
-            uint16_t raddr = mbc1_ram_addr & RAM_ADDR_MASK;
-            uint8_t bank = (mbc1_ram_addr >> RAM_ADDR_MASK_SHIFT) & MBC1_RAM_BANK_MASK;
+            uint16_t raddr = mbc5_ram_addr & RAM_ADDR_MASK;
+            uint8_t bank = (mbc5_ram_addr >> RAM_ADDR_MASK_SHIFT) & MBC5_RAM_BANK_MASK;
 
             LOG_DEBUG("[MBC5] Writing to MBC1 RAM Bank [%x] at address %x [%x]\n", bank, addr, data);
 
