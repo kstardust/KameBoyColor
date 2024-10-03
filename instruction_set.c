@@ -20,8 +20,8 @@ stop(gbc_cpu_t *cpu, instruction_t *ins)
     }
 
     LOG_INFO("[CPU]Speed switch %s -> %s\n",
-        (cpu->dspeed ? "DOUBLE" : "NORMAL"),
-        (cpu->dspeed ? "NORMAL" : "DOUBLE"));
+        (cpu->dspeed ? "NORMAL" : "DOUBLE"),
+        (cpu->dspeed ? "DOUBLE" : "NORMAL"));
 }
 
 static void
