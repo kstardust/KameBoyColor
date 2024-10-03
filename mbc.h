@@ -45,15 +45,27 @@
 #define MBC1_RAM_BANK_MASK_SHIFT 2
 #define MBC1_RAM_BANK_MASK ((1 << MBC1_RAM_BANK_MASK_SHIFT) - 1)
 
+#define MBC5_REG_ROM_BANK_LSB_BEGIN 0x2000
+#define MBC5_REG_ROM_BANK_LSB_END   0x2fff
+
+#define MBC5_REG_ROM_BANK_MSB_BEGIN 0x3000
+#define MBC5_REG_ROM_BANK_MSB_END   0x3fff
+
+#define MBC5_RAM_BANK_MASK      0x0f
+#define MBC5_ROM_BANK_MASK      0x1f
+
+#define MBC5_REG_ROM_BANK_MSB_MASK 0x1
+#define MBC5_REG_ROM_BANK_MSB_SHIFT 8
+
 typedef struct gbc_mbc gbc_mbc_t;
 typedef uint8_t (*mbc_read_func)(gbc_mbc_t *mbc, uint16_t addr);
 typedef uint8_t (*mbc_write_func)(gbc_mbc_t *mbc, uint16_t addr, uint8_t data);
 
 struct gbc_mbc
 {
-    uint8_t rom_bank;
+    uint16_t rom_bank;
+    uint16_t rom_bank_size;
     uint8_t ram_bank;
-    uint8_t rom_bank_size;
     uint8_t ram_bank_size;
     uint8_t ram_enabled;
     uint8_t mode;
