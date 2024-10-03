@@ -110,6 +110,10 @@ void GuiAudioUpdate(void *udata)
         return;
     }
 
+    if (audio_device == 0) {
+        return;
+    }
+
     if (SDL_QueueAudio(audio_device, audio_buffer.data(), sample_counter) < 0) {
         fprintf(stderr, "Failed to queue audio: %s\n", SDL_GetError());
         return;
