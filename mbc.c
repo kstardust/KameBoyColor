@@ -241,7 +241,7 @@ mbc1_write(gbc_mbc_t *mbc, uint16_t addr, uint8_t data)
     if (IN_RANGE(addr, MBC1_ROM_BEGIN, MBC1_ROM_END)) {
 
         if (IN_RANGE(addr, MBC1_REG_RAM_ENABLE_BEGIN, MBC1_REG_RAM_ENABLE_END)) {
-            result = data & 0x0f;
+            result = ((data & 0x0f) == MBC1_RAM_ENABLE);
             mbc->ram_enabled = result;
             LOG_DEBUG("[MBC1] RAM enabled: %d\n", mbc->ram_enabled);
 
@@ -350,7 +350,7 @@ mbc5_write(gbc_mbc_t *mbc, uint16_t addr, uint8_t data)
     if (IN_RANGE(addr, MBC1_ROM_BEGIN, MBC1_ROM_END)) {
 
         if (IN_RANGE(addr, MBC1_REG_RAM_ENABLE_BEGIN, MBC1_REG_RAM_ENABLE_END)) {
-            result = data & 0x0f;
+            result = ((data & 0x0f) == MBC1_RAM_ENABLE);
             mbc->ram_enabled = result;
             LOG_DEBUG("[MBC5] RAM enabled: %d\n", mbc->ram_enabled);
 
@@ -366,7 +366,7 @@ mbc5_write(gbc_mbc_t *mbc, uint16_t addr, uint8_t data)
             LOG_DEBUG("[MBC5] Set RAM bank: %d\n", mbc->ram_bank);
 
         } else if (IN_RANGE(addr, MBC1_REG_BANKING_MODE_BEGIN, MBC1_REG_BANKING_MODE_END)) {
-            LOG_DEBUG("[MBC5] I guesss nothing happens here: %x\n", addr);
+            LOG_ERROR("[MBC5] I guesss nothing happens here: %x\n", addr);
         } else {
             LOG_ERROR("[MBC5] It is not possible to reach here: %x\n", addr);
             abort();
