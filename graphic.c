@@ -295,6 +295,8 @@ gbc_graphic_cycle(gbc_graphic_t *graphic)
                 graphic->mode = PPU_MODE_3;
                 gbc_graphic_draw_line(graphic, scanline);
             } else if (graphic->mode == PPU_MODE_0 || graphic->mode == PPU_MODE_1) {
+                if (graphic->mode != PPU_MODE_1)
+                    scanline++;
                 /* OAM SCAN */
                 /* The real gameboy scans obj here but we scan then in MODE3, see above */
                 graphic->dots = PPU_MODE_2_DOTS;
@@ -302,7 +304,6 @@ gbc_graphic_cycle(gbc_graphic_t *graphic)
                 if (io_stat & STAT_MODE_2_INT) {
                     REQUEST_INTERRUPT(graphic->mem, INTERRUPT_LCD_STAT);
                 }
-                scanline++;
             }
         } else {
             /* V-BLANK */
