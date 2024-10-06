@@ -52,7 +52,7 @@
 #define MBC5_REG_ROM_BANK_MSB_END   0x3fff
 
 #define MBC5_RAM_BANK_MASK      0x0f
-#define MBC5_ROM_BANK_MASK      0x1f
+#define MBC5_ROM_BANK_MASK      0x1ff
 
 #define MBC5_REG_ROM_BANK_MSB_MASK 0x1
 #define MBC5_REG_ROM_BANK_MSB_SHIFT 8
