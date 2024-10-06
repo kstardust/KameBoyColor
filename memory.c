@@ -147,6 +147,8 @@ io_port_read(void *udata, uint16_t addr)
         return *((uint8_t*)(mem->bg_palette) + (IO_PORT_READ(mem, IO_PORT_BCPS_BCPI) & 0x3f));
     } else if (port == IO_PORT_OCPD_OBPD) {
         return *((uint8_t*)(mem->obj_palette) + (IO_PORT_READ(mem, IO_PORT_OCPS_OCPI) & 0x3f));
+    } else if (port == IO_PORT_VBK) {
+        return IO_PORT_READ(mem, IO_PORT_VBK) | 0xfe;
     }
     return IO_PORT_READ(mem, port);
 }
@@ -234,6 +236,8 @@ io_port_write(void *udata, uint16_t addr, uint8_t data)
         }
     } else if (port == IO_PORT_DMA) {
         io_dma_transer(mem, data);
+    } else if (port == IO_PORT_VBK) {
+        data &= 0x01;
     }
 
     IO_PORT_WRITE(mem, port, data);

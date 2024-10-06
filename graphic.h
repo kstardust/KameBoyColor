@@ -102,6 +102,11 @@ TODO: Using cpu cycles may be better?
 #define OAM_Y_TO_SCREEN(y) ((y) - 16)
 #define OAM_X_TO_SCREEN(x) ((x) - 8)
 
+/* each tile is 8x8, top-left is 0,0 */
+#define TILE_PIXEL_COLORID(td, x, y)  \
+    ((td)->data[y * 2] & (1 << (7 - x)) ? 1 : 0) + \
+    ((td)->data[y * 2 + 1] & (1 << (7 - x)) ? 2 : 0)
+
 struct gbc_graphic
 {
     uint32_t dots;   /* dots to next graphic update */

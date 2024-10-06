@@ -5,12 +5,6 @@
 static void* vram_addr(void *udata, uint16_t addr);
 static void* vram_addr_bank(void *udata, uint16_t addr, uint8_t bank);
 
-/* each tile is 8x8, top-left is 0,0 */
-#define TILE_PIXEL_COLORID(td, x, y)  \
-    ((td)->data[y * 2] & (1 << (7 - x)) ? 1 : 0) + \
-    ((td)->data[y * 2 + 1] & (1 << (7 - x)) ? 2 : 0)
-
-
 void
 gbc_graphic_init(gbc_graphic_t *graphic)
 {
