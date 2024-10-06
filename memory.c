@@ -177,6 +177,24 @@ io_dma_transer(gbc_memory_t *mem, uint8_t addr)
     }
 }
 
+static inline uint8_t
+hdma_transer(gbc_memory_t *mem, uint8_t data)
+{
+    /* https://gbdev.io/pandocs/CGB_Registers.html#lcd-vram-dma-transfers */
+    uint16_t src = (IO_PORT_READ(mem, IO_PORT_HDMA1) << 8) | IO_PORT_READ(mem, IO_PORT_HDMA2);
+    uint16_t dst = (IO_PORT_READ(mem, IO_PORT_HDMA3) << 8) | IO_PORT_READ(mem, IO_PORT_HDMA4);
+    dst &= 0x1ff0;
+    dst += 0x8000;
+
+    uint16_t len = ((data & 0x7f) + 1) * 0x10;
+
+    for (int i = 0; i < len; i++)
+        mem->write(mem, dst + i, mem->read(mem, src + i));
+
+    /* I suspect that Transfer Mode is not necessary */
+    return 0xff;
+}
+
 static uint8_t
 io_port_write(void *udata, uint16_t addr, uint8_t data)
 {
@@ -238,6 +256,8 @@ io_port_write(void *udata, uint16_t addr, uint8_t data)
         io_dma_transer(mem, data);
     } else if (port == IO_PORT_VBK) {
         data &= 0x01;
+    } else if (port == IO_PORT_HDMA5) {
+        data = hdma_transer(mem, data);
     }
 
     IO_PORT_WRITE(mem, port, data);
