@@ -19,16 +19,6 @@ static double last_frame = 0;
 static long long int last_cycles = 0;
 std::vector<ImU32> framebuffer(width * height, IM_COL32(0, 0, 0, 255)); // Initialize with black color
 
-// Fill the framebuffer with your data
-void FillFramebuffer(std::vector<ImU32>& buffer) {
-    for (int y = 0; y < height; ++y) {
-        for (int x = 0; x < width; ++x) {
-            // Example: Fill with a simple pattern
-            // buffer[y * width + x] = ((x + y) % 2) ? IM_COL32(255, 255, 255, 255) : IM_COL32(0, 0, 0, 255);
-            buffer[y * width + x] = IM_COL32(std::rand() % 255, std::rand() % 255, std::rand() % 255, 255);
-        }
-    }
-}
 
 // Draw the framebuffer
 void DrawFramebuffer(ImDrawList* draw_list, const std::vector<ImU32>& buffer, ImVec2 position) {
@@ -233,11 +223,10 @@ void ShowHUD() {
 void ShowGame() {
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     //ImGui::SetNextWindowPos(center, ImGuiCond_Always, ImVec2(0.5f, 0.5f)); // Center window
-    ImGui::SetNextWindowSize(ImVec2(width * pixel_size, height * pixel_size + 20));
+    ImGui::SetNextWindowSize(ImVec2(width * pixel_size, height * pixel_size + 30));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
     ImGui::Begin("GBC");
     ImDrawList* draw_list = ImGui::GetWindowDrawList();
-    // FillFramebuffer(framebuffer);
     DrawFramebuffer(draw_list, framebuffer, ImGui::GetCursorScreenPos());
     ImGui::End();
     ImGui::PopStyleVar();

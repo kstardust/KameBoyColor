@@ -26,7 +26,12 @@ replace it with your own GUI. Check the `gui/gui.h`.
 I'll gradually fix the failed tests.
 
 # MBC
-Currently only `MBC1` is implemented. (Which is enough for... *Tetris*!)
+
+| Test | Status | Game |
+|----------|----------|----------|
+| MBC1      | ✅   | Tetris DX |
+| MBC5     | ✅     | Super Mario Bros. Deluxe |
+I'll add more MBCs in the future.
 
 # Build
 ## macOS
