@@ -17,6 +17,7 @@ int
 gbc_init(gbc_t *gbc, const char *game_rom, const char *boot_rom)
 {
     init_instruction_set();
+    memset(gbc, 0, sizeof(gbc_t));
 
     gbc_mem_init(&gbc->mem);
     gbc_cpu_init(&gbc->cpu);
