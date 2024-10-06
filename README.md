@@ -41,7 +41,7 @@ brew install sdl2
 ```
 2. Clone the project
 ```bash
-git clone git@github.com:kstardust/KameBoyColor.git
+git clone https://github.com/kstardust/KameBoyColor.git
 git submodule update --init
 ```
 3. Build the project
@@ -63,7 +63,7 @@ pacman -S mingw-w64-x86_64-cmake mingw-w64-x86_64-toolchain mingw-w64-x86_64-SDL
 ```
 3. Clone the project
 ```bash
-git clone git@github.com:kstardust/KameBoyColor.git
+git clone https://github.com/kstardust/KameBoyColor.git
 git submodule update --init
 ```
 4. Set the `MSYS2_PATH` in `CMakeLists.txt` to your MSYS2 installation path
