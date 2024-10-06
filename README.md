@@ -31,6 +31,8 @@ I'll gradually fix the failed tests.
 |----------|----------|----------|
 | MBC1      | ✅   | Tetris DX |
 | MBC5     | ✅     | Super Mario Bros. Deluxe |
+
+
 I'll add more MBCs in the future.
 
 # Build
@@ -42,6 +44,7 @@ brew install sdl2
 2. Clone the project
 ```bash
 git clone https://github.com/kstardust/KameBoyColor.git
+cd KameBoyColor
 git submodule update --init
 ```
 3. Build the project
@@ -57,20 +60,21 @@ I do not have a Linux machine on hand, but it should be similar to macOS.
 ## Windows
 You need MSYS2 to build as I used some POSIX functions.
 1. Install [MSYS2](https://www.msys2.org/)
-2. Open MSYS2 shell and install the necessary packages
-```bash
-pacman -S mingw-w64-x86_64-cmake mingw-w64-x86_64-toolchain mingw-w64-x86_64-SDL2
-```
-3. Clone the project
+2. Clone the project
 ```bash
 git clone https://github.com/kstardust/KameBoyColor.git
+cd KameBoyColor
 git submodule update --init
+```
+3. Open `MSYS2 shell` and install the necessary packages
+```bash
+pacman -S mingw-w64-x86_64-cmake mingw-w64-x86_64-toolchain mingw-w64-x86_64-SDL2
 ```
 4. Set the `MSYS2_PATH` in `CMakeLists.txt` to your MSYS2 installation path
 ```cmake
 set(MSYS2_PATH "C:\\MyPrograms\\msys2")
 ```
-5. Build the project
+5. Build the project (`This step is supposed to be done in MSYS2 shell. DO NOT USE Git Bash shell!!`)
 ```bash
 cmake -G 'Unix Makefiles'
 make
