@@ -9,6 +9,11 @@
 const int width = 160;
 const int height = 144;
 const int pixel_size = 4;
+const int tile_viewer_border_width = 1;
+static int tile_viewer_enabled = 0;
+
+const int tile_viewr_col = 16;
+const int tile_viewer_row = 384 / tile_viewr_col;
 
 static double last_frame = 0;
 static long long int last_cycles = 0;
@@ -36,6 +41,45 @@ void DrawFramebuffer(ImDrawList* draw_list, const std::vector<ImU32>& buffer, Im
     }
 }
 
+void DrawTileViewerFramebuffer(ImDrawList* draw_list, int bank, ImVec2 position) {
+    // Draw the tile viewer framebuffer
+    gbc_t *gbc = (gbc_t*)gui_callback_udata;
+    for (int row = 0; row < tile_viewer_row; row++) {
+        for (int col = 0; col < tile_viewr_col; col++) {
+
+            gbc_tile_t *tile = gbc_graphic_get_tile(&gbc->graphic, TILE_TYPE_OBJ, row * tile_viewr_col + col, bank);
+            int row_base = row * (8 + tile_viewer_border_width) * pixel_size + position.y + tile_viewer_border_width / 2 * pixel_size;
+            int col_base = col * (8 + tile_viewer_border_width) * pixel_size + position.x + tile_viewer_border_width / 2 * pixel_size;
+            for (int y = 0; y < 8; y++) {
+                for (int x = 0; x < 8; x++) {
+                    uint8_t color_id = TILE_PIXEL_COLORID(tile, x, y);
+
+                    ImU32 color;
+                    if (color_id == 0) {
+                        color = IM_COL32(255, 255, 255, 255);
+                    } else if (color_id == 1) {
+                        color = IM_COL32(169, 169, 169, 255);
+                    } else if (color_id == 2) {
+                        color = IM_COL32(84, 84, 84, 255);
+                    } else if (color_id == 3) {
+                        color = IM_COL32(0, 0, 0, 255);
+                    } else {
+                        /* it is impossible to reach here */
+                        color = IM_COL32(255, 0, 0, 255);
+                    }
+
+                    draw_list->AddRectFilled(
+                        ImVec2(col_base + x * pixel_size, row_base + y * pixel_size),
+                        ImVec2(col_base + (x + 1) * pixel_size, row_base + (y + 1) * pixel_size),
+                        color
+                    );
+                }
+            }
+        }
+    }
+}
+
+
 void InitMyWindow() {
     std::srand(std::time(nullptr));
 }
@@ -47,6 +91,26 @@ void GuiWrite(void *udata, unsigned short addr, unsigned short data) {
 bool IsPaused() {
     gbc_t *gbc = (gbc_t*)gui_callback_udata;
     return gbc->paused;
+}
+
+void VisualizeTiles() {
+    ImGui::SetNextWindowSize(ImVec2(tile_viewr_col * (8 + tile_viewer_border_width) * pixel_size + 20,
+    tile_viewer_row * (8 + tile_viewer_border_width) * pixel_size));
+    ImGui::Begin("TileViewer Bank 0");
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+    ImDrawList* draw_list = ImGui::GetWindowDrawList();
+    DrawTileViewerFramebuffer(draw_list, 0, ImGui::GetCursorScreenPos());
+    ImGui::PopStyleVar();
+    ImGui::End();
+
+    ImGui::SetNextWindowSize(ImVec2(tile_viewr_col * (8 + tile_viewer_border_width) * pixel_size + 20,
+    tile_viewer_row * (8 + tile_viewer_border_width) * pixel_size));
+    ImGui::Begin("TileViewer Bank 1");
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+    draw_list = ImGui::GetWindowDrawList();
+    DrawTileViewerFramebuffer(draw_list, 1, ImGui::GetCursorScreenPos());
+    ImGui::PopStyleVar();
+    ImGui::End();
 }
 
 void ClickPause() {
@@ -70,11 +134,21 @@ void ShowHUDControlPanels() {
         if (ImGui::Button(pause_text.c_str())) {
             ClickPause();
         }
+
         if (IsPaused()) {
             ImGui::SameLine();
             if (ImGui::Button("Step")) {
                 ClickStep();
             }
+        }
+
+        ImGui::SameLine();
+        if (ImGui::Button(tile_viewer_enabled ? "Hide Tiles" : "View Tiles")) {
+            tile_viewer_enabled = !tile_viewer_enabled;
+        }
+
+        if (tile_viewer_enabled) {
+            VisualizeTiles();
         }
 /*         ImGui::SameLine();
         if (ImGui::Button("Button 3")) {}  */
