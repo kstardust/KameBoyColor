@@ -46,8 +46,19 @@ void DrawTileViewerFramebuffer(ImDrawList* draw_list, int bank, ImVec2 position)
     gbc_t *gbc = (gbc_t*)gui_callback_udata;
     for (int row = 0; row < tile_viewer_row; row++) {
         for (int col = 0; col < tile_viewr_col; col++) {
+            int idx = row * tile_viewr_col + col;
+            gbc_tile_t *tile;
+            if (idx > 255) {
+                uint8_t old = IO_PORT_READ(&gbc->mem, IO_PORT_LCDC);
+                IO_PORT_WRITE(&gbc->mem, IO_PORT_LCDC, old & ~LCDC_BG_WINDOW_TILE_DATA);
+                tile = gbc_graphic_get_tile(&gbc->graphic, TILE_TYPE_WIN, idx, bank);
+                IO_PORT_WRITE(&gbc->mem, IO_PORT_LCDC, old);
+            } else {
+                tile = gbc_graphic_get_tile(&gbc->graphic, TILE_TYPE_OBJ, idx, bank);
+            }
+            /* debug rom */
+            // tile = (gbc_tile_t*)((gbc->mbc.rom_banks)+(0x4000 * rom_counter + 0x1800 + idx * 16));
 
-            gbc_tile_t *tile = gbc_graphic_get_tile(&gbc->graphic, TILE_TYPE_OBJ, row * tile_viewr_col + col, bank);
             int row_base = row * (8 + tile_viewer_border_width) * pixel_size + position.y + tile_viewer_border_width / 2 * pixel_size;
             int col_base = col * (8 + tile_viewer_border_width) * pixel_size + position.x + tile_viewer_border_width / 2 * pixel_size;
             for (int y = 0; y < 8; y++) {
