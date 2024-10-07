@@ -27,10 +27,10 @@ I'll gradually fix the failed tests.
 
 # MBC
 
-| Test | Status | Game |
+| Test | Status | Games I tested |
 |----------|----------|----------|
 | MBC1      | ✅   | Tetris DX |
-| MBC5     | ✅     | Super Mario Bros. Deluxe |
+| MBC5     | ✅     | Super Mario Bros. Deluxe, The Legend of Zelda: Oracle of Ages |
 
 
 I'll add more MBCs in the future.
