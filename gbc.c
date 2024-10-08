@@ -105,7 +105,8 @@ gbc_run(gbc_t *gbc)
                     continue;
                 }
                 /* forwards an instruction */
-                if (gbc->debug_steps > 0 && gbc->cpu.ins_cycles == 1) {
+                /* TODO: in double speed mode, this is not always a single instruction */
+                if (gbc->debug_steps > 0 && gbc->cpu.ins_cycles <= 1) {
                     gbc->debug_steps--;
                 }
             }
