@@ -183,6 +183,7 @@ hdma_transer(gbc_memory_t *mem, uint8_t data)
     /* https://gbdev.io/pandocs/CGB_Registers.html#lcd-vram-dma-transfers */
     uint16_t src = (IO_PORT_READ(mem, IO_PORT_HDMA1) << 8) | IO_PORT_READ(mem, IO_PORT_HDMA2);
     uint16_t dst = (IO_PORT_READ(mem, IO_PORT_HDMA3) << 8) | IO_PORT_READ(mem, IO_PORT_HDMA4);
+    src &= 0xfff0;
     dst &= 0x1ff0;
     dst += 0x8000;
 
