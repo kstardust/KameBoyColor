@@ -79,12 +79,6 @@ set(MSYS2_PATH "C:\\MyPrograms\\msys2")
 cmake -G 'Unix Makefiles'
 make
 ```
-# Run
-Run the project
-```bash
-./xgbc -r cartridge_file [-b boot_rom]
-```
-Boot rom is optional.
 
 # Controls
 Its in the `gui/main_sdl2.cpp` file. You can change it to whatever you like.
