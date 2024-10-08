@@ -7,8 +7,8 @@
 #include "common.h"
 #include "cartridge.h"
 #include "instruction_set.h"
-
 #include "gui.h"
+#include "rom_dialog.h"
 
 #define USEAGE "Usage: xgbc -r cartridge [-b boot_rom]\n" \
                 "  cartridge: path to the gameboy cartridge file\n" \
@@ -71,9 +71,13 @@ main(int argc, char **argv)
 {
     GuiInit();
 
-    char* cartridge;
-    char* boot_rom;
-    parse_args(argc, argv, &cartridge, &boot_rom);
+    char* cartridge = NULL;
+    char* boot_rom = NULL;
+    while (1) {
+        RomDialog(&cartridge, &boot_rom);
+        if (cartridge != NULL)
+            break;
+    }
 
     gbc_t gbc;
     if (gbc_init(&gbc, cartridge, boot_rom) == 0) {

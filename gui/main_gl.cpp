@@ -64,15 +64,15 @@ static std::unordered_map<int, int> key_map = {
 void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     ImGuiIO& io = ImGui::GetIO();
-    key_pressed = 0;            
-    auto kiter = key_map.find(key);    
+    key_pressed = 0;
+    auto kiter = key_map.find(key);
     if (kiter == key_map.end()) {
         return;
-    }    
+    }
 /*     if (action == GLFW_PRESS)
         io.AddKeyEvent(kiter->second, true);
     if (action == GLFW_RELEASE)
-        io.AddKeyEvent(kiter->second, false); */    
+        io.AddKeyEvent(kiter->second, false); */
     if (action == GLFW_PRESS)
         key_pressed = kiter->second;
 }
@@ -83,7 +83,7 @@ void SetupKeyInputing() {
 
 int GuiInit()
 {
-    glfwSetErrorCallback(glfw_error_callback);    
+    glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit())
         return 1;
 
@@ -150,7 +150,7 @@ int GuiInit()
     //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
     //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
     //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, nullptr, io.Fonts->GetGlyphRangesJapanese());
-    //IM_ASSERT(font != nullptr);    
+    //IM_ASSERT(font != nullptr);
 
     InitMyWindow();
     SetupKeyInputing();
@@ -158,7 +158,7 @@ int GuiInit()
 }
 
 void GuiSetCloseCallback(void (*callback)(void* udata)) {
-    gui_close_callback = callback;        
+    gui_close_callback = callback;
 }
 
 void GuiSetUserData(void* udata) {
@@ -171,9 +171,9 @@ uint8_t GuiPollKeypad()
 }
 
 void GuiUpdate()
-{    
+{
     if (glfwWindowShouldClose(window))
-    {        
+    {
         if (gui_close_callback != NULL)
             gui_close_callback(gui_callback_udata);
         return;

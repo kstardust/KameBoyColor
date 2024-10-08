@@ -44,16 +44,18 @@ set(IMGUI_SOURCES
     gui/imgui/imgui_demo.cpp
     gui/imgui/backends/imgui_impl_sdl2.cpp
     gui/imgui/backends/imgui_impl_opengl3.cpp
+    gui/nativefiledialog/src/nfd_common.c
 )
 
-set(IMGUI_INCLUDE_DIRS ./ gui/ gui/imgui gui/imgui/backends)
+set(IMGUI_INCLUDE_DIRS ./ gui/ gui/imgui gui/imgui/backends gui/nativefiledialog/src/include)
 
 if (WIN32)
-    list(APPEND IMGUI_INCLUDE_DIRS        
+    list(APPEND IMGUI_INCLUDE_DIRS
         ${MSYS2_PATH}/mingw64/include/SDL2
     )
-
-    link_directories(        
+    list(APPEND IMGUI_SOURCES
+        gui/nativefiledialog/src/nfd_win.cpp)
+    link_directories(
         ${MSYS2_PATH}/mingw64/lib
     )
 elseif(APPLE)
@@ -61,9 +63,14 @@ elseif(APPLE)
         ${HOMEBREW_PATH}/include
     )
 
+    list(APPEND IMGUI_SOURCES
+        gui/nativefiledialog/src/nfd_cocoa.m)
     link_directories(
         ${HOMEBREW_PATH}/lib
     )
+elseif(LINUX)
+    list(APPEND IMGUI_SOURCES
+        gui/nativefiledialog/src/nfd_gtk.c)
 endif()
 
 if (WIN32)

@@ -22,6 +22,8 @@
 #endif
 #include "mywindow.h"
 #include "gui.h"
+#include "rom_dialog.h"
+#include "nfd.h"
 
 using std::vector;
 
@@ -215,6 +217,80 @@ int GuiInit()
     //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, nullptr, io.Fonts->GetGlyphRangesJapanese());
     //IM_ASSERT(font != nullptr);
     InitAudio();
+    return 0;
+}
+
+void OpenFileDialog(char **path) {
+    char *outPath = NULL;
+    nfdresult_t result = NFD_OpenDialog( NULL, NULL, &outPath );
+
+    if (result == NFD_OKAY) {
+        *path = outPath;
+    } else if ( result == NFD_CANCEL ) {
+        puts("User pressed cancel.");
+    }
+    else {
+        printf("Error: %s\n", NFD_GetError() );
+    }
+}
+
+int RomDialog(char **cartidge, char **boot_rom)
+{
+    ImGuiIO& io = ImGui::GetIO();
+    SDL_Event event;
+    bool done = false;
+    ImVec4 clear_color = ImVec4(0x0d / float(0xff),  0x11 / float(0xff),  0x17 / float(0xff), 1.0f);
+
+    if (SDL_PollEvent(&event)) {
+        ImGui_ImplSDL2_ProcessEvent(&event);
+        if (event.type == SDL_QUIT)
+            done = true;
+        if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window))
+            done = true;
+    }
+    if (done) {
+        exit(1);
+        return 1;
+    }
+
+    // Start the Dear ImGui frame
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplSDL2_NewFrame();
+    ImGui::NewFrame();
+
+    ImGui::Begin("ImGui GBC");
+    ImGui::SetNextWindowSize(ImVec2(300, 200));
+    ImGui::BeginChild("Rom", ImVec2(300, 200), true);
+
+    ImGui::Text("Select a ROM file to load, boot ROM is optional.");
+    ImGui::Separator();
+
+    if (ImGui::Button("Load ROM")) {
+        OpenFileDialog(cartidge);
+    }
+
+    if (ImGui::Button("Load Boot ROM")) {
+        OpenFileDialog(boot_rom);
+    }
+
+    if (*boot_rom)
+        ImGui::Text(*boot_rom);
+
+    ImGui::EndChild();
+    ImGui::End();
+
+    // Rendering
+    ImGui::Render();
+    glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
+    glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
+    glClear(GL_COLOR_BUFFER_BIT);
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    SDL_GL_SwapWindow(window);
+
+    if (*cartidge != NULL) {
+        return 0;
+    }
+
     return 0;
 }
 
