@@ -240,6 +240,7 @@ int RomDialog(char **cartidge, char **boot_rom)
     SDL_Event event;
     bool done = false;
     ImVec4 clear_color = ImVec4(0x0d / float(0xff),  0x11 / float(0xff),  0x17 / float(0xff), 1.0f);
+    bool should_exit = false;
 
     if (SDL_PollEvent(&event)) {
         ImGui_ImplSDL2_ProcessEvent(&event);
@@ -269,12 +270,18 @@ int RomDialog(char **cartidge, char **boot_rom)
         OpenFileDialog(cartidge);
     }
 
+    if (*cartidge)
+        ImGui::Text("%s", *cartidge);
+
     if (ImGui::Button("Load Boot ROM")) {
         OpenFileDialog(boot_rom);
     }
 
     if (*boot_rom)
         ImGui::Text("%s", *boot_rom);
+
+    if (*cartidge && ImGui::Button("Start"))
+        should_exit = true;
 
     ImGui::EndChild();
     ImGui::End();
@@ -287,7 +294,7 @@ int RomDialog(char **cartidge, char **boot_rom)
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     SDL_GL_SwapWindow(window);
 
-    return 0;
+    return should_exit ? 0 : 1;
 }
 
 void GuiUpdate()

@@ -73,11 +73,8 @@ main(int argc, char **argv)
 
     char* cartridge = NULL;
     char* boot_rom = NULL;
-    while (1) {
-        RomDialog(&cartridge, &boot_rom);
-        if (cartridge != NULL)
-            break;
-    }
+    while (RomDialog(&cartridge, &boot_rom))
+        ;
 
     gbc_t gbc;
     if (gbc_init(&gbc, cartridge, boot_rom) == 0) {
