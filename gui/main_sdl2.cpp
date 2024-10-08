@@ -274,7 +274,7 @@ int RomDialog(char **cartidge, char **boot_rom)
     }
 
     if (*boot_rom)
-        ImGui::Text(*boot_rom);
+        ImGui::Text("%s", *boot_rom);
 
     ImGui::EndChild();
     ImGui::End();
