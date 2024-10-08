@@ -287,10 +287,6 @@ int RomDialog(char **cartidge, char **boot_rom)
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     SDL_GL_SwapWindow(window);
 
-    if (*cartidge != NULL) {
-        return 0;
-    }
-
     return 0;
 }
 
