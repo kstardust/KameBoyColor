@@ -262,7 +262,7 @@ int RomDialog(char **cartidge, char **boot_rom)
     ImGui::SetNextWindowSize(ImVec2(300, 200));
     ImGui::BeginChild("Rom", ImVec2(300, 200), true);
 
-    ImGui::Text("Select a ROM file to load, boot ROM is optional.");
+    ImGui::Text("Select a ROM file to load, \nboot ROM is optional.");
     ImGui::Separator();
 
     if (ImGui::Button("Load ROM")) {
