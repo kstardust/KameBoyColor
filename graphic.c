@@ -340,6 +340,23 @@ gbc_graphic_cycle(gbc_graphic_t *graphic)
 
         IO_PORT_WRITE(graphic->mem, IO_PORT_STAT, io_stat);
     } else {
+        /* otherwise games like Metal Gear Solid will enter a infinite loop
+          Hits to debug:
+          After chose the difficulty, the game will at some point execute to
+          0x402a then 0xe63, which has a instruction to enable interrupt,
+          it will jump to 0x48(LCD interrupt) then 0xe63,a
+          after further few jump, it will jump to 0x42cb(ROM65), which checks
+          if LY == 0, if not, it will continue to execute the following instruction,
+          which has a loop to check if LY == LYC, but the LCD is disabled, so it will
+          never be true, and the game will stuck here.
+          I thus suspect that the LY should be zero if the LCD is disabled. But I didn't
+          find it in pandoc and gbdev. I googled "gameboy color ly lcdc disabled" and the
+          first result is:
+          /* https://www.reddit.com/r/Gameboy/comments/a1c8h0/what_happens_when_a_gameboy_screen_is_disabled/
+          which saved my day.
+          I am very tired when writing this, but with a sense of accomplishment.
+        */
+        IO_PORT_WRITE(graphic->mem, IO_PORT_LY, 0);
         graphic->dots = DOTS_PER_SCANLINE * TOTAL_SCANLINES;
         LOG_DEBUG("[GRAPHIC] PPU DISABLED\n");
     }
