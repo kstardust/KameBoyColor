@@ -174,7 +174,7 @@ int GuiInit()
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
     SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
-    window = SDL_CreateWindow("ImGui GBC", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, INIT_WINDOW_WIDTH, INIT_WINDOW_HEIGHT, window_flags);
+    window = SDL_CreateWindow("KameBoyColor", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, INIT_WINDOW_WIDTH, INIT_WINDOW_HEIGHT, window_flags);
     if (window == nullptr)
     {
         printf("Error: SDL_CreateWindow(): %s\n", SDL_GetError());
@@ -259,7 +259,7 @@ int RomDialog(char **cartidge, char **boot_rom)
     ImGui_ImplSDL2_NewFrame();
     ImGui::NewFrame();
 
-    ImGui::Begin("ImGui GBC");
+    ImGui::Begin("GBC");
     ImGui::SetNextWindowSize(ImVec2(300, 200));
     ImGui::BeginChild("Rom", ImVec2(300, 200), true);
 

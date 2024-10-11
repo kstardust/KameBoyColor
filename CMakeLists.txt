@@ -84,5 +84,5 @@ add_compile_options(-g)
 #add_link_options(-fsanitize=address)
 
 include_directories(${IMGUI_INCLUDE_DIRS})
-add_executable(xgbc ${SOURCES} ${IMGUI_SOURCES})
-target_link_libraries(xgbc ${IMGUI_LIBS})
+add_executable(kgbc ${SOURCES} ${IMGUI_SOURCES})
+target_link_libraries(kgbc ${IMGUI_LIBS})
