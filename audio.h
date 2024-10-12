@@ -68,7 +68,7 @@
 
 #define CHANNEL_EVENVLOPE_PACE(c) ( ((c)->NRx2) & 0x7)
 #define CHANNEL_EVENVLOPE_VOLUME(c) ( ((c)->NRx2) >> 4)
-#define CHANNEL_EVENVLOPE_DIRECTION(c) ( ((c)->NRx2) & 0x8)
+#define CHANNEL_EVENVLOPE_DIRECTION(c) ( ((c)->NRx2 & 0x8) ? 1 : 0)
 #define CHANNEL3_OUTPUT_LEVEL(ch) ( ((ch->NRx2) >> 5) & 0x3)
 
 #define CHANNEL4_CLOCK_SHIFT(c) ( ((c)->NRx3 >> 4) & 0xf)
