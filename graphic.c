@@ -59,7 +59,7 @@ gbc_graphic_get_tilemap(gbc_graphic_t *graphic, uint8_t type)
 }
 
 inline static uint16_t
-gbc_graphic_render_pixel(gbc_graphic_t *graphic, uint16_t scanline, uint16_t col, uint8_t *objs_idx, uint8_t objs_count)
+gbc_graphic_render_pixel(gbc_graphic_t *graphic, uint16_t scanline, int16_t col, uint8_t *objs_idx, uint8_t objs_count)
 {
     uint8_t lcdc = IO_PORT_READ(graphic->mem, IO_PORT_LCDC);
     uint16_t bg_color, obj_color;
@@ -173,8 +173,8 @@ gbc_graphic_render_pixel(gbc_graphic_t *graphic, uint16_t scanline, uint16_t col
             gbc_obj_t *obj = (gbc_obj_t*)OAM_ADDR(graphic->mem);
             obj += objs_idx[i];
 
-            uint8_t obj_y = OAM_Y_TO_SCREEN(obj->y);
-            uint8_t obj_x = OAM_X_TO_SCREEN(obj->x);
+            int16_t obj_y = OAM_Y_TO_SCREEN(obj->y);
+            int16_t obj_x = OAM_X_TO_SCREEN(obj->x);
 
             if (col < obj_x || col >= obj_x + OBJ_WIDTH) {
                 continue;
@@ -250,10 +250,12 @@ gbc_graphic_draw_line(gbc_graphic_t *graphic, uint16_t scanline)
     gbc_obj_t *obj = (gbc_obj_t*)OAM_ADDR(graphic->mem);
     uint8_t objs_idx[MAX_OBJ_SCANLINE];
 
-    for (int i = 0; i < MAX_OBJS; i++, obj++) {
-        uint8_t y = OAM_Y_TO_SCREEN(obj->y);
+    int16_t signed_scanline = (int16_t)scanline;
 
-        if (scanline >= y && scanline < y + obj_height) {
+    for (int i = 0; i < MAX_OBJS; i++, obj++) {
+        int16_t y = OAM_Y_TO_SCREEN(obj->y);
+
+        if (signed_scanline >= y && signed_scanline < y + obj_height) {
             objs_idx[objs++] = i;
             if (objs == MAX_OBJ_SCANLINE) {
                 break;
@@ -261,7 +263,7 @@ gbc_graphic_draw_line(gbc_graphic_t *graphic, uint16_t scanline)
         }
     }
 
-    for (uint16_t i = 0; i < VISIBLE_HORIZONTAL_PIXELS; i++) {
+    for (int16_t i = 0; i < VISIBLE_HORIZONTAL_PIXELS; i++) {
         uint16_t color = gbc_graphic_render_pixel(graphic, scanline, i, objs_idx, objs);
         graphic->screen_write(graphic->screen_udata, scanline_base + i, color);
     }
