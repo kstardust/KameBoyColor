@@ -28,7 +28,7 @@ void GuiSetUserData(void *udata);
 /* it will be called after every frame, to see if any key is pressed */
 uint8_t GuiPollKeypad();
 
-/* Gameboy sound, left and right channel, current the sound is mono, so l_sample = r_sample */
+/* Gameboy sound, left and right channel respectively */
 void GuiAudioWrite(int8_t l_sample, int8_t r_sample);
 
 /* update the audio, it will be called after every frame */
