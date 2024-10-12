@@ -36,7 +36,7 @@ void *gui_callback_udata = NULL;
 static uint8_t key_pressed = 0;
 static SDL_Window* window;
 static SDL_GLContext gl_context;
-static vector<int8_t> audio_buffer(SAMPLES_FRAME);  // Buffer for audio samples
+static vector<int8_t> audio_buffer(SAMPLES_FRAME * 2);  // Buffer for audio samples
 SDL_AudioDeviceID audio_device;
 static int sample_counter = 0;
 
@@ -77,7 +77,7 @@ void AudioThread()
     SDL_AudioSpec desired_spec, obtained_spec;
     desired_spec.freq = SAMPLE_RATE;
     desired_spec.format = AUDIO_S8;
-    desired_spec.channels = 1;  // Mono
+    desired_spec.channels = 2;
     desired_spec.samples = SAMPLES_FRAME;
     desired_spec.callback = NULL;
 
@@ -102,6 +102,7 @@ void GuiAudioWrite(int8_t l_sample, int8_t r_sample)
     }
 
     audio_buffer[sample_counter++] = l_sample;
+    audio_buffer[sample_counter++] = r_sample;
 }
 
 void GuiAudioUpdate(void *udata)

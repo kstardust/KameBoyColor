@@ -344,8 +344,8 @@ gbc_graphic_cycle(gbc_graphic_t *graphic)
           Hits to debug:
           After chose the difficulty, the game will at some point execute to
           0x402a then 0xe63, which has a instruction to enable interrupt,
-          it will jump to 0x48(LCD interrupt) then 0xe63,a
-          after further few jump, it will jump to 0x42cb(ROM65), which checks
+          it will be interrupt to 0x48(LCD interrupt).
+          After a few further jumps, it will jump to 0x42cb(ROM 0x65), which checks
           if LY == 0, if not, it will continue to execute the following instruction,
           which has a loop to check if LY == LYC, but the LCD is disabled, so it will
           never be true, and the game will stuck here.

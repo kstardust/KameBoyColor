@@ -980,18 +980,34 @@ gbc_audio_cycle(gbc_audio_t *audio)
                     | ((audio->c3.on) << 2)
                     | ((audio->c4.on) << 3);
 
-    /* todo read NR50 */
-    uint8_t volume = 0x7;
+    uint8_t l_volume = LEFT_VOLUME(audio->NR50);
+    uint8_t r_volume = RIGHT_VOLUME(audio->NR50);
 
-    audio->sample += (c1 + c2 + c3 + c4) * volume / 4;
+    uint16_t left = 0;
+    uint16_t right = 0;
+
+    left = ((audio->NR51 & SOUND_PANNING_CH1_LEFT) ? c1 : 0) + \
+              ((audio->NR51 & SOUND_PANNING_CH2_LEFT) ? c2 : 0) + \
+              ((audio->NR51 & SOUND_PANNING_CH3_LEFT) ? c3 : 0) + \
+              ((audio->NR51 & SOUND_PANNING_CH4_LEFT) ? c4 : 0);
+
+    right = ((audio->NR51 & SOUND_PANNING_CH1_RIGHT) ? c1 : 0) + \
+              ((audio->NR51 & SOUND_PANNING_CH2_RIGHT) ? c2 : 0) + \
+              ((audio->NR51 & SOUND_PANNING_CH3_RIGHT) ? c3 : 0) + \
+              ((audio->NR51 & SOUND_PANNING_CH4_RIGHT) ? c4 : 0);
+
+    audio->left_sample += left * l_volume / 4;
+    audio->right_sample += right * r_volume / 4;
 
     if (audio->output_sample_cycles == 0) {
         /* linear interpolation */
-        uint8_t sample = 0;
-        if (audio->sample_divider > 0)
-            sample = audio->sample / audio->sample_divider;
+        uint8_t l_sample = 0, r_sample = 0;
+        if (audio->sample_divider > 0) {
+            l_sample = audio->left_sample / audio->sample_divider;
+            r_sample = audio->right_sample / audio->sample_divider;
+        }
 
-        audio->audio_write(sample, sample);
+        audio->audio_write(l_sample, r_sample);
         audio->output_sample_cycles = SAMPLE_TO_AUDIO_CYCLES;
         audio->output_sample_cycles_remainder += SAMPLE_TO_AUDIO_CYCLES_REMAINDER;
 
@@ -999,11 +1015,9 @@ gbc_audio_cycle(gbc_audio_t *audio)
             audio->output_sample_cycles++;
             audio->output_sample_cycles_remainder -= REMAINDER_SCALING_FACTOR;
         }
-        audio->sample = 0;
+        audio->left_sample = audio->right_sample = 0;
         audio->sample_divider = audio->output_sample_cycles;
     }
 
     audio->output_sample_cycles--;
-
-    /* TODO: volume panning */
 }

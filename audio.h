@@ -39,6 +39,18 @@
 #define CHANNEL3_MAX_LENGTH      0x100
 #define CHANNEL3_VOLUME_MASK     0xff
 
+#define LEFT_VOLUME(c) (((c) >> 4) & 0x7)
+#define RIGHT_VOLUME(c) ((c) & 0x7)
+
+#define SOUND_PANNING_CH1_RIGHT  0x01
+#define SOUND_PANNING_CH1_LEFT   0x10
+#define SOUND_PANNING_CH2_RIGHT  0x02
+#define SOUND_PANNING_CH2_LEFT   0x20
+#define SOUND_PANNING_CH3_RIGHT  0x04
+#define SOUND_PANNING_CH3_LEFT   0x40
+#define SOUND_PANNING_CH4_RIGHT  0x08
+#define SOUND_PANNING_CH4_LEFT   0x80
+
 
 #define CHANNEL_PERIOD_UPDATE(c, p) {    \
     (c)->NRx3 = ((p) & 0xff);          \
@@ -130,7 +142,8 @@ struct gbc_audio {
 
     uint32_t output_sample_cycles_remainder;
     uint16_t output_sample_cycles;
-    int16_t sample;
+    int16_t left_sample;
+    int16_t right_sample;
     int16_t sample_divider;
 
     uint8_t m_cycles;
