@@ -231,7 +231,6 @@ static uint8_t
 write_nr30(gbc_audio_t *audio, uint16_t addr, uint8_t data)
 {
     gbc_audio_channel_t *ch = &(audio->c3);
-    ch->on = (data & CH3_DAC_ON_MASK) != 0;
     ch->NRx0 = data;
     return data;
 }
