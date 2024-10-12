@@ -126,7 +126,7 @@ mem_echo_write(void *udata, uint16_t addr, uint8_t data)
 {
     gbc_memory_t *mem = (gbc_memory_t*)udata;
     addr = addr - WRAM_ECHO_BEGIN + WRAM_BANK_0_BEGIN;
-    return mem_raw_write(mem, addr, data);
+    return mem->write(mem, addr, data);
 }
 
 static uint8_t
@@ -134,7 +134,7 @@ mem_echo_read(void *udata, uint16_t addr)
 {
     gbc_memory_t *mem = (gbc_memory_t*)udata;
     addr = addr - WRAM_ECHO_BEGIN + WRAM_BANK_0_BEGIN;
-    return mem_raw_read(mem, addr);
+    return mem->read(mem, addr);
 }
 
 static uint8_t
